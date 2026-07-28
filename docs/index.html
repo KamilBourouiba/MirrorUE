@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=softlive1" />
+  <link rel="stylesheet" href="styles.css?v=iphone1" />
 </head>
 <body>
   <div class="bg" aria-hidden="true">
@@ -56,18 +56,76 @@
         <p class="meta">macOS 14+ · iOS 27+ · Developer Mode</p>
       </div>
 
-      <div class="hero-live" aria-label="Interactive 3D phone scene">
-        <iframe
-          class="spline-live"
-          title="Free Phone Animated Mockup — Spline Community (CC0)"
-          src="https://app.spline.design/file/dca4befb-8867-42de-bcee-1f0a0f7ba659?view=preview"
-          loading="eager"
-          allow="fullscreen"
-        ></iframe>
-        <p class="credit">
-          <a href="https://community.spline.design/file/274de1d3-018d-48c3-99b1-31ab8d44b6be" rel="noopener" target="_blank">Free Phone Animated Mockup</a>
-          · CC0 · Spline
-        </p>
+      <div class="hero-live" aria-label="Interactive mirrored iPhone demo">
+        <div class="mirror-stage" id="mirror-stage">
+          <div class="mac-frame" aria-hidden="true">
+            <div class="mac-bar">
+              <span></span><span></span><span></span>
+              <em>MirrorUE — live</em>
+            </div>
+          </div>
+
+          <div class="phone" id="phone">
+            <div class="phone-side"></div>
+            <div class="phone-glass">
+              <div class="island"></div>
+              <div class="screen" id="screen">
+                <div class="status">
+                  <span class="time" id="phone-time">9:41</span>
+                  <span class="status-icons" aria-hidden="true">●●●</span>
+                </div>
+
+                <div class="pages" id="pages">
+                  <div class="page page-home">
+                    <p class="page-title">Home</p>
+                    <div class="apps">
+                      <button type="button" class="app" data-app="Messages" style="--c:#34c759"><span></span>Messages</button>
+                      <button type="button" class="app" data-app="Safari" style="--c:#5b6cff"><span></span>Safari</button>
+                      <button type="button" class="app" data-app="Photos" style="--c:#ff8f7a"><span></span>Photos</button>
+                      <button type="button" class="app" data-app="Mail" style="--c:#64d2ff"><span></span>Mail</button>
+                      <button type="button" class="app" data-app="Music" style="--c:#ff375f"><span></span>Music</button>
+                      <button type="button" class="app" data-app="Maps" style="--c:#30d158"><span></span>Maps</button>
+                      <button type="button" class="app" data-app="Settings" style="--c:#8e8e93"><span></span>Settings</button>
+                      <button type="button" class="app" data-app="Xcode" style="--c:#147efb"><span></span>Xcode</button>
+                    </div>
+                  </div>
+                  <div class="page page-desk">
+                    <p class="page-title">Desk</p>
+                    <div class="widget">
+                      <strong>MirrorUE</strong>
+                      <span>120 fps · HID linked</span>
+                      <div class="bars"><i></i><i></i><i></i><i></i></div>
+                    </div>
+                    <div class="widget soft">
+                      <strong>Workflow</strong>
+                      <code>tap → type → swipe</code>
+                    </div>
+                  </div>
+                  <div class="page page-log">
+                    <p class="page-title">Events</p>
+                    <ul class="event-log" id="event-log"></ul>
+                  </div>
+                </div>
+
+                <div class="dots" id="dots" aria-hidden="true">
+                  <span class="on"></span><span></span><span></span>
+                </div>
+                <div class="dock">
+                  <span style="--c:#34c759"></span>
+                  <span style="--c:#5b6cff"></span>
+                  <span style="--c:#ff8f7a"></span>
+                  <span style="--c:#8e8e93"></span>
+                </div>
+
+                <div class="cursor" id="cursor" hidden></div>
+                <div class="ripple" id="ripple" hidden></div>
+              </div>
+              <div class="home-bar" aria-hidden="true"></div>
+            </div>
+          </div>
+
+          <p class="control-hint">Move to aim · click to tap · drag to swipe pages</p>
+        </div>
       </div>
     </section>
 
@@ -194,21 +252,8 @@
 
   <footer class="foot">
     <p>MIT © Kamil Bourouiba · <a href="https://github.com/KamilBourouiba/MirrorUE">GitHub</a></p>
-    <p class="foot-spline">
-      Remix more CC0 scenes:
-      <a href="https://community.spline.design/file/a9ca70d3-151c-4266-8bc6-0e54a11470de" target="_blank" rel="noopener">iPhone 16 Pro</a>
-      ·
-      <a href="https://community.spline.design/file/3d9569d9-f015-4a43-b779-accc24145cbb" target="_blank" rel="noopener">MacBook</a>
-    </p>
   </footer>
 
-  <script>
-    document.querySelectorAll('.nav-links a').forEach(function (link) {
-      link.addEventListener('click', function () {
-        var toggle = document.getElementById('nav-toggle');
-        if (toggle) toggle.checked = false;
-      });
-    });
-  </script>
+  <script src="demo.js?v=iphone1" defer></script>
 </body>
 </html>
