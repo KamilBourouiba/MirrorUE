@@ -8,21 +8,20 @@
   <meta property="og:title" content="MirrorUE" />
   <meta property="og:description" content="Control, present, and automate a real iPhone from your Mac." />
   <meta property="og:type" content="website" />
-  <meta name="theme-color" content="#070a10" />
+  <meta name="theme-color" content="#eef2ff" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=glass1" />
+  <link rel="stylesheet" href="styles.css?v=softlive1" />
 </head>
 <body>
   <div class="bg" aria-hidden="true">
     <div class="orb orb-a"></div>
     <div class="orb orb-b"></div>
     <div class="orb orb-c"></div>
-    <div class="grid-fade"></div>
   </div>
 
-  <header class="nav glass">
+  <header class="nav">
     <div class="nav-inner">
       <a class="logo" href="#top">MirrorUE<span class="logo-dot">_</span></a>
       <input type="checkbox" id="nav-toggle" class="nav-toggle" hidden />
@@ -42,7 +41,7 @@
   <main id="top">
     <section class="hero">
       <div class="hero-copy">
-        <p class="chip glass">dev tool · MIT · USB + CoreDevice</p>
+        <p class="chip">dev tool · MIT · USB + CoreDevice</p>
         <p class="brand">MirrorUE</p>
         <h1>Mirror a real iPhone.<br />Drive it from your Mac.</h1>
         <p class="lede">
@@ -52,38 +51,27 @@
         </p>
         <div class="cta">
           <a class="btn primary" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download release</a>
-          <a class="btn ghost glass" href="https://github.com/KamilBourouiba/MirrorUE">View source</a>
+          <a class="btn ghost" href="https://github.com/KamilBourouiba/MirrorUE">View source</a>
         </div>
         <p class="meta">macOS 14+ · iOS 27+ · Developer Mode</p>
       </div>
 
-      <div class="hero-visual">
-        <div class="spline-shell glass">
-          <iframe
-            class="spline-frame"
-            title="Free Phone Animated Mockup — Spline Community (CC0)"
-            src="https://app.spline.design/file/dca4befb-8867-42de-bcee-1f0a0f7ba659?view=preview"
-            loading="lazy"
-            allow="fullscreen"
-          ></iframe>
-          <div class="spline-fallback" aria-hidden="true">
-            <div class="phone-glass">
-              <div class="phone-screen">
-                <span class="scanline"></span>
-                <code>mirrorue://live</code>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="hero-live" aria-label="Interactive 3D phone scene">
+        <iframe
+          class="spline-live"
+          title="Free Phone Animated Mockup — Spline Community (CC0)"
+          src="https://app.spline.design/file/dca4befb-8867-42de-bcee-1f0a0f7ba659?view=preview"
+          loading="eager"
+          allow="fullscreen"
+        ></iframe>
         <p class="credit">
-          3D:
           <a href="https://community.spline.design/file/274de1d3-018d-48c3-99b1-31ab8d44b6be" rel="noopener" target="_blank">Free Phone Animated Mockup</a>
-          (CC0) via Spline Community
+          · CC0 · Spline
         </p>
       </div>
     </section>
 
-    <section class="note glass">
+    <section class="note frost">
       <p>
         Apple’s iPhone Mirroring isn’t currently available in the EU (DMA uncertainty).
         MirrorUE is a <strong>developer tool</strong> for phones you pair yourself—
@@ -92,7 +80,7 @@
     </section>
 
     <section id="control" class="feature">
-      <div class="feature-card glass">
+      <div class="feature-card frost">
         <p class="kicker">// control</p>
         <h2>Mouse, trackpad, keyboard on silicon you own.</h2>
         <p>
@@ -109,7 +97,7 @@
     </section>
 
     <section id="present" class="feature">
-      <div class="feature-card glass">
+      <div class="feature-card frost">
         <p class="kicker">// present</p>
         <h2>Record demos with show-touches.</h2>
         <p>
@@ -126,7 +114,7 @@
     </section>
 
     <section id="automate" class="feature">
-      <div class="feature-card glass">
+      <div class="feature-card frost">
         <p class="kicker">// automate</p>
         <h2>Workflows + loopback API.</h2>
         <p>
@@ -148,7 +136,7 @@
       </div>
 
       <div class="plans">
-        <article class="plan glass">
+        <article class="plan frost">
           <h3>Solo</h3>
           <p class="price"><span>Free</span></p>
           <p class="plan-lead">Mirror, control, record on your Mac + iPhone.</p>
@@ -161,7 +149,7 @@
           <a class="btn ghost" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download free</a>
         </article>
 
-        <article class="plan glass featured">
+        <article class="plan frost featured">
           <p class="badge">most useful</p>
           <h3>Lab</h3>
           <p class="price"><span>$19</span><small>/seat·mo</small></p>
@@ -175,7 +163,7 @@
           <a class="btn primary" href="#pricing" aria-disabled="true">Join waitlist</a>
         </article>
 
-        <article class="plan glass">
+        <article class="plan frost">
           <h3>Fleet</h3>
           <p class="price"><span>$79</span><small>/seat·mo</small></p>
           <p class="plan-lead">Teams running physical-device smoke at scale.</p>
@@ -190,7 +178,7 @@
       </div>
     </section>
 
-    <section class="start glass">
+    <section class="start frost">
       <h2>Get started</h2>
       <ol>
         <li><span>01</span><div><strong>Download</strong><p>Latest release or <code>./tools/package_app.sh</code></p></div></li>
@@ -207,11 +195,10 @@
   <footer class="foot">
     <p>MIT © Kamil Bourouiba · <a href="https://github.com/KamilBourouiba/MirrorUE">GitHub</a></p>
     <p class="foot-spline">
-      Also browse
-      <a href="https://community.spline.design/file/a9ca70d3-151c-4266-8bc6-0e54a11470de" target="_blank" rel="noopener">iPhone 16 Pro mockup</a>
+      Remix more CC0 scenes:
+      <a href="https://community.spline.design/file/a9ca70d3-151c-4266-8bc6-0e54a11470de" target="_blank" rel="noopener">iPhone 16 Pro</a>
       ·
-      <a href="https://community.spline.design/file/3d9569d9-f015-4a43-b779-accc24145cbb" target="_blank" rel="noopener">MacBook mockup</a>
-      (CC0 — remix in Spline)
+      <a href="https://community.spline.design/file/3d9569d9-f015-4a43-b779-accc24145cbb" target="_blank" rel="noopener">MacBook</a>
     </p>
   </footer>
 
@@ -222,16 +209,6 @@
         if (toggle) toggle.checked = false;
       });
     });
-    // Hide CSS fallback once Spline iframe paints
-    (function () {
-      var frame = document.querySelector('.spline-frame');
-      var fallback = document.querySelector('.spline-fallback');
-      if (!frame || !fallback) return;
-      frame.addEventListener('load', function () {
-        fallback.classList.add('hidden');
-      });
-      setTimeout(function () { fallback.classList.add('hidden'); }, 4000);
-    })();
   </script>
 </body>
 </html>
