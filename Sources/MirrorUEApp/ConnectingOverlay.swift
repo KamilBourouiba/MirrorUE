@@ -4,12 +4,18 @@ import DeviceKit
 /// Frosted connecting overlay with spinner, steps, and device details.
 /// Card size follows content and shrinks with the window (no clipped steps).
 final class ConnectingOverlay: NSView {
+    var onRetry: (() -> Void)?
+    var onBack: (() -> Void)?
+
     private let effect = NSVisualEffectView()
     private let spinner = NSProgressIndicator()
     private let titleLabel = NSTextField(labelWithString: "Connecting")
     private let detailLabel = NSTextField(labelWithString: "")
     private let stepsLabel = NSTextField(labelWithString: "")
     private let pulse = NSView()
+    private let retryButton = NSButton(title: "Try again", target: nil, action: nil)
+    private let backButton = NSButton(title: "Choose device", target: nil, action: nil)
+    private var actions: NSStackView?
     private var pulseAnim: CABasicAnimation?
 
     override init(frame frameRect: NSRect) {
@@ -80,9 +86,30 @@ final class ConnectingOverlay: NSView {
         stepsLabel.setContentCompressionResistancePriority(.required, for: .vertical)
         stepsLabel.translatesAutoresizingMaskIntoConstraints = false
 
+        retryButton.bezelStyle = .rounded
+        retryButton.title = "Try again"
+        retryButton.target = self
+        retryButton.action = #selector(retryClicked)
+        retryButton.isHidden = true
+        retryButton.translatesAutoresizingMaskIntoConstraints = false
+
+        backButton.bezelStyle = .rounded
+        backButton.title = "Choose device"
+        backButton.target = self
+        backButton.action = #selector(backClicked)
+        backButton.isHidden = true
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+
+        let actions = NSStackView(views: [backButton, retryButton])
+        actions.orientation = .horizontal
+        actions.spacing = 10
+        actions.translatesAutoresizingMaskIntoConstraints = false
+        self.actions = actions
+
         effect.addSubview(titleLabel)
         effect.addSubview(detailLabel)
         effect.addSubview(stepsLabel)
+        effect.addSubview(actions)
 
         let maxW = effect.widthAnchor.constraint(equalToConstant: 320)
         maxW.priority = .defaultHigh
@@ -125,7 +152,10 @@ final class ConnectingOverlay: NSView {
             stepsLabel.topAnchor.constraint(equalTo: detailLabel.bottomAnchor, constant: 14),
             stepsLabel.leadingAnchor.constraint(equalTo: effect.leadingAnchor, constant: 22),
             stepsLabel.trailingAnchor.constraint(equalTo: effect.trailingAnchor, constant: -18),
-            stepsLabel.bottomAnchor.constraint(equalTo: effect.bottomAnchor, constant: -20),
+
+            actions.topAnchor.constraint(equalTo: stepsLabel.bottomAnchor, constant: 16),
+            actions.centerXAnchor.constraint(equalTo: effect.centerXAnchor),
+            actions.bottomAnchor.constraint(equalTo: effect.bottomAnchor, constant: -18),
         ])
     }
 
@@ -141,6 +171,7 @@ final class ConnectingOverlay: NSView {
         let short = String(device.udid.prefix(12))
         detailLabel.stringValue = "\(name)\n\(model)  ·  \(ios)\n\(short)…"
         setStep(step)
+        setFailureActions(visible: false)
         spinner.startAnimation(nil)
         startPulse()
     }
@@ -153,9 +184,22 @@ final class ConnectingOverlay: NSView {
         stepsLabel.stringValue = lines.joined(separator: "\n")
     }
 
+    func showFailed(title: String, detail: String, steps: [String]) {
+        setStep(title)
+        if !detail.isEmpty {
+            detailLabel.stringValue = detailLabel.stringValue.split(separator: "\n").prefix(2).joined(separator: "\n")
+                + "\n\n" + detail
+        }
+        setSteps(steps)
+        setFailureActions(visible: true)
+        spinner.stopAnimation(nil)
+        stopPulse()
+    }
+
     func hideAnimated() {
         spinner.stopAnimation(nil)
         stopPulse()
+        setFailureActions(visible: false)
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.28
             animator().alphaValue = 0
@@ -164,6 +208,15 @@ final class ConnectingOverlay: NSView {
             self?.alphaValue = 1
         })
     }
+
+    private func setFailureActions(visible: Bool) {
+        retryButton.isHidden = !visible
+        backButton.isHidden = !visible
+        actions?.isHidden = !visible
+    }
+
+    @objc private func retryClicked() { onRetry?() }
+    @objc private func backClicked() { onBack?() }
 
     private func startPulse() {
         pulse.layer?.removeAllAnimations()

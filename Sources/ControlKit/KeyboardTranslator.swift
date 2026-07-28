@@ -26,22 +26,21 @@ public enum KeyboardTranslator {
         case physical
         case us
         case fr
+        case de
 
         static func fromEnv() -> PhoneLayout {
-            let raw = ProcessInfo.processInfo.environment["MIRRORUE_KB_PHONE"]?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .lowercased() ?? ""
-            switch raw {
-            case "", "auto":
+            // Prefer persisted Settings (and env) via MirrorUESettings.
+            switch MirrorUESettings.keyboardMode {
+            case .auto:
                 return resolveAuto()
-            case "physical", "host", "match":
+            case .physical:
                 return .physical
-            case "us", "en", "english", "qwerty":
+            case .us:
                 return .us
-            case "fr", "azerty", "french":
+            case .fr:
                 return .fr
-            default:
-                return resolveAuto()
+            case .de:
+                return .de
             }
         }
 
@@ -54,20 +53,24 @@ public enum KeyboardTranslator {
             let langs = Locale.preferredLanguages.map { $0.lowercased() }
             if let primary = langs.first {
                 if primary.hasPrefix("fr") { return .fr }
+                if primary.hasPrefix("de") { return .de }
                 if primary.hasPrefix("en") { return .us }
                 if primary.hasPrefix("it")
                     || primary.hasPrefix("es")
                     || primary.hasPrefix("pt") {
                     return .us // QWERTY letter positions
                 }
-                if primary.hasPrefix("de") || primary.hasPrefix("sv") || primary.hasPrefix("fi") {
-                    return .physical // QWERTZ / local — mirror positions
+                if primary.hasPrefix("sv") || primary.hasPrefix("fi") {
+                    return .physical
                 }
             }
 
             let id = currentInputSourceID().lowercased()
             if !id.isEmpty {
                 if isAZERTY(id: id) { return .fr }
+                if id.contains("german") || id.contains("austrian") || id.contains("swiss.german") {
+                    return .de
+                }
                 if isQWERTYFamily(id: id) { return .us }
                 return .physical
             }
@@ -145,6 +148,7 @@ public enum KeyboardTranslator {
         switch phoneLayout {
         case .us: table = asciiToHID_US
         case .fr: table = asciiToHID_FR
+        case .de: table = asciiToHID_DE
         case .physical: return nil
         }
         guard let (usage, needsShift) = table[key]
@@ -271,6 +275,30 @@ public enum KeyboardTranslator {
         "2": (0x1F, true), "3": (0x20, true), "4": (0x21, true), "5": (0x22, true),
         "6": (0x23, true), "7": (0x24, true), "8": (0x25, true), "9": (0x26, true),
         "0": (0x27, true),
+    ]
+
+    // MARK: - German QWERTZ (iPhone Hardware Keyboard = German)
+
+    /// Glyph → HID for German QWERTZ (Y/Z swapped vs US).
+    private static let asciiToHID_DE: [String: (UInt16, Bool)] = [
+        "a": (0x04, false), "b": (0x05, false), "c": (0x06, false), "d": (0x07, false),
+        "e": (0x08, false), "f": (0x09, false), "g": (0x0A, false), "h": (0x0B, false),
+        "i": (0x0C, false), "j": (0x0D, false), "k": (0x0E, false), "l": (0x0F, false),
+        "m": (0x10, false), "n": (0x11, false), "o": (0x12, false), "p": (0x13, false),
+        "q": (0x14, false), "r": (0x15, false), "s": (0x16, false), "t": (0x17, false),
+        "u": (0x18, false), "v": (0x19, false),
+        "y": (0x1D, false), "z": (0x1C, false), "w": (0x1A, false), "x": (0x1B, false),
+        "A": (0x04, true), "B": (0x05, true), "C": (0x06, true), "D": (0x07, true),
+        "E": (0x08, true), "F": (0x09, true), "G": (0x0A, true), "H": (0x0B, true),
+        "I": (0x0C, true), "J": (0x0D, true), "K": (0x0E, true), "L": (0x0F, true),
+        "M": (0x10, true), "N": (0x11, true), "O": (0x12, true), "P": (0x13, true),
+        "Q": (0x14, true), "R": (0x15, true), "S": (0x16, true), "T": (0x17, true),
+        "U": (0x18, true), "V": (0x19, true),
+        "Y": (0x1D, true), "Z": (0x1C, true), "W": (0x1A, true), "X": (0x1B, true),
+        " ": (0x2C, false), "\t": (0x2B, false), "\n": (0x28, false), "\r": (0x28, false),
+        "-": (0x2D, false), "_": (0x2D, true),
+        ",": (0x36, false), ";": (0x36, true),
+        ".": (0x37, false), ":": (0x37, true),
     ]
 
     private static let compat: [String: String] = [

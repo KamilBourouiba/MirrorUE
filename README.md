@@ -53,9 +53,22 @@ iOS versions are not supported.
 
 ## Quick start
 
+### App (recommended)
+
 ```bash
-git clone https://github.com/KamilBourouiba/MirrorUE.git
-cd MirrorUE
+./tools/package_app.sh          # builds binaries + dist/MirrorUE.app + .dmg
+open dist/MirrorUE.app          # or open dist/MirrorUE.dmg → drag to Applications
+```
+
+First launch shows a short setup checklist (USB, Trust, Developer Mode, Network
+pairing, camera permission). Then pick your iPhone. Settings live in the dock
+gear or **⌘,**.
+
+> Unsigned local builds: right-click the app → **Open** the first time.
+
+### Developers
+
+```bash
 ./tools/build_engine.sh   # once (or after pulling)
 ./mirroring               # device picker, or pass --udid
 ```
@@ -69,8 +82,7 @@ unlocked and accept Trust / camera–screen prompts on the Mac.
 ```
 
 Binaries land in `bin/MirrorUE` (UI) and `bin/MirrorUEEngine` (frozen CoreDevice
-worker). The launcher prefers those builds — no user Python required at runtime
-after a successful freeze.
+worker). The packaged `.app` embeds both under `Contents/MacOS/`.
 
 ---
 
@@ -157,6 +169,53 @@ paste via Cmd+V on device (`MIRRORUE_KB_PASTE=0` to disable).
 | Vol − / Vol + | Volume |
 | Music safe | Pause video path; HID-only |
 | Instant | Soft refresh; **Shift-click** = hard transcoder reset |
+| Screenshot | Save PNG to Desktop (`⌘⇧S`) |
+| Record | Start/stop .mov to Desktop (`⌘⇧R`) |
+| Paste clipboard | Send Mac clipboard via Cmd+V on device (`⌘⇧V`) |
+| Performance | Live fps / latency / diagnostics (`⌘P`) |
+| Workflows | Record / play / save JSON automations (`⌘⇧W`) |
+| Settings | FPS, keyboard, landscape, show touches (`⌘,`) |
+
+### Workflows (automation)
+
+1. Open **Workflows** (dock list / `⌘⇧W`).
+2. **Record**, then tap, swipe, type, and use dock buttons on the phone.
+3. **Stop** → **Play** to replay, or **Save** to
+   `~/Documents/MirrorUE/Workflows/*.json`.
+
+Example JSON:
+
+```json
+{
+  "name": "Login smoke",
+  "version": 1,
+  "steps": [
+    { "kind": "tap", "x": 0.5, "y": 0.72 },
+    { "kind": "wait", "ms": 400 },
+    { "kind": "type", "text": "hello@example.com" },
+    { "kind": "key", "usage": 40, "mods": 0 }
+  ]
+}
+```
+
+Coordinates are normalized 0…1 in the mirrored content rect (y downward).
+
+### Local automation API
+
+While MirrorUE is connected, a **loopback-only** HTTP API listens on
+`http://127.0.0.1:8090` (override with `MIRRORUE_API_PORT`):
+
+```bash
+./tools/mirrorue-cli status
+./tools/mirrorue-cli tap 0.5 0.8
+./tools/mirrorue-cli type 'hello@example.com'
+./tools/mirrorue-cli button home
+./tools/mirrorue-cli run ~/Documents/MirrorUE/Workflows/Recording.json
+```
+
+See [SECURITY.md](SECURITY.md) — do not expose this port publicly.
+
+**Show touches** is on by default (toggle with `⌘⇧T` or Settings).
 
 ### 6. Window and orientation
 
@@ -191,6 +250,9 @@ Stop with **⌘Q** or close the window.
 ---
 
 ## Environment variables
+
+Prefer **Settings** in the app (dock gear / ⌘,) for FPS, keyboard, and landscape.
+Environment variables still override prefs for development and CI:
 
 | Variable | Default | Effect |
 |----------|---------|--------|
@@ -248,6 +310,17 @@ iPhone types `q` — that is why `auto` / `fr` exist.
 - DRM apps may blank while mirrored
 - Re-validate after major iOS / macOS updates
 - Display FPS is capped by the Mac display refresh (need ProMotion for 120)
+
+### Compatibility matrix
+
+| Host / device | Status |
+|---------------|--------|
+| macOS 14+ | Supported |
+| macOS 15 / 26 | Supported (re-validate after updates) |
+| iOS 27+ | Supported |
+| iOS 26 and earlier | Unsupported (no UniversalHID path MirrorUE uses) |
+
+Open **Performance** (dock chart / ⌘P) for live fps, latency, and **Copy diagnostics**.
 
 ---
 

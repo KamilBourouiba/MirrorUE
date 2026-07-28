@@ -73,6 +73,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var dock: ControlCenterDock!
     var picker: DevicePickerView?
     var connecting: ConnectingOverlay?
+    var setupChecklist: SetupChecklistView?
+    var settingsPanel: SettingsPanel?
+    var performancePanel: PerformancePanel?
+    var workflowPanel: WorkflowPanel?
+    var privacyPanel: PrivacyPanel?
+    var connectionState: ConnectionState = .idle
+    var lastBootDevice: DeviceInfo?
+    var recoveryAttempt = 0
+    var engineRecoveryAttempt = 0
+    private var sleepObservers: [NSObjectProtocol] = []
     var control = ControlClient()
     var muvsReader: VideoSocketReader?
     var capture: DeviceScreenCapture?
@@ -115,6 +125,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        MirrorUESettings.applyToEnvironment()
+        installMainMenu()
         _ = DeviceScreenCapture.isAvailable
 
         let contentW = args.width + sidePad * 2
@@ -248,12 +260,151 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         resizeWindowToVideo(animated: false)
+        installSessionHealthObservers()
+        startLocalAPI()
 
         if let udid = args.udid {
             Task { await self.boot(udid: udid) }
+        } else if !MirrorUESettings.setupChecklistSeen {
+            showSetupChecklist()
         } else {
             showDevicePicker()
         }
+    }
+
+    private func startLocalAPI() {
+        let api = LocalAPIServer.shared
+        api.controlProvider = { [weak self] in
+            guard let self, self.didRevealMirror else { return nil }
+            return self.control
+        }
+        api.touchModeProvider = { [weak self] in
+            self?.metalView.touchMode ?? .portrait
+        }
+        api.statusProvider = { [weak self] in
+            guard let self else { return [:] }
+            return [
+                "connected": self.didRevealMirror,
+                "device": self.cachedDeviceName,
+                "codec": self.codecLabel,
+                "state": self.connectionState.title,
+                "engineAlive": self.session?.isAlive ?? false,
+                "displayFps": self.metalView?.fps ?? 0,
+                "captureFps": self.capture?.inboundFps ?? 0,
+                "apiPort": Int(LocalAPIServer.shared.port),
+            ]
+        }
+        let port = UInt16(ProcessInfo.processInfo.environment["MIRRORUE_API_PORT"].flatMap(Int.init) ?? 8090)
+        api.start(port: port)
+    }
+
+    private func installSessionHealthObservers() {
+        let ws = NSWorkspace.shared.notificationCenter
+        sleepObservers.append(ws.addObserver(
+            forName: NSWorkspace.willSleepNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            fputs("MirrorUE: Mac will sleep\n", stderr)
+            self?.status.stringValue = "Mac sleeping…"
+        })
+        sleepObservers.append(ws.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            fputs("MirrorUE: Mac woke — recovering capture\n", stderr)
+            self.applyConnectionState(.recovering(message: "Mac woke — restoring…", attempt: 1))
+            self.capture?.stop()
+            self.capture?.start()
+            if let session = self.session, !session.isAlive, let device = self.lastBootDevice {
+                Task { await self.boot(device: device) }
+            } else if self.didRevealMirror {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                    self?.applyConnectionState(.connected(codec: self?.codecLabel ?? "coremediaio"))
+                }
+            }
+        })
+    }
+
+    private func installMainMenu() {
+        let main = NSMenu()
+        let appMenu = NSMenu()
+        let appItem = NSMenuItem()
+        appItem.submenu = appMenu
+        main.addItem(appItem)
+        appMenu.addItem(withTitle: "About MirrorUE", action: #selector(showAbout), keyEquivalent: "")
+        appMenu.addItem(withTitle: "Privacy & Security…", action: #selector(showPrivacy), keyEquivalent: "")
+        appMenu.addItem(NSMenuItem.separator())
+        appMenu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
+        appMenu.addItem(withTitle: "Performance…", action: #selector(showPerformance), keyEquivalent: "p")
+        appMenu.addItem(NSMenuItem.separator())
+        let shot = NSMenuItem(title: "Screenshot", action: #selector(takeScreenshot), keyEquivalent: "s")
+        shot.keyEquivalentModifierMask = [.command, .shift]
+        appMenu.addItem(shot)
+        let rec = NSMenuItem(title: "Start/Stop Recording", action: #selector(toggleRecording), keyEquivalent: "r")
+        rec.keyEquivalentModifierMask = [.command, .shift]
+        appMenu.addItem(rec)
+        let paste = NSMenuItem(title: "Paste Mac Clipboard", action: #selector(pasteMacClipboard), keyEquivalent: "v")
+        paste.keyEquivalentModifierMask = [.command, .shift]
+        appMenu.addItem(paste)
+        let touches = NSMenuItem(title: "Toggle Show Touches", action: #selector(toggleShowTouches), keyEquivalent: "t")
+        touches.keyEquivalentModifierMask = [.command, .shift]
+        appMenu.addItem(touches)
+        let wf = NSMenuItem(title: "Workflows…", action: #selector(showWorkflows), keyEquivalent: "w")
+        wf.keyEquivalentModifierMask = [.command, .shift]
+        appMenu.addItem(wf)
+        appMenu.addItem(NSMenuItem.separator())
+        appMenu.addItem(withTitle: "Quit MirrorUE", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+
+        let windowMenu = NSMenu(title: "Window")
+        let windowItem = NSMenuItem(title: "Window", action: nil, keyEquivalent: "")
+        windowItem.submenu = windowMenu
+        main.addItem(windowItem)
+        windowMenu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
+        windowMenu.addItem(withTitle: "Performance…", action: #selector(showPerformance), keyEquivalent: "p")
+
+        NSApp.mainMenu = main
+    }
+
+    @objc private func showAbout() {
+        let alert = NSAlert()
+        alert.messageText = "MirrorUE"
+        alert.informativeText = "Control a development iPhone from your Mac.\nCoreMediaIO + CoreDevice · MIT License\nLocal API: http://127.0.0.1:\(LocalAPIServer.shared.port)/v1/status"
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Privacy…")
+        if alert.runModal() == .alertSecondButtonReturn {
+            showPrivacy()
+        }
+    }
+
+    @objc func showPrivacy() {
+        guard privacyPanel == nil, let root = window.contentView else { return }
+        let panel = PrivacyPanel(frame: root.bounds)
+        panel.autoresizingMask = [.width, .height]
+        panel.onClose = { [weak self] in
+            self?.privacyPanel?.removeFromSuperview()
+            self?.privacyPanel = nil
+        }
+        root.addSubview(panel)
+        privacyPanel = panel
+    }
+
+    @objc func showSettings() {
+        guard settingsPanel == nil, let root = window.contentView else { return }
+        let panel = SettingsPanel(frame: root.bounds)
+        panel.autoresizingMask = [.width, .height]
+        panel.onClose = { [weak self] in
+            self?.settingsPanel?.removeFromSuperview()
+            self?.settingsPanel = nil
+        }
+        panel.onApply = { [weak self] in
+            self?.status.stringValue = "settings saved · \(MirrorUESettings.captureFPS) fps · \(MirrorUESettings.keyboardMode.rawValue)"
+            // Restart capture rate on next session; FPS is read when attach runs.
+            if let capture = self?.capture, capture.isRunning {
+                capture.stop()
+                capture.start()
+            }
+        }
+        root.addSubview(panel)
+        settingsPanel = panel
     }
 
     func windowWillStartLiveResize(_ notification: Notification) {
@@ -441,24 +592,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
+    private func applyConnectionState(_ state: ConnectionState) {
+        connectionState = state
+        status.stringValue = state.title
+        let badge = state.linkBadge
+        linkBadge.set(symbol: badge.symbol, text: badge.text)
+        connecting?.setStep(state.title)
+        connecting?.setSteps(state.steps)
+        if case .failed(let message, let detail) = state {
+            connecting?.showFailed(title: message, detail: detail, steps: state.steps)
+        }
+    }
+
+    private func showSetupChecklist() {
+        let view = SetupChecklistView(frame: window.contentView!.bounds)
+        view.autoresizingMask = [.width, .height]
+        view.onContinue = { [weak self] in
+            self?.setupChecklist?.removeFromSuperview()
+            self?.setupChecklist = nil
+            self?.showDevicePicker()
+        }
+        window.contentView?.addSubview(view)
+        setupChecklist = view
+        applyConnectionState(.pickingDevice)
+    }
+
     private func showConnecting(device: DeviceInfo) {
         connecting?.removeFromSuperview()
         let overlay = ConnectingOverlay(frame: window.contentView!.bounds)
         overlay.autoresizingMask = [.width, .height]
-        overlay.show(device: device, step: "Connecting…")
-        overlay.setSteps([
-            "○  Open CoreDevice tunnel",
-            "○  Attach HID control",
-            "○  Start screen capture",
-        ])
+        overlay.show(device: device, step: ConnectionState.openingTunnel(link: "linking…").title)
+        overlay.setSteps(ConnectionState.openingTunnel(link: "linking…").steps)
+        overlay.onRetry = { [weak self] in
+            guard let self, let device = self.lastBootDevice else { return }
+            self.recoveryAttempt = 0
+            Task { await self.boot(device: device) }
+        }
+        overlay.onBack = { [weak self] in
+            self?.connecting?.removeFromSuperview()
+            self?.connecting = nil
+            self?.session?.stop()
+            self?.session = nil
+            self?.showDevicePicker()
+        }
         window.contentView?.addSubview(overlay)
         connecting = overlay
         deviceBadge.set(symbol: "iphone", text: device.name ?? "iPhone")
         cachedDeviceName = device.name ?? "iPhone"
-        linkBadge.set(symbol: "antenna.radiowaves.left.and.right", text: "linking…")
+        applyConnectionState(.openingTunnel(link: "linking…"))
     }
 
     private func updateConnecting(step: String, steps: [String], link: String, symbol: String = "cable.connector") {
+        // Kept for call sites that still pass explicit steps; prefer applyConnectionState.
         connecting?.setStep(step)
         connecting?.setSteps(steps)
         linkBadge.set(symbol: symbol, text: link)
@@ -469,6 +654,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         connecting?.hideAnimated()
         connecting = nil
         didRevealMirror = true
+        applyConnectionState(.connected(codec: codecLabel))
+        maybeShowFirstHints()
+    }
+
+    private func maybeShowFirstHints() {
+        guard !MirrorUESettings.didShowFirstHints, let root = window.contentView else { return }
+        MirrorUESettings.didShowFirstHints = true
+        let hints = FirstUseHintsOverlay(frame: root.bounds)
+        hints.present(in: root)
     }
 
     private func showDevicePicker() {
@@ -483,9 +677,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         window.contentView?.addSubview(view)
         picker = view
-        status.stringValue = "select an iPhone…"
+        applyConnectionState(.pickingDevice)
         deviceBadge.set(symbol: "iphone", text: "MirrorUE")
-        linkBadge.set(symbol: "cable.connector", text: "USB · pick a phone")
     }
 
     private func boot(udid: String) async {
@@ -493,52 +686,69 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let info = try Usbmux.pick(udid: udid)
             await boot(device: info)
         } catch {
-            DispatchQueue.main.async {
-                self.status.stringValue = "error: \(error)"
-                self.connecting?.removeFromSuperview()
-                self.connecting = nil
-                self.showDevicePicker()
-            }
+            presentBootFailure(error)
             fputs("boot failed: \(error)\n", stderr)
         }
     }
 
+    private func presentBootFailure(_ error: Error) {
+        let message = "Couldn’t connect"
+        let detail = friendlyError(error)
+        DispatchQueue.main.async {
+            if self.connecting == nil, let device = self.lastBootDevice {
+                self.showConnecting(device: device)
+            }
+            if self.connecting != nil {
+                self.applyConnectionState(.failed(message: message, detail: detail))
+            } else {
+                self.status.stringValue = "error: \(detail)"
+                self.showDevicePicker()
+            }
+        }
+    }
+
+    private func friendlyError(_ error: Error) -> String {
+        let raw = String(describing: error)
+        if raw.contains("missingEngine") || raw.lowercased().contains("engine") {
+            return "The control engine is missing. Reinstall the app, or run ./tools/build_engine.sh when developing."
+        }
+        if raw.lowercased().contains("timeout") {
+            return "The phone didn’t answer in time. Unlock it, keep USB plugged in, and enable Developer Mode."
+        }
+        if raw.lowercased().contains("exited") {
+            return "The control engine stopped. Unlock the iPhone, quit other mirrors (QuickTime), and try again."
+        }
+        return raw
+    }
+
     private func boot(device info: DeviceInfo) async {
         didRevealMirror = false
+        lastBootDevice = info
+        session?.stop()
+        session = nil
         DispatchQueue.main.async {
             self.showConnecting(device: info)
             self.window.title = info.name ?? "MirrorUE"
         }
         do {
             let peer = (try? Usbmux.controlPeer(for: info.udid)) ?? info
+            let link = peer.connectionType == "USB" ? "USB tunnel" : "Wi‑Fi tunnel"
             DispatchQueue.main.async {
-                self.updateConnecting(
-                    step: "Opening tunnel…",
-                    steps: [
-                        "●  Open CoreDevice tunnel",
-                        "○  Attach HID control",
-                        "○  Start screen capture",
-                    ],
-                    link: peer.connectionType == "USB" ? "USB tunnel" : "Wi‑Fi tunnel",
-                    symbol: peer.connectionType == "USB" ? "cable.connector" : "wifi"
-                )
+                self.applyConnectionState(.openingTunnel(link: link))
             }
             let session = TunnelSession(device: peer, httpPort: args.httpPort)
             try session.start()
+            session.onProcessExit = { [weak self] code in
+                guard let self, self.didRevealMirror else { return }
+                fputs("MirrorUE: engine exited (\(code)) — recovering\n", stderr)
+                self.handleEngineDeath(code: code)
+            }
             self.session = session
             self.control.baseURL = session.controlBaseURL
             try await session.waitUntilReady()
+            let hidLink = peer.connectionType == "USB" ? "USB · HID" : "Wi‑Fi · HID"
             DispatchQueue.main.async {
-                self.updateConnecting(
-                    step: "Attaching controls…",
-                    steps: [
-                        "✓  Open CoreDevice tunnel",
-                        "●  Attach HID control",
-                        "○  Start screen capture",
-                    ],
-                    link: peer.connectionType == "USB" ? "USB · HID" : "Wi‑Fi · HID",
-                    symbol: peer.connectionType == "USB" ? "cable.connector" : "wifi"
-                )
+                self.applyConnectionState(.attachingHID(link: hidLink))
             }
             if let rsd = session.rsdSession {
                 control.hidSocketPath = rsd.hidSocketPath
@@ -547,25 +757,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 startVideo(nil)
             }
             DispatchQueue.main.async {
-                self.updateConnecting(
-                    step: "Waiting for screen…",
-                    steps: [
-                        "✓  Open CoreDevice tunnel",
-                        "✓  Attach HID control",
-                        "●  Start screen capture",
-                    ],
-                    link: "capture…",
-                    symbol: "sparkles.tv"
-                )
+                self.applyConnectionState(.startingCapture)
                 self.window.makeFirstResponder(self.metalView)
             }
+            recoveryAttempt = 0
         } catch {
-            DispatchQueue.main.async {
-                self.status.stringValue = "error: \(error)"
-                self.connecting?.removeFromSuperview()
-                self.connecting = nil
-                self.showDevicePicker()
+            // One automatic retry for flaky tunnel bring-up.
+            if recoveryAttempt < 2 {
+                recoveryAttempt += 1
+                DispatchQueue.main.async {
+                    self.applyConnectionState(.recovering(message: "Reopening connection…", attempt: self.recoveryAttempt))
+                }
+                try? await Task.sleep(nanoseconds: 1_200_000_000)
+                await boot(device: info)
+                return
             }
+            presentBootFailure(error)
             fputs("boot failed: \(error)\n", stderr)
         }
     }
@@ -583,18 +790,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.codecLabel = "coremediaio"
-                self.linkBadge.set(symbol: "sparkles.tv", text: "screen · \(name)")
-                self.updateConnecting(
-                    step: "Screen live",
-                    steps: [
-                        "✓  Open CoreDevice tunnel",
-                        "✓  Attach HID control",
-                        "✓  Start screen capture",
-                    ],
-                    link: "screen live",
-                    symbol: "sparkles.tv"
-                )
+                self.applyConnectionState(.connected(codec: "screen · \(name)"))
                 fputs("MediaKit: presenting via \(name)\n", stderr)
+            }
+        }
+        source.onStalled = { [weak self] in
+            DispatchQueue.main.async {
+                self?.applyConnectionState(.recovering(message: "Video interrupted — reopening…", attempt: 1))
+                self?.status.stringValue = "recovering capture…"
+            }
+        }
+        source.onRecovered = { [weak self] name in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.codecLabel = "coremediaio"
+                self.applyConnectionState(.connected(codec: "screen · \(name)"))
             }
         }
         source.start()
@@ -677,8 +887,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func handleDockAction(_ id: String) {
         switch id {
-        case "apps": control.appsSwitcher()
-        case "cc": control.controlCenter()
+        case "apps":
+            WorkflowRecorder.shared.button("apps")
+            control.appsSwitcher()
+        case "cc":
+            WorkflowRecorder.shared.button("cc")
+            control.controlCenter()
         case "music":
             musicSafe.toggle()
             control.musicSafe(musicSafe)
@@ -692,14 +906,193 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 control.musicSafe(false)
                 dock.setMusicSafe(false)
             }
+        case "settings":
+            showSettings()
+        case "perf":
+            showPerformance()
+        case "screenshot":
+            takeScreenshot()
+        case "record":
+            toggleRecording()
+        case "pasteclip":
+            pasteMacClipboard()
+        case "workflow":
+            showWorkflows()
         default:
+            WorkflowRecorder.shared.button(id)
             control.button(id)
         }
+    }
+
+    @objc func showWorkflows() {
+        guard workflowPanel == nil, let root = window.contentView else { return }
+        let panel = WorkflowPanel(frame: root.bounds)
+        panel.autoresizingMask = [.width, .height]
+        panel.onClose = { [weak self] in
+            self?.workflowPanel?.removeFromSuperview()
+            self?.workflowPanel = nil
+        }
+        panel.onStartRecord = { [weak self] in
+            WorkflowRecorder.shared.start()
+            self?.status.stringValue = "workflow recording…"
+        }
+        panel.onStopRecord = { [weak self] in
+            let wf = WorkflowRecorder.shared.stop()
+            self?.status.stringValue = "workflow · \(wf.steps.count) steps"
+            return wf
+        }
+        panel.onPlay = { [weak self] wf in
+            guard let self else { return }
+            self.status.stringValue = "playing workflow…"
+            WorkflowPlayer.shared.onProgress = { [weak self] i, n, summary in
+                self?.status.stringValue = "play \(i)/\(n) · \(summary)"
+                self?.workflowPanel?.setStatus("play \(i)/\(n) · \(summary)")
+            }
+            WorkflowPlayer.shared.onFinished = { [weak self] ok in
+                self?.status.stringValue = ok ? "workflow done" : "workflow stopped"
+                self?.workflowPanel?.setStatus(ok ? "Done" : "Stopped")
+            }
+            WorkflowPlayer.shared.play(wf, control: self.control, touchMode: self.metalView.touchMode)
+        }
+        panel.onStopPlay = {
+            WorkflowPlayer.shared.cancel()
+        }
+        root.addSubview(panel)
+        workflowPanel = panel
+    }
+
+    @objc func takeScreenshot() {
+        let url = CaptureStudio.shared.saveScreenshot(metalView?.lastPixelBuffer)
+        if let url {
+            status.stringValue = "screenshot · \(url.lastPathComponent)"
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        } else {
+            status.stringValue = "screenshot failed — wait for a live frame"
+        }
+    }
+
+    @objc func toggleRecording() {
+        if CaptureStudio.shared.isRecording {
+            CaptureStudio.shared.stopRecording { [weak self] url in
+                if let url {
+                    self?.status.stringValue = "saved · \(url.lastPathComponent)"
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                } else {
+                    self?.status.stringValue = "recording failed"
+                }
+                self?.dock.setRecordOn(false)
+            }
+            return
+        }
+        let size = metalView?.videoSize ?? .zero
+        let w = size.width > 1 ? size.width : 1170
+        let h = size.height > 1 ? size.height : 2532
+        do {
+            try CaptureStudio.shared.startRecording(size: CGSize(width: w, height: h))
+            dock.setRecordOn(true)
+            status.stringValue = "recording…"
+        } catch {
+            status.stringValue = "record failed: \(error)"
+        }
+    }
+
+    @objc func pasteMacClipboard() {
+        let pb = NSPasteboard.general
+        guard let text = pb.string(forType: .string), !text.isEmpty else {
+            status.stringValue = "clipboard empty"
+            return
+        }
+        // Put text on pasteboard (already there) and send Cmd+V to the phone.
+        for chord in KeyboardTranslator.pasteChords(text) {
+            control.key(down: true, usage: chord.usage, character: "", mods: chord.mods)
+            control.key(down: false, usage: chord.usage, character: "", mods: chord.mods)
+        }
+        control.keyboardReset()
+        status.stringValue = "pasted \(min(text.count, 40)) chars"
+    }
+
+    @objc func toggleShowTouches() {
+        MirrorUESettings.showTouches.toggle()
+        status.stringValue = MirrorUESettings.showTouches ? "show touches on" : "show touches off"
+        if !MirrorUESettings.showTouches { metalView?.cancelActiveTouch() }
+    }
+
+    private func handleEngineDeath(code: Int32) {
+        guard let device = lastBootDevice else {
+            applyConnectionState(.failed(
+                message: "Control engine stopped",
+                detail: "Exit code \(code). Unlock the iPhone and try again."
+            ))
+            return
+        }
+        if engineRecoveryAttempt >= 2 {
+            engineRecoveryAttempt = 0
+            if connecting == nil { showConnecting(device: device) }
+            applyConnectionState(.failed(
+                message: "Control engine stopped",
+                detail: "Couldn’t recover automatically. Unlock the phone, quit other mirrors, then Try again."
+            ))
+            return
+        }
+        engineRecoveryAttempt += 1
+        applyConnectionState(.recovering(message: "Control engine restarted…", attempt: engineRecoveryAttempt))
+        Task { await boot(device: device) }
+    }
+
+    @objc func showPerformance() {
+        guard performancePanel == nil, let root = window.contentView else { return }
+        let panel = PerformancePanel(frame: root.bounds)
+        panel.autoresizingMask = [.width, .height]
+        panel.metricsProvider = { [weak self] in
+            self?.makeDiagnostics() ?? DiagnosticsReport(
+                captureFps: 0, displayFps: 0, latencyP50Ms: 0, latencyP95Ms: 0,
+                videoTransport: "—", inputTransport: "—", deviceName: "—", udid: "—",
+                connectionState: "—", engineAlive: false, captureStalled: false,
+                keyboardMode: "—", targetFps: 120,
+                macOS: DiagnosticsReport.macVersion(), appVersion: "dev"
+            )
+        }
+        panel.onClose = { [weak self] in
+            self?.performancePanel?.removeFromSuperview()
+            self?.performancePanel = nil
+        }
+        root.addSubview(panel)
+        performancePanel = panel
+    }
+
+    private func makeDiagnostics() -> DiagnosticsReport {
+        let lag = (captureIsFresh ? capture?.deliveryLag : muvsReader?.endToEndLatency)?.snapshot()
+            ?? LatencyWindow.Snapshot(p50Ms: 0, p95Ms: 0, count: 0)
+        let peer = lastBootDevice
+        let input: String = {
+            if control.hidSocketPath != nil { return "CoreDevice Network/USB HID" }
+            return "HTTP fallback"
+        }()
+        return DiagnosticsReport(
+            captureFps: capture?.inboundFps ?? 0,
+            displayFps: metalView?.fps ?? 0,
+            latencyP50Ms: lag.p50Ms,
+            latencyP95Ms: lag.p95Ms,
+            videoTransport: captureIsFresh ? "USB CoreMediaIO" : "Engine HEVC/MUVS",
+            inputTransport: input,
+            deviceName: cachedDeviceName,
+            udid: peer?.udid ?? "—",
+            connectionState: connectionState.title,
+            engineAlive: session?.isAlive ?? false,
+            captureStalled: capture?.isStalled ?? false,
+            keyboardMode: MirrorUESettings.keyboardMode.rawValue,
+            targetFps: MirrorUESettings.captureFPS,
+            macOS: DiagnosticsReport.macVersion(),
+            appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
+        )
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
     func applicationWillTerminate(_ notification: Notification) {
+        LocalAPIServer.shared.stop()
+        for o in sleepObservers { NSWorkspace.shared.notificationCenter.removeObserver(o) }
+        sleepObservers.removeAll()
         picker?.stopPolling()
         session?.stop()
         muvsReader?.stop()
@@ -801,20 +1194,14 @@ enum TouchMap {
 
     static func mode(frameWidth: Int, frameHeight: Int) -> Mode {
         if frameWidth <= frameHeight { return .portrait }
-        let raw = ProcessInfo.processInfo.environment["MIRRORUE_HID_ORIENT"]?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-        if raw == "buffer" || raw == "off" || raw == "0" || raw == "identity" {
+        switch MirrorUESettings.landscapeHome {
+        case .buffer:
             return .buffer
-        }
-        let flip = ProcessInfo.processInfo.environment["MIRRORUE_LANDSCAPE"]?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-        if flip == "left" || flip == "homeleft" {
+        case .left:
             return .landscape(.left)
+        case .automatic:
+            return .landscape(.right)
         }
-        // Default: home on the right (most common one-handed / natural rotate).
-        return .landscape(.right)
     }
 
     static func badge(for mode: Mode) -> String {
@@ -925,6 +1312,9 @@ final class FrameView: MTKView, MTKViewDelegate {
     private var captureRing: CaptureFrameRing?
     private var continuousCapture = false
     private var drawScheduled = false
+    private let touchIndicator = TouchIndicatorOverlay(frame: .zero)
+    /// Latest CoreMediaIO frame for screenshot / recording.
+    private(set) var lastPixelBuffer: CVPixelBuffer?
 
     private static var captureSlotCount: Int {
         let raw = ProcessInfo.processInfo.environment["MIRRORUE_CAPTURE_SLOTS"] ?? "32"
@@ -949,6 +1339,15 @@ final class FrameView: MTKView, MTKViewDelegate {
         commandQueue = device.makeCommandQueue()!
         buildPipeline(device)
         allowedTouchTypes = []
+
+        touchIndicator.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(touchIndicator)
+        NSLayoutConstraint.activate([
+            touchIndicator.leadingAnchor.constraint(equalTo: leadingAnchor),
+            touchIndicator.trailingAnchor.constraint(equalTo: trailingAnchor),
+            touchIndicator.topAnchor.constraint(equalTo: topAnchor),
+            touchIndicator.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
     }
 
     override var acceptsFirstResponder: Bool { true }
@@ -983,6 +1382,23 @@ final class FrameView: MTKView, MTKViewDelegate {
         lastDragY = y
         lastDragSent = CACurrentMediaTime()
         control.touch(type: "contact", x: x, y: y)
+        updateTouchIndicator(event, pressing: true)
+        if let uv = contentUV(event) {
+            WorkflowRecorder.shared.touchDown(nx: uv.0, ny: uv.1)
+        }
+    }
+
+    private func updateTouchIndicator(_ event: NSEvent, pressing: Bool) {
+        guard MirrorUESettings.showTouches else {
+            touchIndicator.clear()
+            return
+        }
+        let p = convert(event.locationInWindow, from: nil)
+        if pressing {
+            touchIndicator.show(at: p, pressing: true)
+        } else {
+            touchIndicator.release(at: p)
+        }
     }
 
     @available(*, unavailable)
@@ -1090,6 +1506,10 @@ final class FrameView: MTKView, MTKViewDelegate {
             captureRing = CaptureFrameRing(device: device, slots: Self.captureSlotCount)
         }
         guard let slot = captureRing?.push(pixelBuffer) else { return }
+        lastPixelBuffer = pixelBuffer
+        if CaptureStudio.shared.isRecording {
+            CaptureStudio.shared.appendFrame(pixelBuffer)
+        }
 
         uploadLock.lock()
         liveCapture = slot
@@ -1243,6 +1663,20 @@ final class FrameView: MTKView, MTKViewDelegate {
         )
     }
 
+    /// Content-rect UV (0…1, y downward) for workflow recording.
+    func contentUV(_ event: NSEvent) -> (Double, Double)? {
+        let p = convert(event.locationInWindow, from: nil)
+        let view = bounds.size
+        let video = videoSize.width > 1 ? videoSize : view
+        let content = TouchMap.contentRect(view: view, video: video)
+        guard content.width > 1, content.height > 1 else { return nil }
+        var nx = (p.x - content.minX) / content.width
+        var ny = 1.0 - (p.y - content.minY) / content.height
+        nx = min(1, max(0, nx))
+        ny = min(1, max(0, ny))
+        return (Double(nx), Double(ny))
+    }
+
     /// Drop an in-progress finger without waiting for mouseUp (resize / layout).
     func cancelActiveTouch() {
         guard activeTouch else { return }
@@ -1250,6 +1684,7 @@ final class FrameView: MTKView, MTKViewDelegate {
         control.touch(type: "release", x: max(lastDragX, 0), y: max(lastDragY, 0))
         lastDragX = -1
         lastDragY = -1
+        touchIndicator.clear()
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -1269,11 +1704,13 @@ final class FrameView: MTKView, MTKViewDelegate {
         lastDragX = x
         lastDragY = y
         control.touch(type: "contact", x: x, y: y)
+        updateTouchIndicator(event, pressing: true)
     }
 
     override func mouseUp(with event: NSEvent) {
         guard activeTouch else { return }
         activeTouch = false
+        updateTouchIndicator(event, pressing: false)
         guard let (x, y) = norm(event) else {
             control.touch(type: "release", x: max(lastDragX, 0), y: max(lastDragY, 0))
             return
@@ -1281,6 +1718,9 @@ final class FrameView: MTKView, MTKViewDelegate {
         lastDragX = x
         lastDragY = y
         control.touch(type: "release", x: x, y: y)
+        if let uv = contentUV(event) {
+            WorkflowRecorder.shared.touchUp(nx: uv.0, ny: uv.1)
+        }
     }
 
     override func scrollWheel(with event: NSEvent) {
@@ -1336,9 +1776,15 @@ final class FrameView: MTKView, MTKViewDelegate {
 
         // Physical / host: mirror the key position (Mac layout == iPhone layout).
         if layout == .physical {
-            if let usage = MacHID.usage(forKeyCode: code) {
+                if let usage = MacHID.usage(forKeyCode: code) {
                 keysDown[code] = (usage, "", mods)
                 control.key(down: true, usage: usage, character: "", mods: mods)
+                let glyph = event.charactersIgnoringModifiers ?? ""
+                if let ch = glyph.first, ch.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) }) {
+                    WorkflowRecorder.shared.typed(String(ch))
+                } else {
+                    WorkflowRecorder.shared.specialKey(usage: usage, mods: mods)
+                }
             }
             return
         }
@@ -1356,10 +1802,13 @@ final class FrameView: MTKView, MTKViewDelegate {
                 let hostMods = mods & 0x0A
                 let glyph = String(ch)
                 if let chord = KeyboardTranslator.resolve(glyph, hostMods: hostMods) {
-                    // Send HID usage for the *phone* layout; empty char so the
-                    // engine does not re-map through the US table.
                     keysDown[code] = (chord.usage, "", chord.mods)
                     control.key(down: true, usage: chord.usage, character: "", mods: chord.mods)
+                    if structural {
+                        WorkflowRecorder.shared.specialKey(usage: chord.usage, mods: chord.mods)
+                    } else {
+                        WorkflowRecorder.shared.typed(glyph)
+                    }
                     return
                 }
                 if KeyboardTranslator.pasteUnmapped, !structural {
@@ -1368,6 +1817,7 @@ final class FrameView: MTKView, MTKViewDelegate {
                         control.key(down: false, usage: chord.usage, character: "", mods: chord.mods)
                     }
                     control.keyboardReset()
+                    WorkflowRecorder.shared.typed(glyph)
                     return
                 }
                 return
@@ -1377,6 +1827,7 @@ final class FrameView: MTKView, MTKViewDelegate {
         if let usage = MacHID.specialUsage(forKeyCode: code) {
             keysDown[code] = (usage, "", mods)
             control.key(down: true, usage: usage, character: "", mods: mods)
+            WorkflowRecorder.shared.specialKey(usage: usage, mods: mods)
         }
     }
 }

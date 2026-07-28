@@ -76,6 +76,12 @@ public final class TunnelSession: @unchecked Sendable {
         }
         try p.run()
         process = p
+        p.terminationHandler = { [weak self] proc in
+            let code = proc.terminationStatus
+            DispatchQueue.main.async {
+                self?.onProcessExit?(code)
+            }
+        }
         fputs("TunnelSession engine=\(engine.lastPathComponent) pid=\(p.processIdentifier) udid=\(device.udid)\n", stderr)
     }
 
@@ -101,11 +107,20 @@ public final class TunnelSession: @unchecked Sendable {
     public func stop() {
         logPipe?.fileHandleForReading.readabilityHandler = nil
         if let process, process.isRunning {
+            process.terminationHandler = nil
             process.terminate()
             process.waitUntilExit()
         }
         process = nil
     }
+
+    public var isAlive: Bool {
+        guard let process else { return false }
+        return process.isRunning
+    }
+
+    /// Optional callback when the engine process exits unexpectedly.
+    public var onProcessExit: ((Int32) -> Void)?
 
     deinit { stop() }
 
@@ -135,7 +150,7 @@ public enum TunnelError: Error, CustomStringConvertible {
     public var description: String {
         switch self {
         case .missingEngine:
-            return "MirrorUEEngine missing — run ./tools/build_engine.sh"
+            return "MirrorUEEngine is missing from this app. Reinstall MirrorUE or rebuild with ./tools/build_engine.sh"
         case .timeout:
             return "tunnel status timeout"
         case .exited(let c):

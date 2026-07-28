@@ -11,6 +11,7 @@ final class ControlCenterDock: NSView {
     private var tileSizeConstraints: [NSLayoutConstraint] = []
     private var dividerWidthConstraints: [NSLayoutConstraint] = []
     private var musicOn = false
+    private var recordOn = false
     private var compact = false
 
     private static let tile: CGFloat = 34
@@ -19,7 +20,7 @@ final class ControlCenterDock: NSView {
     private static let barRadius: CGFloat = 18
 
     /// Intrinsic width of the glass capsule at full size (for compact threshold).
-    static let preferredWidth: CGFloat = 428
+    static let preferredWidth: CGFloat = 680
 
     /// Never drive the NSWindow size — a required intrinsic width caused
     /// `_changeWindowFrameFromConstraintsIfNecessary` layout-pass crashes.
@@ -104,6 +105,12 @@ final class ControlCenterDock: NSView {
         appendGroup([
             ("music.note", "music", "Music Safe"),
             ("bolt.fill", "instant", "Refresh"),
+            ("camera.fill", "screenshot", "Screenshot"),
+            ("record.circle", "record", "Record video"),
+            ("list.bullet.rectangle", "workflow", "Workflows"),
+            ("doc.on.clipboard", "pasteclip", "Paste clipboard"),
+            ("chart.bar.fill", "perf", "Performance"),
+            ("gearshape.fill", "settings", "Settings"),
         ])
     }
 
@@ -131,6 +138,11 @@ final class ControlCenterDock: NSView {
     func setMusicSafe(_ on: Bool) {
         musicOn = on
         refreshTint(for: "music")
+    }
+
+    func setRecordOn(_ on: Bool) {
+        recordOn = on
+        refreshTint(for: "record")
     }
 
     private func appendGroup(_ specs: [(String, String, String)]) {
@@ -204,7 +216,7 @@ final class ControlCenterDock: NSView {
 
     private func refreshTint(for action: String) {
         guard let b = buttons[action] else { return }
-        let on = action == "music" && musicOn
+        let on = (action == "music" && musicOn) || (action == "record" && recordOn)
         b.layer?.backgroundColor = on ? Self.activeFill : Self.idleFill
         b.contentTintColor = .white
         b.alphaValue = 1

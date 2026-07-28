@@ -29,3 +29,6 @@ dist/
 *.fb
 *.shm
 .env.*
+
+# Distribution artifacts
+dist/

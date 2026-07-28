@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MirrorUE — Control a real iPhone from your Mac</title>
+  <meta name="description" content="Native high-refresh iPhone mirroring on macOS with touch, keyboard translation, recording, and physical-device automation. Built for developers." />
+  <meta property="og:title" content="MirrorUE" />
+  <meta property="og:description" content="Control, present, and automate a real iPhone from your Mac." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="top">
+    <a class="brand-mark" href="#top">MirrorUE</a>
+    <nav>
+      <a href="#control">Control</a>
+      <a href="#present">Present</a>
+      <a href="#automate">Automate</a>
+      <a href="https://github.com/KamilBourouiba/MirrorUE">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="brand">MirrorUE</p>
+        <h1>Control a real iPhone from your Mac.</h1>
+        <p class="lede">
+          Native CoreMediaIO video up to 120&nbsp;fps, CoreDevice HID for touch and
+          keyboard, recording and workflows—on a development iPhone you own.
+        </p>
+        <div class="cta">
+          <a class="btn primary" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download</a>
+          <a class="btn ghost" href="https://github.com/KamilBourouiba/MirrorUE">View source</a>
+        </div>
+        <p class="fine">macOS 14+ · iOS 27+ · Developer Mode · MIT</p>
+      </div>
+      <div class="hero-stage" aria-hidden="true">
+        <div class="desk">
+          <div class="mac">
+            <div class="mac-bezel">
+              <div class="mac-screen">
+                <div class="scan"></div>
+                <div class="phone-in-mac">
+                  <div class="notch"></div>
+                  <div class="phone-ui">
+                    <span class="bar"></span>
+                    <span class="bar short"></span>
+                    <span class="tile"></span>
+                    <span class="tile"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cable"></div>
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="phone-ui live">
+              <span class="bar"></span>
+              <span class="bar short"></span>
+              <span class="tile"></span>
+              <span class="tile"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="story">
+      <p>
+        Apple’s iPhone Mirroring is not currently available in the EU, citing
+        regulatory uncertainty around the Digital Markets Act. MirrorUE exists
+        as a <strong>developer tool</strong> for phones you pair yourself—not a
+        drop-in consumer replacement.
+      </p>
+    </section>
+
+    <section id="control" class="feature">
+      <div class="feature-text">
+        <p class="eyebrow">Control</p>
+        <h2>Mouse, trackpad, and keyboard on the real device.</h2>
+        <p>
+          Tap and swipe on the mirrored surface. Type with automatic keyboard-layout
+          translation when Mac and iPhone layouts differ. Dock controls for Home,
+          Lock, volume, and more.
+        </p>
+      </div>
+      <ul class="spec">
+        <li>USB CoreMediaIO path (QuickTime-class capture)</li>
+        <li>Network CoreDevice tunnel for HID</li>
+        <li>Auto FR / US / DE keyboard mapping</li>
+        <li>Landscape digitizer remap</li>
+      </ul>
+    </section>
+
+    <section id="present" class="feature alt">
+      <div class="feature-text">
+        <p class="eyebrow">Present</p>
+        <h2>Record demos with touch indicators.</h2>
+        <p>
+          Screenshot and HEVC screen recording to the Desktop. Optional show-touches
+          for tutorials, QA, and livestreams. Performance panel with fps and latency.
+        </p>
+      </div>
+      <ul class="spec">
+        <li>⌘⇧S screenshot · ⌘⇧R record</li>
+        <li>Show touches for demos</li>
+        <li>Target 120 fps on ProMotion Macs</li>
+        <li>Copy diagnostics for bug reports</li>
+      </ul>
+    </section>
+
+    <section id="automate" class="feature">
+      <div class="feature-text">
+        <p class="eyebrow">Automate</p>
+        <h2>Record workflows. Replay. Script via HTTP.</h2>
+        <p>
+          Capture taps, swipes, and typing into JSON workflows. Replay from the app
+          or drive the device from a loopback API—ideal for QA smoke tests on
+          physical hardware.
+        </p>
+      </div>
+      <pre class="code" tabindex="0"><code>./tools/mirrorue-cli tap 0.5 0.8
+./tools/mirrorue-cli type 'hello@example.com'
+./tools/mirrorue-cli run ./login.json</code></pre>
+    </section>
+
+    <section class="install">
+      <h2>Get started</h2>
+      <ol>
+        <li>Download the latest release or build with <code>./tools/package_app.sh</code></li>
+        <li>Connect a trusted USB iPhone with Developer Mode enabled</li>
+        <li>Open MirrorUE, complete the checklist, pick your device</li>
+      </ol>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Latest release</a>
+        <a class="btn ghost" href="https://github.com/KamilBourouiba/MirrorUE/blob/main/SECURITY.md">Security model</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>MIT © Kamil Bourouiba · <a href="https://github.com/KamilBourouiba/MirrorUE">GitHub</a></p>
+  </footer>
+</body>
+</html>

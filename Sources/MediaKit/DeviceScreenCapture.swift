@@ -9,9 +9,14 @@ import Foundation
 public final class DeviceScreenCapture: NSObject, @unchecked Sendable {
     public var onFrame: ((CVPixelBuffer) -> Void)?
     public var onActive: ((String) -> Void)?
+    /// Fired when inbound frames stall (~3s) and the capture reattaches.
+    public var onStalled: (() -> Void)?
+    /// Fired after a successful reattach following a stall.
+    public var onRecovered: ((String) -> Void)?
     public let deliveryLag = LatencyWindow()
     public private(set) var framesReceived: UInt64 = 0
     public private(set) var deviceName = "-"
+    public private(set) var isStalled = false
 
     private let session = AVCaptureSession()
     private let frameQueue = DispatchQueue(label: "mirrorue-capture.frames", qos: .userInteractive)
@@ -46,10 +51,17 @@ public final class DeviceScreenCapture: NSObject, @unchecked Sendable {
 
     /// Target CoreMediaIO frame rate (default 120). Clamped to 1…240.
     public static var captureFPS: Int {
-        let raw = ProcessInfo.processInfo.environment["MIRRORUE_CAPTURE_FPS"]?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let n = Int(raw) ?? 120
-        return min(240, max(1, n))
+        if let env = ProcessInfo.processInfo.environment["MIRRORUE_CAPTURE_FPS"]?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+           let n = Int(env), n > 0 {
+            return min(240, max(1, n))
+        }
+        let stored = UserDefaults.standard.object(forKey: "mirrorue.captureFPS") as? Int
+        switch stored {
+        case 60: return 60
+        case 120: return 120
+        default: return 120 // automatic
+        }
     }
 
     public static var isAvailable: Bool {
@@ -91,6 +103,10 @@ public final class DeviceScreenCapture: NSObject, @unchecked Sendable {
                 self.frameClock.unlock()
                 if last != 0 && monotonicNow() &- last > 3_000_000_000 {
                     fputs("MediaKit: screen capture stalled, reattaching\n", stderr)
+                    if !self.isStalled {
+                        self.isStalled = true
+                        DispatchQueue.main.async { self.onStalled?() }
+                    }
                     self.attach(force: true)
                 }
             } else {
@@ -187,7 +203,13 @@ public final class DeviceScreenCapture: NSObject, @unchecked Sendable {
             self.frameClock.unlock()
             self.deviceName = device.localizedName
             fputs("MediaKit: screen capture via \(device.localizedName)\n", stderr)
-            self.onActive?(device.localizedName)
+            let name = device.localizedName
+            let wasStalled = self.isStalled
+            self.isStalled = false
+            DispatchQueue.main.async {
+                self.onActive?(name)
+                if wasStalled { self.onRecovered?(name) }
+            }
         }
     }
 

@@ -12,7 +12,7 @@ final class DevicePickerView: NSView, NSTableViewDataSource, NSTableViewDelegate
     private let table = NSTableView()
     private let refreshButton = NSButton(title: "Refresh", target: nil, action: nil)
     private let connectButton = NSButton(title: "Connect", target: nil, action: nil)
-    private let emptyLabel = NSTextField(labelWithString: "No USB iPhone found")
+    private let emptyLabel = NSTextField(labelWithString: "No USB iPhone found — plug in, unlock, and Trust this Mac")
 
     private var devices: [DeviceInfo] = []
     private var pollTimer: Timer?
