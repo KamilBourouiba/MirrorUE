@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# MirrorUE — Swift/Metal entry (USB release)
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+if [[ ! -x "$ROOT/bin/MirrorUE" || ! -x "$ROOT/bin/MirrorUEEngine" ]]; then
+  "$ROOT/tools/build_engine.sh"
+fi
+export MIRRORUE_ENGINE="${MIRRORUE_ENGINE:-$ROOT/bin/MirrorUEEngine}"
+exec "$ROOT/bin/MirrorUE" "$@"

@@ -1,0 +1,4 @@
+# Build-time only (PyInstaller → bin/MirrorUEEngine). Runtime is Swift + Mach-O.
+pymobiledevice3>=10.1.0
+pyinstaller>=6.0.0
+IPython>=8.0.0

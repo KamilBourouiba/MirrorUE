@@ -1,0 +1,31 @@
+# Build
+.build/
+.bin/
+bin/MirrorUE
+bin/MirrorUEEngine
+*.o
+*.dSYM/
+.swiftpm/
+
+# Python / PyInstaller
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+*.spec
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Local / secrets / runtime
+*.log
+.env
+*.fb
+*.shm
+.env.*

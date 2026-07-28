@@ -1,0 +1,145 @@
+import Foundation
+
+/// Spawns MirrorUEEngine (CoreDevice tunnel + DisplayService + HID) and waits
+/// until the local control HTTP endpoint is ready.
+public final class TunnelSession: @unchecked Sendable {
+    public let device: DeviceInfo
+    public let httpPort: Int
+    public let controlBaseURL: URL
+    public private(set) var rsdSession: RsdSession?
+    private var process: Process?
+    private var logPipe: Pipe?
+
+    public init(device: DeviceInfo, httpPort: Int = 8080) {
+        self.device = device
+        self.httpPort = httpPort
+        self.controlBaseURL = URL(string: "http://127.0.0.1:\(httpPort)")!
+    }
+
+    public static func resolveEngine() -> URL? {
+        if let p = ProcessInfo.processInfo.environment["MIRRORUE_ENGINE"],
+           FileManager.default.isExecutableFile(atPath: p) {
+            return URL(fileURLWithPath: p)
+        }
+        let candidates: [URL] = [
+            Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/MirrorUEEngine"),
+            Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("MirrorUEEngine"),
+            URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("bin/MirrorUEEngine"),
+            URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+                .deletingLastPathComponent().appendingPathComponent("bin/MirrorUEEngine"),
+        ].compactMap { $0 }
+        for c in candidates {
+            if FileManager.default.isExecutableFile(atPath: c.path) { return c }
+        }
+        return nil
+    }
+
+    public func start() throws {
+        guard let engine = Self.resolveEngine() else {
+            throw TunnelError.missingEngine
+        }
+        _ = shell("lsof -tiTCP:\(httpPort) -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null")
+        _ = shell("lsof -tiTCP:\(httpPort + 1) -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null")
+
+        let transport = device.connectionType == "USB" ? "usb" : "wifi"
+        let p = Process()
+        let isScript = engine.pathExtension == "py" || engine.pathExtension == "sh" || isShebang(engine)
+        if isScript {
+            p.executableURL = URL(fileURLWithPath: "/bin/bash")
+            p.arguments = [engine.path,
+                           "--udid", device.udid,
+                           "--transport", transport,
+                           "--http-port", "\(httpPort)"]
+        } else {
+            p.executableURL = engine
+            p.arguments = [
+                "--udid", device.udid,
+                "--transport", transport,
+                "--http-port", "\(httpPort)",
+            ]
+        }
+        var env = ProcessInfo.processInfo.environment
+        env["MIRRORUE_NATIVE"] = "1"
+        env["MIRRORUE_VIDEO_TRANSPORT"] = "unix"
+        env["MIRRORUE_PUSH"] = env["MIRRORUE_PUSH"] ?? "rgba"
+        env["MIRRORUE_RCTL"] = env["MIRRORUE_RCTL"] ?? "1"
+        p.environment = env
+        let pipe = Pipe()
+        p.standardOutput = pipe
+        p.standardError = pipe
+        logPipe = pipe
+        pipe.fileHandleForReading.readabilityHandler = { h in
+            let data = h.availableData
+            if !data.isEmpty, let s = String(data: data, encoding: .utf8) {
+                fputs(s, stderr)
+            }
+        }
+        try p.run()
+        process = p
+        fputs("TunnelSession engine=\(engine.lastPathComponent) pid=\(p.processIdentifier) udid=\(device.udid)\n", stderr)
+    }
+
+    public func waitUntilReady(timeout: TimeInterval = 60) async throws {
+        let url = controlBaseURL.appendingPathComponent("status")
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if let process, !process.isRunning {
+                throw TunnelError.exited(process.terminationStatus)
+            }
+            do {
+                let (_, resp) = try await URLSession.shared.data(from: url)
+                if let http = resp as? HTTPURLResponse, http.statusCode == 200 {
+                    rsdSession = await CoreDeviceBridge.waitForSession(timeout: 5)
+                    return
+                }
+            } catch {}
+            try await Task.sleep(nanoseconds: 250_000_000)
+        }
+        throw TunnelError.timeout
+    }
+
+    public func stop() {
+        logPipe?.fileHandleForReading.readabilityHandler = nil
+        if let process, process.isRunning {
+            process.terminate()
+            process.waitUntilExit()
+        }
+        process = nil
+    }
+
+    deinit { stop() }
+
+    private func isShebang(_ url: URL) -> Bool {
+        guard let fh = try? FileHandle(forReadingFrom: url) else { return false }
+        defer { try? fh.close() }
+        let data = fh.readData(ofLength: 2)
+        return data == Data([0x23, 0x21])
+    }
+
+    @discardableResult
+    private func shell(_ cmd: String) -> Int32 {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/bash")
+        p.arguments = ["-c", cmd]
+        try? p.run()
+        p.waitUntilExit()
+        return p.terminationStatus
+    }
+}
+
+public enum TunnelError: Error, CustomStringConvertible {
+    case missingEngine
+    case timeout
+    case exited(Int32)
+
+    public var description: String {
+        switch self {
+        case .missingEngine:
+            return "MirrorUEEngine missing — run ./tools/build_engine.sh"
+        case .timeout:
+            return "tunnel status timeout"
+        case .exited(let c):
+            return "engine exited (\(c))"
+        }
+    }
+}
