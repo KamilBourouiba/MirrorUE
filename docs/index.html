@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=iphone1" />
+  <link rel="stylesheet" href="styles.css?v=iphone2" />
 </head>
 <body>
   <div class="bg" aria-hidden="true">
@@ -58,73 +58,63 @@
 
       <div class="hero-live" aria-label="Interactive mirrored iPhone demo">
         <div class="mirror-stage" id="mirror-stage">
-          <div class="mac-frame" aria-hidden="true">
-            <div class="mac-bar">
-              <span></span><span></span><span></span>
-              <em>MirrorUE — live</em>
-            </div>
-          </div>
+          <div class="demo-row">
+            <div class="phone" id="phone">
+              <div class="phone-side"></div>
+              <div class="phone-glass">
+                <div class="island"></div>
+                <div class="screen" id="screen">
+                  <div class="status">
+                    <span class="time" id="phone-time">9:41</span>
+                    <span class="status-icons" aria-hidden="true">●●●</span>
+                  </div>
 
-          <div class="phone" id="phone">
-            <div class="phone-side"></div>
-            <div class="phone-glass">
-              <div class="island"></div>
-              <div class="screen" id="screen">
-                <div class="status">
-                  <span class="time" id="phone-time">9:41</span>
-                  <span class="status-icons" aria-hidden="true">●●●</span>
-                </div>
-
-                <div class="pages" id="pages">
-                  <div class="page page-home">
+                  <div class="home-layer" id="home-layer">
                     <p class="page-title">Home</p>
                     <div class="apps">
                       <button type="button" class="app" data-app="Messages" style="--c:#34c759"><span></span>Messages</button>
                       <button type="button" class="app" data-app="Safari" style="--c:#5b6cff"><span></span>Safari</button>
-                      <button type="button" class="app" data-app="Photos" style="--c:#ff8f7a"><span></span>Photos</button>
                       <button type="button" class="app" data-app="Mail" style="--c:#64d2ff"><span></span>Mail</button>
+                      <button type="button" class="app" data-app="Settings" style="--c:#8e8e93"><span></span>Settings</button>
+                      <button type="button" class="app" data-app="Photos" style="--c:#ff8f7a"><span></span>Photos</button>
                       <button type="button" class="app" data-app="Music" style="--c:#ff375f"><span></span>Music</button>
                       <button type="button" class="app" data-app="Maps" style="--c:#30d158"><span></span>Maps</button>
-                      <button type="button" class="app" data-app="Settings" style="--c:#8e8e93"><span></span>Settings</button>
                       <button type="button" class="app" data-app="Xcode" style="--c:#147efb"><span></span>Xcode</button>
                     </div>
-                  </div>
-                  <div class="page page-desk">
-                    <p class="page-title">Desk</p>
-                    <div class="widget">
-                      <strong>MirrorUE</strong>
-                      <span>120 fps · HID linked</span>
-                      <div class="bars"><i></i><i></i><i></i><i></i></div>
-                    </div>
-                    <div class="widget soft">
-                      <strong>Workflow</strong>
-                      <code>tap → type → swipe</code>
+                    <div class="dock">
+                      <span style="--c:#34c759"></span>
+                      <span style="--c:#5b6cff"></span>
+                      <span style="--c:#ff8f7a"></span>
+                      <span style="--c:#8e8e93"></span>
                     </div>
                   </div>
-                  <div class="page page-log">
-                    <p class="page-title">Events</p>
-                    <ul class="event-log" id="event-log"></ul>
+
+                  <div class="app-sheet" id="app-sheet" hidden>
+                    <div class="app-nav">
+                      <button type="button" class="app-back" id="app-back">‹ Home</button>
+                      <strong id="app-title">App</strong>
+                    </div>
+                    <div class="app-body" id="app-body"></div>
                   </div>
-                </div>
 
-                <div class="dots" id="dots" aria-hidden="true">
-                  <span class="on"></span><span></span><span></span>
+                  <div class="cursor" id="cursor" hidden></div>
+                  <div class="ripple" id="ripple" hidden></div>
                 </div>
-                <div class="dock">
-                  <span style="--c:#34c759"></span>
-                  <span style="--c:#5b6cff"></span>
-                  <span style="--c:#ff8f7a"></span>
-                  <span style="--c:#8e8e93"></span>
-                </div>
-
-                <div class="cursor" id="cursor" hidden></div>
-                <div class="ripple" id="ripple" hidden></div>
+                <div class="home-bar" id="home-bar" aria-hidden="true"></div>
               </div>
-              <div class="home-bar" aria-hidden="true"></div>
             </div>
-          </div>
 
-          <p class="control-hint">Move to aim · click to tap · drag to swipe pages</p>
+            <aside class="api-console frost" id="api-console" aria-label="Local API activity">
+              <div class="api-head">
+                <span class="api-dot"></span>
+                <code>127.0.0.1:8090</code>
+                <button type="button" class="api-replay" id="api-replay" title="Replay demo">replay</button>
+              </div>
+              <div class="api-feed" id="api-feed"></div>
+              <p class="api-caption">Auto demo of the loopback API · pause by touching the phone</p>
+            </aside>
+          </div>
+          <p class="control-hint">Tap apps to open · drag to aim · API drives itself when idle</p>
         </div>
       </div>
     </section>
@@ -254,6 +244,6 @@
     <p>MIT © Kamil Bourouiba · <a href="https://github.com/KamilBourouiba/MirrorUE">GitHub</a></p>
   </footer>
 
-  <script src="demo.js?v=iphone1" defer></script>
+  <script src="demo.js?v=iphone2" defer></script>
 </body>
 </html>
