@@ -2,207 +2,241 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>MirrorUE — Control a real iPhone from your Mac</title>
   <meta name="description" content="Native high-refresh iPhone mirroring on macOS with touch, keyboard translation, recording, and physical-device automation. Built for developers." />
   <meta property="og:title" content="MirrorUE" />
   <meta property="og:description" content="Control, present, and automate a real iPhone from your Mac." />
   <meta property="og:type" content="website" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <meta name="theme-color" content="#f5f5f7" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="grain" aria-hidden="true"></div>
-
-  <header class="top">
-    <a class="brand-mark" href="#top">MirrorUE</a>
-    <nav>
-      <a href="#control">Control</a>
-      <a href="#present">Present</a>
-      <a href="#automate">Automate</a>
-      <a href="#pricing">Pricing</a>
-      <a href="https://github.com/KamilBourouiba/MirrorUE">GitHub</a>
-    </nav>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="logo" href="#top">MirrorUE</a>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" hidden />
+      <label for="nav-toggle" class="nav-burger" aria-label="Menu">
+        <span></span><span></span>
+      </label>
+      <nav class="nav-links">
+        <a href="#control">Control</a>
+        <a href="#present">Present</a>
+        <a href="#automate">Automate</a>
+        <a href="#pricing">Pricing</a>
+        <a class="nav-cta" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download</a>
+      </nav>
+    </div>
   </header>
 
   <main id="top">
     <section class="hero">
-      <div class="hero-copy">
-        <p class="brand">MirrorUE</p>
-        <h1>Control a real iPhone from your Mac.</h1>
-        <p class="lede">
-          Native CoreMediaIO video up to 120&nbsp;fps, CoreDevice HID for touch and
-          keyboard, recording and workflows—on a development iPhone you own.
-        </p>
-        <div class="cta">
-          <a class="btn primary" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download</a>
-          <a class="btn ghost" href="https://github.com/KamilBourouiba/MirrorUE">View source</a>
-        </div>
-        <p class="fine">macOS 14+ · iOS 27+ · Developer Mode · MIT</p>
+      <p class="hero-brand">MirrorUE</p>
+      <h1>Control a real iPhone<br />from your Mac.</h1>
+      <p class="hero-sub">
+        Native video up to 120&nbsp;fps. Touch, keyboard, recording, and automation—
+        on a development iPhone you own.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-blue" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download</a>
+        <a class="btn btn-text" href="https://github.com/KamilBourouiba/MirrorUE">View on GitHub <span aria-hidden="true">›</span></a>
       </div>
-      <div class="hero-stage" aria-hidden="true">
-        <div class="desk">
-          <div class="mac">
-            <div class="mac-bezel">
-              <div class="mac-screen">
-                <div class="scan"></div>
-                <div class="phone-in-mac">
-                  <div class="notch"></div>
-                  <div class="phone-ui">
-                    <span class="bar"></span>
-                    <span class="bar short"></span>
-                    <span class="tile"></span>
-                    <span class="tile"></span>
+      <p class="hero-meta">macOS 14+ · iOS 27+ · Developer Mode · MIT</p>
+
+      <div class="hero-canvas" aria-hidden="true">
+        <div class="stage">
+          <div class="stage-glow"></div>
+          <div class="macbook">
+            <div class="macbook-lid">
+              <div class="macbook-screen">
+                <div class="mirror-frame">
+                  <div class="mirror-phone">
+                    <div class="dynamic-island"></div>
+                    <div class="mirror-content">
+                      <span class="ui-line"></span>
+                      <span class="ui-line short"></span>
+                      <div class="ui-grid">
+                        <span></span><span></span>
+                        <span></span><span></span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+            <div class="macbook-base"></div>
+            <div class="macbook-notch"></div>
           </div>
-          <div class="cable"></div>
-          <div class="phone">
-            <div class="notch"></div>
-            <div class="phone-ui live">
-              <span class="bar"></span>
-              <span class="bar short"></span>
-              <span class="tile"></span>
-              <span class="tile"></span>
+          <div class="device">
+            <div class="dynamic-island"></div>
+            <div class="mirror-content live">
+              <span class="ui-line"></span>
+              <span class="ui-line short"></span>
+              <div class="ui-grid">
+                <span></span><span></span>
+                <span></span><span></span>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="story">
+    <section class="note">
       <p>
-        Apple’s iPhone Mirroring is not currently available in the EU, citing
-        regulatory uncertainty around the Digital Markets Act. MirrorUE exists
-        as a <strong>developer tool</strong> for phones you pair yourself—not a
-        drop-in consumer replacement.
+        Apple’s iPhone Mirroring isn’t currently available in the EU due to
+        Digital Markets Act uncertainty. MirrorUE is a
+        <strong>developer tool</strong> for phones you pair yourself—not a
+        consumer replacement.
       </p>
     </section>
 
-    <section id="control" class="feature">
-      <div class="feature-text">
-        <p class="eyebrow">Control</p>
+    <section id="control" class="block">
+      <div class="block-copy">
+        <p class="kicker">Control</p>
         <h2>Mouse, trackpad, and keyboard on the real device.</h2>
         <p>
-          Tap and swipe on the mirrored surface. Type with automatic keyboard-layout
-          translation when Mac and iPhone layouts differ. Dock controls for Home,
-          Lock, volume, and more.
+          Tap and swipe on the mirrored surface. Type with automatic layout
+          translation when Mac and iPhone keyboards differ. Dock controls for
+          Home, Lock, and volume.
         </p>
       </div>
-      <ul class="spec">
-        <li>USB CoreMediaIO path (QuickTime-class capture)</li>
-        <li>Network CoreDevice tunnel for HID</li>
-        <li>Auto FR / US / DE keyboard mapping</li>
+      <ul class="chips">
+        <li>USB CoreMediaIO capture</li>
+        <li>CoreDevice HID tunnel</li>
+        <li>FR / US / DE keyboard map</li>
         <li>Landscape digitizer remap</li>
       </ul>
     </section>
 
-    <section id="present" class="feature alt">
-      <div class="feature-text">
-        <p class="eyebrow">Present</p>
+    <section id="present" class="block tint">
+      <div class="block-copy">
+        <p class="kicker">Present</p>
         <h2>Record demos with touch indicators.</h2>
         <p>
-          Screenshot and HEVC screen recording to the Desktop. Optional show-touches
-          for tutorials, QA, and livestreams. Performance panel with fps and latency.
+          Screenshot and HEVC recording to the Desktop. Optional show-touches
+          for tutorials and QA. Performance panel with fps and latency.
         </p>
       </div>
-      <ul class="spec">
+      <ul class="chips">
         <li>⌘⇧S screenshot · ⌘⇧R record</li>
         <li>Show touches for demos</li>
-        <li>Target 120 fps on ProMotion Macs</li>
-        <li>Copy diagnostics for bug reports</li>
+        <li>Up to 120 fps on ProMotion</li>
+        <li>Copy diagnostics</li>
       </ul>
     </section>
 
-    <section id="automate" class="feature">
-      <div class="feature-text">
-        <p class="eyebrow">Automate</p>
+    <section id="automate" class="block">
+      <div class="block-copy">
+        <p class="kicker">Automate</p>
         <h2>Record workflows. Replay. Script via HTTP.</h2>
         <p>
-          Capture taps, swipes, and typing into JSON workflows. Replay from the app
-          or drive the device from a loopback API—ideal for QA smoke tests on
-          physical hardware.
+          Capture taps, swipes, and typing into JSON. Replay in-app or drive the
+          device from a loopback API—ideal for smoke tests on physical hardware.
         </p>
       </div>
-      <pre class="code" tabindex="0"><code>./tools/mirrorue-cli tap 0.5 0.8
-./tools/mirrorue-cli type 'hello@example.com'
-./tools/mirrorue-cli run ./login.json</code></pre>
+      <pre class="terminal" tabindex="0"><code><span class="prompt">$</span> ./tools/mirrorue-cli tap 0.5 0.8
+<span class="prompt">$</span> ./tools/mirrorue-cli type 'hello@example.com'
+<span class="prompt">$</span> ./tools/mirrorue-cli run ./login.json</code></pre>
     </section>
 
     <section id="pricing" class="pricing">
-      <div class="pricing-head">
-        <p class="eyebrow">Pricing</p>
-        <h2>Simple plans. Open core.</h2>
-        <p class="pricing-lede">
-          Mock pricing for the product story—the app is MIT today. Pick a lane;
-          checkout isn’t live yet.
+      <div class="pricing-intro">
+        <p class="kicker">Pricing</p>
+        <h2>Simple plans.<br />Open core.</h2>
+        <p>
+          Illustrative pricing for the product story. MirrorUE is MIT today—
+          checkout isn’t live.
         </p>
-        <p class="mock-badge" role="status">Mock · not billed</p>
+        <span class="pill">Mock · not billed</span>
       </div>
 
-      <div class="plans" role="list">
-        <article class="plan" role="listitem">
-          <p class="plan-name">Solo</p>
-          <p class="plan-price"><span class="amount">$0</span><span class="period">/ forever</span></p>
-          <p class="plan-desc">Mirror, control, and record on your own Mac + iPhone.</p>
+      <div class="plans">
+        <article class="plan">
+          <h3>Solo</h3>
+          <p class="price"><span>Free</span></p>
+          <p class="plan-lead">Mirror, control, and record on your Mac + iPhone.</p>
           <ul>
             <li>Native mirroring up to 120&nbsp;fps</li>
             <li>Touch, keyboard, dock controls</li>
             <li>Screenshot &amp; screen recording</li>
             <li>MIT source on GitHub</li>
           </ul>
-          <a class="btn ghost" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download free</a>
+          <a class="btn btn-outline" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download free</a>
         </article>
 
-        <article class="plan featured" role="listitem">
-          <p class="plan-tag">Most useful</p>
-          <p class="plan-name">Lab</p>
-          <p class="plan-price"><span class="amount">$19</span><span class="period">/ seat · mo</span></p>
-          <p class="plan-desc">QA and demos with workflows and the local automation API.</p>
+        <article class="plan plan-featured">
+          <p class="plan-badge">Most useful</p>
+          <h3>Lab</h3>
+          <p class="price"><span>$19</span><small>/mo</small></p>
+          <p class="plan-lead">QA and demos with workflows and the local API.</p>
           <ul>
             <li>Everything in Solo</li>
             <li>Workflow record / replay</li>
             <li>Loopback HTTP API + CLI</li>
             <li>Priority setup notes</li>
           </ul>
-          <a class="btn primary" href="#pricing" aria-disabled="true">Join waitlist</a>
+          <a class="btn btn-blue" href="#pricing" aria-disabled="true">Join waitlist</a>
         </article>
 
-        <article class="plan" role="listitem">
-          <p class="plan-name">Fleet</p>
-          <p class="plan-price"><span class="amount">$79</span><span class="period">/ seat · mo</span></p>
-          <p class="plan-desc">Teams running physical-device smoke tests at scale.</p>
+        <article class="plan">
+          <h3>Fleet</h3>
+          <p class="price"><span>$79</span><small>/mo</small></p>
+          <p class="plan-lead">Teams running physical-device smoke tests at scale.</p>
           <ul>
             <li>Everything in Lab</li>
             <li>Multi-device seats</li>
             <li>Shared workflow library</li>
             <li>Email support (mock)</li>
           </ul>
-          <a class="btn ghost" href="#pricing" aria-disabled="true">Talk to us</a>
+          <a class="btn btn-outline" href="#pricing" aria-disabled="true">Talk to us</a>
         </article>
       </div>
     </section>
 
-    <section class="install">
-      <h2>Get started</h2>
+    <section class="start">
+      <h2>Get started in minutes.</h2>
       <ol>
-        <li>Download the latest release or build with <code>./tools/package_app.sh</code></li>
-        <li>Connect a trusted USB iPhone with Developer Mode enabled</li>
-        <li>Open MirrorUE, complete the checklist, pick your device</li>
+        <li>
+          <span class="step">1</span>
+          <div>
+            <strong>Download</strong>
+            <p>Grab the latest release or build with <code>./tools/package_app.sh</code></p>
+          </div>
+        </li>
+        <li>
+          <span class="step">2</span>
+          <div>
+            <strong>Connect</strong>
+            <p>Trusted USB iPhone with Developer Mode enabled</p>
+          </div>
+        </li>
+        <li>
+          <span class="step">3</span>
+          <div>
+            <strong>Mirror</strong>
+            <p>Open MirrorUE, complete the checklist, pick your device</p>
+          </div>
+        </li>
       </ol>
-      <div class="cta">
-        <a class="btn primary" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Latest release</a>
-        <a class="btn ghost" href="https://github.com/KamilBourouiba/MirrorUE/blob/main/SECURITY.md">Security model</a>
+      <div class="hero-actions">
+        <a class="btn btn-blue" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Latest release</a>
+        <a class="btn btn-text" href="https://github.com/KamilBourouiba/MirrorUE/blob/main/SECURITY.md">Security model <span aria-hidden="true">›</span></a>
       </div>
     </section>
   </main>
 
-  <footer>
-    <p>MIT © Kamil Bourouiba · <a href="https://github.com/KamilBourouiba/MirrorUE">GitHub</a></p>
+  <footer class="foot">
+    <p>Copyright © Kamil Bourouiba. MIT License.</p>
+    <a href="https://github.com/KamilBourouiba/MirrorUE">GitHub</a>
   </footer>
+  <script>
+    document.querySelectorAll('.nav-links a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        var toggle = document.getElementById('nav-toggle');
+        if (toggle) toggle.checked = false;
+      });
+    });
+  </script>
 </body>
 </html>
