@@ -675,7 +675,7 @@ footer {
     grid-template-columns: 1fr;
   }
 
-  .top nav a:not(:last-child) {
+  .top nav a:not([href="#pricing"]):not(:last-child) {
     display: none;
   }
 }
