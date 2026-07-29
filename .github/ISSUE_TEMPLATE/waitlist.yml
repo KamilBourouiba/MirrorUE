@@ -1,0 +1,36 @@
+name: Pro waitlist signup
+description: Join the MirrorUE Pro early-access waitlist
+title: "[Waitlist] "
+labels: ["waitlist"]
+body:
+  - type: markdown
+    value: |
+      Submit this form to join the **MirrorUE Pro** waitlist. The issue closes automatically once recorded.
+  - type: input
+    id: email
+    attributes:
+      label: Email
+      description: We'll contact you when Pro opens
+      placeholder: you@company.com
+    validations:
+      required: true
+  - type: dropdown
+    id: plan
+    attributes:
+      label: Plan
+      options:
+        - pro
+        - fleet
+    validations:
+      required: true
+  - type: input
+    id: company
+    attributes:
+      label: Company
+      placeholder: Optional
+  - type: textarea
+    id: note
+    attributes:
+      label: Note
+      description: Devices, team size, use case…
+      placeholder: Optional

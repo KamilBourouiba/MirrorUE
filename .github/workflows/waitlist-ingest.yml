@@ -1,0 +1,93 @@
+name: Waitlist ingest
+
+on:
+  repository_dispatch:
+    types: [waitlist-signup]
+  workflow_dispatch:
+    inputs:
+      email:
+        description: Email address
+        required: true
+      plan:
+        description: pro or fleet
+        required: true
+        default: pro
+      company:
+        description: Company (optional)
+        required: false
+      note:
+        description: Note (optional)
+        required: false
+      source:
+        description: Source tag
+        required: false
+        default: manual
+
+permissions:
+  contents: write
+
+jobs:
+  append:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Append waitlist entry
+        env:
+          PAYLOAD: ${{ toJson(github.event.client_payload) }}
+          INPUT_EMAIL: ${{ github.event.inputs.email }}
+          INPUT_PLAN: ${{ github.event.inputs.plan }}
+          INPUT_COMPANY: ${{ github.event.inputs.company }}
+          INPUT_NOTE: ${{ github.event.inputs.note }}
+          INPUT_SOURCE: ${{ github.event.inputs.source }}
+        run: |
+          python3 <<'PY'
+          import json, os, pathlib, datetime
+
+          path = pathlib.Path("data/waitlist.json")
+          data = json.loads(path.read_text(encoding="utf-8"))
+          entries = data.get("entries") or []
+
+          payload_raw = os.environ.get("PAYLOAD") or "{}"
+          try:
+              payload = json.loads(payload_raw) if payload_raw.strip() not in ("", "null") else {}
+          except json.JSONDecodeError:
+              payload = {}
+
+          email = (payload.get("email") or os.environ.get("INPUT_EMAIL") or "").strip().lower()
+          plan = (payload.get("plan") or os.environ.get("INPUT_PLAN") or "pro").strip().lower()
+          if not email or "@" not in email:
+              raise SystemExit("Valid email required")
+
+          entry = {
+              "email": email,
+              "plan": plan if plan in ("pro", "fleet") else "pro",
+              "company": (payload.get("company") or os.environ.get("INPUT_COMPANY") or "").strip(),
+              "note": (payload.get("note") or os.environ.get("INPUT_NOTE") or "").strip(),
+              "source": (payload.get("source") or os.environ.get("INPUT_SOURCE") or "dispatch").strip(),
+              "createdAt": datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+          }
+
+          if any(e.get("email") == email for e in entries):
+              print(f"Already on list: {email}")
+          else:
+              entries.append(entry)
+              print(f"Added: {email} ({entry['plan']})")
+
+          data["entries"] = entries
+          data["updatedAt"] = entry["createdAt"]
+          data["version"] = 1
+          path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+          PY
+
+      - name: Commit waitlist
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/waitlist.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Waitlist: add signup"
+          git push

@@ -4,7 +4,9 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'data/waitlist.json'
       - '.github/workflows/pages.yml'
+      - '.github/workflows/waitlist-ingest.yml'
   workflow_dispatch:
 permissions:
   contents: read
