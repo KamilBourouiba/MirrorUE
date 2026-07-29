@@ -12,7 +12,7 @@ window.MirrorUEWaitlist = {
    * FormSubmit.co — only your address, no API key.
    * First test signup emails you an "Activate Form" link at this address (click once).
    */
-  notifyEmail: "hello@mirrorue.dev",
+  notifyEmail: "kbourouiba@icloud.com",
 
   /** GitHub issue ingest (provider: github-issue) */
   githubIssue: {
@@ -25,5 +25,5 @@ window.MirrorUEWaitlist = {
   customEndpoint: "",
 
   /** Last-resort if provider misconfigured */
-  fallbackMailto: "hello@mirrorue.dev",
+  fallbackMailto: "kbourouiba@icloud.com",
 };

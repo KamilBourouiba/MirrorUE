@@ -6,7 +6,7 @@ Collects signups from [GitHub Pages](https://kamilbourouiba.github.io/MirrorUE/)
 
 Uses [FormSubmit.co](https://formsubmit.co) — free, only your email address.
 
-1. Set your inbox in `docs/waitlist-config.js` (already `hello@mirrorue.dev`).
+1. Set your inbox in `docs/waitlist-config.js` (`kbourouiba@icloud.com`).
 2. Push to `main`.
 3. **Activate once:** submit a test signup on the site (or use FormSubmit’s test). FormSubmit emails **`notifyEmail`** with an **“Activate Form”** link — click it. Until then, the site falls back to opening a GitHub issue for the visitor.
 4. After activation, signups arrive as email (table layout).
@@ -14,11 +14,11 @@ Uses [FormSubmit.co](https://formsubmit.co) — free, only your email address.
 ```js
 window.MirrorUEWaitlist = {
   provider: "formsubmit",
-  notifyEmail: "hello@mirrorue.dev",
+  notifyEmail: "kbourouiba@icloud.com",
 };
 ```
 
-No API key. If `hello@mirrorue.dev` is not your real inbox, change `notifyEmail` to an address you read, push, then activate again with the new address.
+No API key. After changing `notifyEmail`, push and complete FormSubmit activation from the new inbox.
 
 ## Alternative: GitHub Issues (100% GitHub-native)
 

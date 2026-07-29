@@ -154,7 +154,7 @@
   }
 
   function mailtoFallback(payload) {
-    const to = cfg.fallbackMailto || "hello@mirrorue.dev";
+    const to = cfg.fallbackMailto || "kbourouiba@icloud.com";
     const subject = encodeURIComponent(`MirrorUE ${payload.plan} waitlist`);
     const body = encodeURIComponent(
       [
