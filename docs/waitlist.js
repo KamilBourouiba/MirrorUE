@@ -79,6 +79,10 @@
     markJoinedUI();
   }
 
+  function isActivationError(message) {
+    return /activation|activate form/i.test(String(message || ""));
+  }
+
   async function postFormSubmit(payload) {
     const to = (cfg.notifyEmail || cfg.fallbackMailto || "").trim();
     if (!to) throw new Error("Set notifyEmail in waitlist-config.js");
@@ -100,8 +104,14 @@
     });
 
     const data = await res.json().catch(() => ({}));
+    const msg = data.message || "";
     if (!res.ok || data.success === "false") {
-      throw new Error(data.message || "Could not submit — try again in a moment.");
+      if (isActivationError(msg)) {
+        const err = new Error(msg);
+        err.code = "FORMSUBMIT_ACTIVATION";
+        throw err;
+      }
+      throw new Error(msg || "Could not submit — try again in a moment.");
     }
   }
 
@@ -202,6 +212,16 @@
 
       showSuccess(form, payload.email, payload.plan);
     } catch (err) {
+      if (err.code === "FORMSUBMIT_ACTIVATION") {
+        window.open(githubIssueUrl(payload), "_blank", "noopener,noreferrer");
+        showSuccess(
+          form,
+          payload.email,
+          payload.plan,
+          "Confirm in the GitHub tab that opened — you're almost on the list."
+        );
+        return;
+      }
       setFormState(form, "error", err.message || "Something went wrong. Try again or email us.");
     }
   }

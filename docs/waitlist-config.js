@@ -8,7 +8,10 @@ window.MirrorUEWaitlist = {
    */
   provider: "formsubmit",
 
-  /** FormSubmit.co — only your address, no API key: https://formsubmit.co */
+  /**
+   * FormSubmit.co — only your address, no API key.
+   * First test signup emails you an "Activate Form" link at this address (click once).
+   */
   notifyEmail: "hello@mirrorue.dev",
 
   /** GitHub issue ingest (provider: github-issue) */
