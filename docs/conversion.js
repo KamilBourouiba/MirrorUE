@@ -5,6 +5,7 @@
   var hero = document.querySelector(".hero");
   var waitlist = document.getElementById("waitlist");
   var foot = document.querySelector(".foot");
+  var mobileMq = window.matchMedia("(max-width: 734px)");
 
   function updateSticky() {
     if (!sticky || !hero) return;
@@ -12,8 +13,17 @@
       sticky.hidden = true;
       return;
     }
-    var heroBottom = hero.getBoundingClientRect().bottom;
+
     var footTop = foot ? foot.getBoundingClientRect().top : Infinity;
+
+    if (mobileMq.matches) {
+      var showMobile = footTop > window.innerHeight * 0.35;
+      sticky.hidden = !showMobile;
+      sticky.setAttribute("aria-hidden", showMobile ? "false" : "true");
+      return;
+    }
+
+    var heroBottom = hero.getBoundingClientRect().bottom;
     var show = heroBottom < 0 && footTop > window.innerHeight * 0.5;
     sticky.hidden = !show;
     sticky.setAttribute("aria-hidden", show ? "false" : "true");
@@ -21,6 +31,7 @@
 
   window.addEventListener("scroll", updateSticky, { passive: true });
   window.addEventListener("resize", updateSticky);
+  mobileMq.addEventListener("change", updateSticky);
   updateSticky();
 
   var observer = new MutationObserver(updateSticky);

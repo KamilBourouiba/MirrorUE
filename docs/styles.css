@@ -413,6 +413,23 @@ a:hover {
   max-width: 560px;
 }
 
+/* Resizable phone frame — keeps 9:19.4 inside width + height caps */
+.phone-shell {
+  --phone-max-h: min(36dvh, 380px);
+  --phone-max-w: min(72vw, 240px);
+  width: min(var(--phone-max-w), calc(var(--phone-max-h) * 9 / 19.4));
+  aspect-ratio: 9 / 19.4;
+  margin-inline: auto;
+  flex-shrink: 0;
+}
+
+.phone-shell .phone {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  max-height: none;
+}
+
 .phone {
   position: relative;
   z-index: 1;
@@ -1314,6 +1331,35 @@ a:hover {
   font-size: 0.8rem;
 }
 
+html.touch-ui body {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 734px) {
+  body {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+
+  .sticky-cta {
+    left: var(--pad);
+    right: var(--pad);
+    width: auto;
+    transform: none;
+    border-radius: 18px;
+    padding: 0.5rem;
+    gap: 0.45rem;
+  }
+
+  .sticky-cta .btn {
+    flex: 1;
+    min-height: 44px;
+    font-size: 0.76rem;
+    padding: 0.5rem 0.55rem;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
 .start-conv {
   margin-bottom: 5rem;
 }
@@ -1705,13 +1751,9 @@ a:hover {
     min-width: 0;
   }
 
-  .phone {
-    width: auto;
-    height: min(38vh, 380px);
-    max-height: 380px;
-    aspect-ratio: 9 / 19.4;
-    margin-inline: auto;
-    cursor: default;
+  .phone-shell {
+    --phone-max-h: min(30dvh, 320px);
+    --phone-max-w: min(64vw, 210px);
   }
 
   .hero h1 {
@@ -1815,8 +1857,9 @@ a:hover {
     padding-bottom: 0.25rem;
   }
 
-  .phone {
-    height: min(36vh, 340px);
+  .phone-shell {
+    --phone-max-h: min(26dvh, 260px);
+    --phone-max-w: min(58vw, 190px);
   }
 
   .mirror-stage {
@@ -1892,16 +1935,19 @@ html.touch-ui .control-hint {
 }
 
 html.touch-ui .demo-row {
-  gap: 0;
+  gap: 0.35rem;
   max-width: 100%;
 }
 
-html.touch-ui .phone {
+html.touch-ui .phone-shell {
+  --phone-max-h: min(24dvh, 240px);
+  --phone-max-w: min(56vw, 180px);
+}
+
+html.touch-ui .phone-shell .phone {
   transform: none !important;
   will-change: auto;
-  height: min(34vh, 320px);
-  width: auto;
-  margin-inline: auto;
+  cursor: default;
 }
 
 html.touch-ui .phone-side {
