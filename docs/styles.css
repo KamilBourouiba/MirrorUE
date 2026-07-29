@@ -416,12 +416,15 @@ a:hover {
 /* Resizable phone frame — 220px design canvas; scales down on narrow viewports */
 .phone-shell {
   --phone-design-w: 220;
+  --phone-radius: 34;
   width: 220px;
   aspect-ratio: 9 / 19.4;
   margin-inline: auto;
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
+  border-radius: calc(100cqw * var(--phone-radius) / var(--phone-design-w));
+  isolation: isolate;
   container-type: inline-size;
   container-name: phone;
 }
@@ -434,6 +437,10 @@ a:hover {
   top: 0;
   transform: translateX(-50%) scale(calc(100cqw / 220px));
   transform-origin: top center;
+  overflow: hidden;
+  border-radius: calc(var(--phone-radius) * 1px);
+  clip-path: inset(0 round calc(var(--phone-radius) * 1px));
+  -webkit-clip-path: inset(0 round calc(var(--phone-radius) * 1px));
 }
 
 .phone-shell .phone {
@@ -459,11 +466,12 @@ a:hover {
 
 .phone-side {
   position: absolute;
-  inset: 2% -3px;
+  inset: 2% 0;
   border-radius: 36px;
   background: linear-gradient(90deg, #c8cedd, #e8ecf8 40%, #b8c0d4);
   transform: translateZ(-8px);
   box-shadow: 0 30px 60px rgba(60, 70, 120, 0.28);
+  pointer-events: none;
 }
 
 .phone-glass {
@@ -471,6 +479,7 @@ a:hover {
   height: 100%;
   border-radius: 34px;
   padding: 9px;
+  overflow: hidden;
   background: linear-gradient(
     145deg,
     rgba(255, 255, 255, 0.85),
@@ -500,6 +509,8 @@ a:hover {
   height: 100%;
   border-radius: 26px;
   overflow: hidden;
+  clip-path: inset(0 round 26px);
+  -webkit-clip-path: inset(0 round 26px);
   background:
     radial-gradient(ellipse at 70% 0%, rgba(165, 200, 255, 0.45), transparent 50%),
     radial-gradient(ellipse at 20% 90%, rgba(196, 181, 253, 0.35), transparent 45%),
