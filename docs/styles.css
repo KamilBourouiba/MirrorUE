@@ -422,7 +422,7 @@ a:hover {
   flex-shrink: 0;
   position: relative;
   overflow: visible;
-  font-size: calc(100cqw / 220 * 16px);
+  font-size: calc(100cqw * 16px / var(--phone-w));
   container-type: inline-size;
   container-name: phone;
 }
