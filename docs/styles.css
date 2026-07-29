@@ -277,6 +277,33 @@ a:hover {
   transform: none;
 }
 
+/* Watch-only demo — auto-play, no manual interaction */
+.phone-shell,
+.phone-shell * {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.phone {
+  cursor: default;
+}
+
+.api-replay {
+  display: none !important;
+}
+
+.cursor {
+  display: none !important;
+}
+
+.mirror-stage .ripple {
+  width: calc(100cqw * 16px / var(--phone-w, 220px));
+  height: calc(100cqw * 16px / var(--phone-w, 220px));
+  margin: calc(100cqw * -8px / var(--phone-w, 220px)) 0 0 calc(100cqw * -8px / var(--phone-w, 220px));
+  background: rgba(91, 108, 255, 0.45);
+}
+
 /* ——— Hero: interactive mirrored iPhone ——— */
 .hero {
   position: relative;
@@ -449,7 +476,7 @@ a:hover {
   transform-style: preserve-3d;
   transition: transform 0.12s ease-out;
   will-change: transform;
-  cursor: none;
+  cursor: default;
   touch-action: manipulation;
 }
 
@@ -1935,37 +1962,6 @@ a:hover {
 }
 
 /* Touch devices: no 3D hero motion, stable layout */
-.only-touch {
-  display: none;
-}
-
-html.touch-ui .only-desktop {
-  display: none;
-}
-
-html.touch-ui .only-touch {
-  display: inline;
-}
-
-/* Touch: watch-only demo — no taps on the phone */
-html.touch-ui .phone-shell,
-html.touch-ui .phone-shell * {
-  pointer-events: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-html.touch-ui .api-replay {
-  display: none;
-}
-
-html.touch-ui .ripple {
-  width: calc(100cqw * 16px / var(--phone-w));
-  height: calc(100cqw * 16px / var(--phone-w));
-  margin: calc(100cqw * -8px / var(--phone-w)) 0 0 calc(100cqw * -8px / var(--phone-w));
-  background: rgba(91, 108, 255, 0.5);
-}
-
 html.touch-ui .workflow-steps {
   flex-wrap: nowrap;
   overflow-x: auto;
@@ -1988,13 +1984,6 @@ html.touch-ui .hero-live {
   perspective: none;
   min-height: auto;
   padding-top: 0.5rem;
-}
-
-html.touch-ui .api-console {
-  width: 100%;
-  max-width: none;
-  max-height: min(36vh, 260px);
-  min-width: 0;
 }
 
 html.touch-ui .control-hint {
@@ -2032,17 +2021,11 @@ html.touch-ui .api-feed {
 }
 
 html.touch-ui .phone-shell .phone {
-  transform: none !important;
-  will-change: auto;
-  cursor: default;
+  will-change: transform;
 }
 
 html.touch-ui .phone-side {
   display: none;
-}
-
-html.touch-ui .cursor {
-  display: none !important;
 }
 
 html.touch-ui .mirror-stage {

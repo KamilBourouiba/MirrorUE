@@ -23,6 +23,7 @@
   var workflowStepsEl = document.getElementById("workflow-steps");
   var timeEl = document.getElementById("phone-time");
   var replayBtn = document.getElementById("api-replay");
+  if (replayBtn) replayBtn.hidden = true;
   if (!stage || !phone || !screen) return;
 
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -49,17 +50,6 @@
     isTouchUI = applyTouchClass();
   });
 
-  function setPhoneTilt(x, y) {
-    if (isTouchUI || reduceMotion) {
-      phone.style.transform = "";
-      return;
-    }
-    var rx = (y - 0.5) * -8;
-    var ry = (x - 0.5) * 12;
-    phone.style.transform = "rotateX(" + rx + "deg) rotateY(" + ry + "deg)";
-  }
-  var userActive = false;
-  var userTimer = null;
   var autoRunning = false;
   var autoToken = 0;
   var openAppName = null;
@@ -205,12 +195,7 @@
     homeLayer.querySelectorAll(".app.pulse").forEach(function (el) {
       el.classList.remove("pulse");
     });
-    if (isTouchUI) {
-      cursor.hidden = true;
-    } else {
-      cursor.hidden = false;
-      moveCursor(0.5, 0.45, false);
-    }
+    cursor.hidden = true;
   }
 
   function phoneScale() {
@@ -232,17 +217,7 @@
   }
 
   function moveCursor(x, y, animate) {
-    if (isTouchUI) return;
-    cursor.hidden = false;
-    if (animate && !reduceMotion) {
-      cursor.style.transition =
-        "left 0.45s cubic-bezier(0.22,1,0.36,1), top 0.45s cubic-bezier(0.22,1,0.36,1)";
-    } else {
-      cursor.style.transition = "none";
-    }
-    cursor.style.left = x * 100 + "%";
-    cursor.style.top = y * 100 + "%";
-    if (!userActive) setPhoneTilt(x, y);
+    /* watch-only demo — ripples only, no pointer cursor */
   }
 
   function showRipple(x, y) {
@@ -252,12 +227,6 @@
     ripple.style.top = y * 100 + "%";
     void ripple.offsetWidth;
     ripple.classList.add("pop");
-    if (!isTouchUI) {
-      cursor.classList.add("down");
-      setTimeout(function () {
-        cursor.classList.remove("down");
-      }, 120);
-    }
   }
 
   function openApp(name, fromApi) {
@@ -292,40 +261,6 @@
       y: (r.top + r.height / 2 - sr.top) / sr.height,
       el: btn,
     };
-  }
-
-  function localPoint(e) {
-    var rect = screen.getBoundingClientRect();
-    return {
-      x: Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)),
-      y: Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height)),
-    };
-  }
-
-  function hitApp(pt) {
-    var apps = homeLayer.querySelectorAll(".app");
-    var rect = screen.getBoundingClientRect();
-    var cx = rect.left + pt.x * rect.width;
-    var cy = rect.top + pt.y * rect.height;
-    for (var i = 0; i < apps.length; i++) {
-      var r = apps[i].getBoundingClientRect();
-      if (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) {
-        return apps[i];
-      }
-    }
-    return null;
-  }
-
-  function markUser() {
-    userActive = true;
-    autoToken += 1;
-    autoRunning = false;
-    setApiMode("idle");
-    clearTimeout(userTimer);
-    userTimer = setTimeout(function () {
-      userActive = false;
-      startAutoDemo();
-    }, 6500);
   }
 
   function wait(ms, token) {
@@ -478,7 +413,7 @@
   }
 
   async function startAutoDemo() {
-    if (autoRunning || userActive || reduceMotion) return;
+    if (autoRunning || reduceMotion) return;
     autoRunning = true;
     var token = ++autoToken;
     if (apiFeed) apiFeed.innerHTML = "";
@@ -497,152 +432,16 @@
 
     if (!finishAuto(token)) return;
     await wait(reduceMotion ? 400 : 2200, token);
-    if (!userActive && token === autoToken) startAutoDemo();
+    if (token === autoToken) startAutoDemo();
   }
 
-  // Manual interaction — desktop only; mobile is watch-only auto demo.
-  var dragging = false;
-  var startX = 0;
-  var startY = 0;
-  var moved = false;
-  var interactTarget = phone;
+  cursor.hidden = true;
+  phone.style.transform = "";
 
-  if (isTouchUI) {
-    cursor.hidden = true;
-    phone.style.transform = "";
-  } else {
-    interactTarget.addEventListener("pointerenter", function () {
-      stage.classList.add("active");
-    });
-
-    interactTarget.addEventListener("pointerleave", function () {
-      stage.classList.remove("active");
-      if (!autoRunning) cursor.hidden = true;
-      dragging = false;
-    });
-
-    interactTarget.addEventListener("pointermove", function (e) {
-      if (autoRunning && !userActive) return;
-      var pt = localPoint(e);
-      moveCursor(pt.x, pt.y, false);
-    });
-
-    interactTarget.addEventListener("pointerdown", function (e) {
-      if (e.button !== undefined && e.button !== 0) return;
-      markUser();
-      dragging = true;
-      moved = false;
-      startX = e.clientX;
-      startY = e.clientY;
-      var pt = localPoint(e);
-      moveCursor(pt.x, pt.y, false);
-      cursor.classList.add("down");
-      try {
-        interactTarget.setPointerCapture(e.pointerId);
-      } catch (err) {}
-    });
-
-    interactTarget.addEventListener("pointerup", function (e) {
-      cursor.classList.remove("down");
-      var pt = localPoint(e);
-      var dx = e.clientX - startX;
-      var dy = e.clientY - startY;
-      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) moved = true;
-
-      if (dragging && !moved) {
-        handlePhoneTap(pt);
-      }
-      dragging = false;
-    });
-
-    interactTarget.addEventListener("pointercancel", function () {
-      dragging = false;
-      cursor.classList.remove("down");
-    });
-  }
-
-  function handlePhoneTap(pt) {
-      showRipple(pt.x, pt.y);
-      if (openAppName && pt.y > 0.92) {
-        closeApp(false);
-      } else if (openAppName) {
-        apiLine(
-          "POST",
-          "/v1/tap",
-          '{"x":' + pt.x.toFixed(2) + ',"y":' + pt.y.toFixed(2) + "}"
-        );
-        if (openAppName === "Music") {
-          var seek = document.getElementById("seek-bar");
-          if (seek) seek.style.width = Math.round(pt.x * 100) + "%";
-        }
-        if (openAppName === "Maps") {
-          var pin = document.getElementById("map-pin");
-          if (pin) {
-            pin.style.left = pt.x * 100 + "%";
-            pin.style.top = pt.y * 100 + "%";
-          }
-        }
-        if (openAppName === "Xcode") {
-          var build = document.getElementById("build-line");
-          if (build) {
-            build.textContent = "Building…";
-            setTimeout(function () {
-              if (build) build.textContent = "✔ testLogin passed";
-            }, 600);
-          }
-        }
-      } else {
-        var app = hitApp(pt);
-        if (app) {
-          app.classList.add("pulse");
-          setTimeout(function () {
-            app.classList.remove("pulse");
-          }, 280);
-          openApp(app.getAttribute("data-app"), false);
-        } else {
-          apiLine(
-            "POST",
-            "/v1/tap",
-            '{"x":' + pt.x.toFixed(2) + ',"y":' + pt.y.toFixed(2) + "}"
-          );
-        }
-      }
-  }
-
-  if (appBack) {
-    appBack.addEventListener("click", function (e) {
-      if (isTouchUI) return;
-      e.stopPropagation();
-      markUser();
-      closeApp(false);
-    });
-  }
-
-  var homeBar = document.getElementById("home-bar");
-  if (homeBar) {
-    homeBar.addEventListener("click", function (e) {
-      if (isTouchUI) return;
-      e.stopPropagation();
-      markUser();
-      if (openAppName) closeApp(false);
-    });
-  }
-
-  if (replayBtn) {
-    replayBtn.addEventListener("click", function (e) {
-      if (isTouchUI) return;
-      e.stopPropagation();
-      userActive = false;
-      clearTimeout(userTimer);
-      autoToken += 1;
-      startAutoDemo();
-    });
-  }
-
-  if (!reduceMotion && !isTouchUI) {
+  if (!reduceMotion) {
     var idle = 0;
     setInterval(function () {
-      if (stage.classList.contains("active") || autoRunning) return;
+      if (autoRunning) return;
       idle += 1;
       var bob = 3 * phoneScale();
       phone.style.transform =
@@ -659,7 +458,7 @@
     isTouchUI = applyTouchClass();
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
-      if (userActive || reduceMotion) return;
+      if (reduceMotion) return;
       autoToken += 1;
       autoRunning = false;
       startAutoDemo();
