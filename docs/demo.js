@@ -22,8 +22,6 @@
   var apiModeEl = document.getElementById("api-mode");
   var workflowStepsEl = document.getElementById("workflow-steps");
   var timeEl = document.getElementById("phone-time");
-  var replayBtn = document.getElementById("api-replay");
-  if (replayBtn) replayBtn.hidden = true;
   if (!stage || !phone || !screen) return;
 
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -367,7 +365,7 @@
 
     if (step.kind === "button") {
       stepApiLine(step);
-      var homePt = elCenter(document.getElementById("home-bar")) || { x: 0.5, y: 0.96 };
+      var homePt = { x: 0.5, y: 0.93 };
       moveCursor(homePt.x, homePt.y, true);
       if (!(await wait(reduceMotion ? 80 : 260, token))) return false;
       showRipple(homePt.x, homePt.y);
@@ -413,7 +411,7 @@
   }
 
   async function startAutoDemo() {
-    if (autoRunning || reduceMotion) return;
+    if (autoRunning) return;
     autoRunning = true;
     var token = ++autoToken;
     if (apiFeed) apiFeed.innerHTML = "";
@@ -454,21 +452,60 @@
   }
 
   var resizeTimer = null;
+  var lastShellWidth = 0;
+
+  function shellWidth() {
+    var shell = document.querySelector(".phone-shell");
+    return shell ? Math.round(shell.getBoundingClientRect().width) : 0;
+  }
+
+  function bootDemo() {
+    if (autoRunning) return;
+    lastShellWidth = shellWidth();
+    startAutoDemo();
+  }
+
   function onViewportChange() {
     isTouchUI = applyTouchClass();
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
-      if (reduceMotion) return;
+      var w = shellWidth();
+      if (Math.abs(w - lastShellWidth) < 10) return;
+      lastShellWidth = w;
       autoToken += 1;
       autoRunning = false;
       startAutoDemo();
-    }, 350);
-  }
-  window.addEventListener("resize", onViewportChange);
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", onViewportChange);
+    }, 600);
   }
 
+  window.addEventListener("resize", onViewportChange);
+  window.addEventListener("orientationchange", onViewportChange);
+  window.addEventListener("pageshow", function (e) {
+    if (e.persisted) bootDemo();
+  });
+
   renderWorkflowSteps(-1);
-  setTimeout(startAutoDemo, reduceMotion ? 0 : 900);
+
+  if ("IntersectionObserver" in window && stage) {
+    var demoBooted = false;
+    var demoObserver = new IntersectionObserver(
+      function (entries) {
+        if (demoBooted || !entries[0].isIntersecting) return;
+        demoBooted = true;
+        demoObserver.disconnect();
+        setTimeout(bootDemo, reduceMotion ? 0 : 400);
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -5% 0px" }
+    );
+    demoObserver.observe(stage);
+    setTimeout(function () {
+      if (!demoBooted && shellWidth() > 0) {
+        demoBooted = true;
+        demoObserver.disconnect();
+        bootDemo();
+      }
+    }, 2500);
+  } else {
+    setTimeout(bootDemo, reduceMotion ? 0 : 900);
+  }
 })();

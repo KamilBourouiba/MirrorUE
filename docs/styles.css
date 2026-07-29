@@ -662,8 +662,7 @@ a:hover {
   font-family: var(--mono);
   font-size: 0.68rem;
   padding: 0;
-  cursor: pointer;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .app-nav strong {
@@ -673,9 +672,71 @@ a:hover {
 
 .app-body {
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   padding: 0.75rem;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.mock-safari {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 0.5rem;
+}
+
+.mock-safari .urlbar {
+  flex-shrink: 0;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.75rem;
+  background: rgba(28, 31, 46, 0.06);
+  font-size: 0.6rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.webcard {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.75rem;
+  border-radius: 1rem;
+  background: rgba(91, 108, 255, 0.08);
+  border: 1px solid rgba(91, 108, 255, 0.15);
+}
+
+.webcard strong {
+  font-family: var(--font);
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.webcard p {
+  margin: 0 0 0.625rem;
+  font-size: 0.62rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.web-cta {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.4375rem 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  align-self: flex-start;
+  max-width: 100%;
 }
 
 .mock-msgs {
@@ -723,47 +784,6 @@ a:hover {
   height: 0.875rem;
   background: var(--accent);
   animation: blink-caret 1s step-end infinite;
-}
-
-.mock-safari .urlbar {
-  padding: 0.5rem 0.625rem;
-  border-radius: 0.75rem;
-  background: rgba(28, 31, 46, 0.06);
-  font-size: 0.6rem;
-  color: var(--muted);
-  margin-bottom: 0.625rem;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.webcard {
-  padding: 0.75rem;
-  border-radius: 1rem;
-  background: rgba(91, 108, 255, 0.08);
-  border: 1px solid rgba(91, 108, 255, 0.15);
-}
-
-.webcard strong {
-  font-family: var(--font);
-  display: block;
-  margin-bottom: 4px;
-}
-
-.webcard p {
-  margin: 0 0 10px;
-  font-size: 0.62rem;
-  color: var(--muted);
-}
-
-.web-cta {
-  appearance: none;
-  border: 0;
-  border-radius: 999px;
-  padding: 0.4375rem 0.75rem;
-  background: var(--accent);
-  color: #fff;
-  font-family: var(--mono);
-  font-size: 0.62rem;
 }
 
 .mock-mail label {
@@ -2006,6 +2026,14 @@ html.touch-ui .phone-shell {
   --phone-max-h: min(34dvh, 320px);
   --phone-max-w: min(68vw, 228px);
   width: min(var(--phone-max-w), calc(var(--phone-max-h) * 9 / 19.4));
+}
+
+html.touch-ui .app-nav {
+  padding-top: 2rem;
+}
+
+html.touch-ui .app-body {
+  padding: 0.5rem 0.625rem 0.625rem;
 }
 
 html.touch-ui .api-console {
