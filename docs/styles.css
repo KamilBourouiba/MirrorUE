@@ -1935,6 +1935,30 @@ a:hover {
 }
 
 /* Touch devices: no 3D hero motion, stable layout */
+.only-touch {
+  display: none;
+}
+
+html.touch-ui .only-desktop {
+  display: none;
+}
+
+html.touch-ui .only-touch {
+  display: inline;
+}
+
+/* Touch: watch-only demo — no taps on the phone */
+html.touch-ui .phone-shell,
+html.touch-ui .phone-shell * {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html.touch-ui .api-replay {
+  display: none;
+}
+
 html.touch-ui .ripple {
   width: calc(100cqw * 16px / var(--phone-w));
   height: calc(100cqw * 16px / var(--phone-w));
@@ -1990,9 +2014,21 @@ html.touch-ui .demo-row {
 }
 
 html.touch-ui .phone-shell {
-  --phone-max-h: min(26dvh, 260px);
-  --phone-max-w: min(52vw, 200px);
+  --phone-max-h: min(34dvh, 320px);
+  --phone-max-w: min(68vw, 228px);
   width: min(var(--phone-max-w), calc(var(--phone-max-h) * 9 / 19.4));
+}
+
+html.touch-ui .api-console {
+  width: 100%;
+  max-width: none;
+  max-height: min(38vh, 280px);
+  min-width: 0;
+  pointer-events: auto;
+}
+
+html.touch-ui .api-feed {
+  max-height: min(22vh, 160px);
 }
 
 html.touch-ui .phone-shell .phone {

@@ -500,7 +500,7 @@
     if (!userActive && token === autoToken) startAutoDemo();
   }
 
-  // Manual interaction — desktop only; mobile stays scrollable + static demo.
+  // Manual interaction — desktop only; mobile is watch-only auto demo.
   var dragging = false;
   var startX = 0;
   var startY = 0;
@@ -510,13 +510,6 @@
   if (isTouchUI) {
     cursor.hidden = true;
     phone.style.transform = "";
-    homeLayer.querySelectorAll(".app").forEach(function (btn) {
-      btn.addEventListener("click", function (e) {
-        e.preventDefault();
-        markUser();
-        openApp(btn.getAttribute("data-app"), false);
-      });
-    });
   } else {
     interactTarget.addEventListener("pointerenter", function () {
       stage.classList.add("active");
@@ -618,6 +611,7 @@
 
   if (appBack) {
     appBack.addEventListener("click", function (e) {
+      if (isTouchUI) return;
       e.stopPropagation();
       markUser();
       closeApp(false);
@@ -627,6 +621,7 @@
   var homeBar = document.getElementById("home-bar");
   if (homeBar) {
     homeBar.addEventListener("click", function (e) {
+      if (isTouchUI) return;
       e.stopPropagation();
       markUser();
       if (openAppName) closeApp(false);
@@ -635,6 +630,7 @@
 
   if (replayBtn) {
     replayBtn.addEventListener("click", function (e) {
+      if (isTouchUI) return;
       e.stopPropagation();
       userActive = false;
       clearTimeout(userTimer);
