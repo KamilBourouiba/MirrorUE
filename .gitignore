@@ -37,3 +37,4 @@ data/waitlist.json
 # Distribution artifacts
 dist/
 Workflows/*.json
+bin/Workflows/
