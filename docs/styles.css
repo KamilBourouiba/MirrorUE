@@ -413,14 +413,29 @@ a:hover {
   max-width: 560px;
 }
 
-/* Resizable phone frame — keeps 9:19.4 inside width + height caps */
+/* Resizable phone frame — 220px design canvas scaled to fit caps */
 .phone-shell {
+  --phone-design-w: 220;
   --phone-max-h: min(36dvh, 380px);
   --phone-max-w: min(72vw, 240px);
   width: min(var(--phone-max-w), calc(var(--phone-max-h) * 9 / 19.4));
   aspect-ratio: 9 / 19.4;
   margin-inline: auto;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  container-type: inline-size;
+  container-name: phone;
+}
+
+.phone-scale {
+  width: calc(var(--phone-design-w) * 1px);
+  height: calc(var(--phone-design-w) * 1px * 19.4 / 9);
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%) scale(calc(100cqw / 220px));
+  transform-origin: top center;
 }
 
 .phone-shell .phone {
@@ -428,6 +443,7 @@ a:hover {
   height: 100%;
   aspect-ratio: auto;
   max-height: none;
+  flex-shrink: 0;
 }
 
 .phone {
@@ -1329,10 +1345,6 @@ a:hover {
   min-height: 40px;
   padding: 0.55rem 1rem;
   font-size: 0.8rem;
-}
-
-html.touch-ui body {
-  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
 }
 
 @media (max-width: 734px) {
