@@ -29,7 +29,7 @@
   }
 
   function provider() {
-    return (cfg.provider || "formsubmit").toLowerCase();
+    return (cfg.provider || "github-issue").toLowerCase();
   }
 
   function buildPayload(form) {
@@ -71,7 +71,7 @@
     setFormState(
       form,
       "success",
-      message || "You're on the list — we'll email you at launch."
+      message || "You're on the list — we'll email you when Pro opens."
     );
     form.querySelectorAll("input:not([type=hidden]), textarea, select, button[type=submit]").forEach((el) => {
       el.disabled = true;
@@ -79,8 +79,29 @@
     markJoinedUI();
   }
 
-  function isActivationError(message) {
-    return /activation|activate form/i.test(String(message || ""));
+  async function postWeb3Forms(payload) {
+    const key = (cfg.web3formsAccessKey || "").trim();
+    if (!key) throw new Error("Web3Forms access key not configured");
+
+    const res = await fetch("https://api.web3forms.com/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        access_key: key,
+        subject: `MirrorUE waitlist · ${payload.plan}`,
+        from_name: "MirrorUE Waitlist",
+        email: payload.email,
+        plan: payload.plan,
+        company: payload.company || "(none)",
+        message: payload.note || "(none)",
+        source: payload.source,
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || "Could not submit — try again in a moment.");
+    }
   }
 
   async function postFormSubmit(payload) {
@@ -106,11 +127,6 @@
     const data = await res.json().catch(() => ({}));
     const msg = data.message || "";
     if (!res.ok || data.success === "false") {
-      if (isActivationError(msg)) {
-        const err = new Error(msg);
-        err.code = "FORMSUBMIT_ACTIVATION";
-        throw err;
-      }
       throw new Error(msg || "Could not submit — try again in a moment.");
     }
   }
@@ -132,19 +148,19 @@
     const body = [
       "### Waitlist signup",
       "",
-      "**Email**",
+      "### Email",
       payload.email,
       "",
-      "**Plan**",
+      "### Plan",
       payload.plan,
       "",
-      "**Company**",
+      "### Company",
       payload.company || "",
       "",
-      "**Note**",
+      "### Note",
       payload.note || "",
       "",
-      "**Source**",
+      "### Source",
       payload.source,
     ].join("\n");
 
@@ -154,7 +170,7 @@
   }
 
   function mailtoFallback(payload) {
-    const to = cfg.fallbackMailto || "kbourouiba@icloud.com";
+    const to = cfg.fallbackMailto || cfg.contactEmail || "kbourouiba@icloud.com";
     const subject = encodeURIComponent(`MirrorUE ${payload.plan} waitlist`);
     const body = encodeURIComponent(
       [
@@ -195,12 +211,24 @@
           form,
           payload.email,
           payload.plan,
-          "Almost done — submit the GitHub tab to confirm your spot."
+          "One more step — in the GitHub tab, click Submit new issue (free account). We'll email you at launch."
         );
         return;
       }
 
-      if (mode === "custom" && cfg.customEndpoint) {
+      if (mode === "web3forms") {
+        if (!cfg.web3formsAccessKey) {
+          window.open(githubIssueUrl(payload), "_blank", "noopener,noreferrer");
+          showSuccess(
+            form,
+            payload.email,
+            payload.plan,
+            "Confirm in the GitHub tab — click Submit new issue to finish."
+          );
+          return;
+        }
+        await postWeb3Forms(payload);
+      } else if (mode === "custom" && cfg.customEndpoint) {
         await postCustom(cfg.customEndpoint.trim(), payload);
       } else if (mode === "formsubmit") {
         await postFormSubmit(payload);
@@ -212,17 +240,13 @@
 
       showSuccess(form, payload.email, payload.plan);
     } catch (err) {
-      if (err.code === "FORMSUBMIT_ACTIVATION") {
-        window.open(githubIssueUrl(payload), "_blank", "noopener,noreferrer");
-        showSuccess(
-          form,
-          payload.email,
-          payload.plan,
-          "Confirm in the GitHub tab that opened — you're almost on the list."
-        );
-        return;
-      }
-      setFormState(form, "error", err.message || "Something went wrong. Try again or email us.");
+      window.open(githubIssueUrl(payload), "_blank", "noopener,noreferrer");
+      showSuccess(
+        form,
+        payload.email,
+        payload.plan,
+        "We opened GitHub as a backup — click Submit new issue to confirm your spot."
+      );
     }
   }
 

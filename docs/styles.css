@@ -1547,6 +1547,76 @@ a:hover {
   color: var(--muted);
 }
 
+.foot-legal {
+  margin-top: 0.45rem;
+}
+
+.foot-legal a {
+  color: var(--faint);
+}
+
+/* ——— Legal pages ——— */
+.legal-page {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: calc(var(--nav-h) + 1.5rem) var(--pad) 3rem;
+}
+
+.legal-doc {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border-radius: var(--radius);
+}
+
+.legal-doc h1 {
+  font-family: var(--font);
+  font-size: clamp(1.65rem, 4vw, 2.1rem);
+  margin: 0.35rem 0 0.5rem;
+  line-height: 1.15;
+}
+
+.legal-doc h2 {
+  font-family: var(--font);
+  font-size: 1.05rem;
+  margin: 1.75rem 0 0.65rem;
+}
+
+.legal-doc p,
+.legal-doc li {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+.legal-doc ul {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.25rem;
+}
+
+.legal-meta {
+  font-size: 0.75rem;
+  color: var(--faint);
+  margin-bottom: 1.25rem;
+}
+
+.legal-links {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.82rem;
+}
+
+.legal-doc a {
+  color: var(--accent);
+}
+
+.waitlist-fine a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* ——— Motion ——— */
 @keyframes rise {
   from {

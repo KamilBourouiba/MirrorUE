@@ -2,28 +2,29 @@
 window.MirrorUEWaitlist = {
   /**
    * Provider (pick one):
-   * - "formsubmit" — emails you directly (default). One-time inbox verify on first signup.
-   * - "github-issue" — opens a GitHub issue; Actions ingests to data/waitlist.json (dev audience).
+   * - "github-issue" — prefilled GitHub issue (default). You get GitHub notification emails.
+   * - "web3forms" — Web3Forms.co → your inbox (set web3formsAccessKey).
+   * - "formsubmit" — FormSubmit.co (often blocked by iCloud).
    * - "custom" — your own POST URL (Google Apps Script, etc.)
    */
-  provider: "formsubmit",
+  provider: "github-issue",
 
-  /**
-   * FormSubmit.co — only your address, no API key.
-   * First test signup emails you an "Activate Form" link at this address (click once).
-   */
+  /** Web3Forms.co — free at https://web3forms.com (access key is public in client). */
+  web3formsAccessKey: "",
+
+  /** FormSubmit.co — optional fallback */
   notifyEmail: "kbourouiba@icloud.com",
 
-  /** GitHub issue ingest (provider: github-issue) */
+  /** GitHub issue signup (provider: github-issue) */
   githubIssue: {
     owner: "KamilBourouiba",
     repo: "MirrorUE",
-    template: "waitlist",
+    template: "waitlist.yml",
   },
 
   /** Optional custom JSON endpoint */
   customEndpoint: "",
 
-  /** Last-resort if provider misconfigured */
+  contactEmail: "kbourouiba@icloud.com",
   fallbackMailto: "kbourouiba@icloud.com",
 };

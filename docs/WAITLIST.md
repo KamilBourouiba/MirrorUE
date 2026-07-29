@@ -2,27 +2,11 @@
 
 Collects signups from [GitHub Pages](https://kamilbourouiba.github.io/MirrorUE/) — **no API keys** on the default setup.
 
-## Default: FormSubmit (recommended)
+## Default: GitHub Issues (recommended)
 
-Uses [FormSubmit.co](https://formsubmit.co) — free, only your email address.
+FormSubmit often fails to deliver to iCloud and other strict inboxes. The default provider opens a **prefilled GitHub issue** instead.
 
-1. Set your inbox in `docs/waitlist-config.js` (`kbourouiba@icloud.com`).
-2. Push to `main`.
-3. **Activate once:** submit a test signup on the site (or use FormSubmit’s test). FormSubmit emails **`notifyEmail`** with an **“Activate Form”** link — click it. Until then, the site falls back to opening a GitHub issue for the visitor.
-4. After activation, signups arrive as email (table layout).
-
-```js
-window.MirrorUEWaitlist = {
-  provider: "formsubmit",
-  notifyEmail: "kbourouiba@icloud.com",
-};
-```
-
-No API key. After changing `notifyEmail`, push and complete FormSubmit activation from the new inbox.
-
-## Alternative: GitHub Issues (100% GitHub-native)
-
-Good if you want signups in `data/waitlist.json` without any third party.
+**You receive signups via GitHub notification emails** (Settings → Notifications → Issues).
 
 ```js
 window.MirrorUEWaitlist = {
@@ -33,11 +17,39 @@ window.MirrorUEWaitlist = {
 
 Flow:
 
-1. User submits the form → prefilled GitHub issue opens in a new tab.
-2. They click **Submit new issue** (needs a GitHub account).
-3. Action [waitlist-from-issue.yml](../.github/workflows/waitlist-from-issue.yml) parses the issue, appends to [`data/waitlist.json`](../data/waitlist.json), comments, and closes it.
+1. User submits the form on the site.
+2. A prefilled GitHub issue opens in a new tab.
+3. They click **Submit new issue** (free GitHub account required).
+4. Action [waitlist-from-issue.yml](../.github/workflows/waitlist-from-issue.yml) validates the issue, comments, and auto-closes it.
 
 Direct link (no site form): **New issue → Pro waitlist signup** template.
+
+## Alternative: Web3Forms (email inbox)
+
+If you prefer email delivery without GitHub:
+
+1. Create a free access key at [web3forms.com](https://web3forms.com) (uses your email).
+2. Set in `docs/waitlist-config.js`:
+
+```js
+window.MirrorUEWaitlist = {
+  provider: "web3forms",
+  web3formsAccessKey: "YOUR_KEY_HERE",
+};
+```
+
+If the key is missing or submission fails, the site falls back to the GitHub issue flow.
+
+## Alternative: FormSubmit
+
+```js
+window.MirrorUEWaitlist = {
+  provider: "formsubmit",
+  notifyEmail: "kbourouiba@icloud.com",
+};
+```
+
+Requires one-time “Activate Form” email from FormSubmit. Often blocked by iCloud — prefer GitHub Issues or Web3Forms.
 
 ## Manual / admin
 
@@ -45,10 +57,12 @@ Direct link (no site form): **New issue → Pro waitlist signup** template.
 ./scripts/waitlist-add.sh user@example.com pro "Acme" "QA team"
 ```
 
-Or **Actions → Waitlist ingest → Run workflow**.
+Or **Actions → Waitlist ingest → Run workflow** (appends to `data/waitlist.json` for private admin use).
 
 ## Privacy
 
+See [privacy.html](privacy.html) on the site.
+
 - Honeypot field blocks basic bots.
 - `localStorage` remembers if the browser already joined.
-- Issues are public until closed; FormSubmit keeps signups in your inbox only.
+- GitHub issues on a public repo may expose signup details until closed — issues are auto-closed after processing.

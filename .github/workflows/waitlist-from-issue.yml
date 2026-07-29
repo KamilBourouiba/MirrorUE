@@ -4,7 +4,6 @@ on:
     types: [opened]
 
 permissions:
-  contents: write
   issues: write
 
 jobs:
@@ -14,26 +13,27 @@ jobs:
       contains(join(github.event.issue.labels.*.name, ','), 'waitlist')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Parse issue and append waitlist.json
+      - name: Parse issue
         id: parse
         env:
           TITLE: ${{ github.event.issue.title }}
           BODY: ${{ github.event.issue.body }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
           python3 <<'PY'
-          import json, os, pathlib, re, datetime
+          import os, re
 
           title = os.environ.get("TITLE") or ""
           body = os.environ.get("BODY") or ""
-          issue_no = os.environ.get("ISSUE_NUMBER") or ""
 
           email = ""
-          m = re.search(r"\*\*Email\*\*\s*\n\s*([^\n]+)", body, re.I)
-          if m:
-              email = m.group(1).strip().lower()
+          for pat in (
+              r"###\s*Email\s*\n+\s*([^\n#]+)",
+              r"\*\*Email\*\*\s*\n\s*([^\n]+)",
+          ):
+              m = re.search(pat, body, re.I)
+              if m:
+                  email = m.group(1).strip().lower()
+                  break
           if not email:
               m = re.search(r"([^\s@]+@[^\s@]+\.[^\s@]+)", body)
               if m:
@@ -43,53 +43,13 @@ jobs:
               if "@" in rest:
                   email = rest.split()[0].strip().lower()
 
-          if not email or "@" not in email:
-              print("No email found in issue; skipping ingest")
-              open(os.environ["GITHUB_OUTPUT"], "a").write("skip=true\n")
-              raise SystemExit(0)
-
-          def field(name):
-              m = re.search(rf"\*\*{re.escape(name)}\*\*\s*\n\s*([^\n*]+)", body, re.I)
-              return m.group(1).strip() if m else ""
-
-          plan = field("Plan").lower() or "pro"
-          if plan not in ("pro", "fleet"):
-              plan = "pro"
-
-          entry = {
-              "email": email,
-              "plan": plan,
-              "company": field("Company"),
-              "note": field("Note"),
-              "source": f"github-issue-{issue_no}",
-              "createdAt": datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
-          }
-
-          path = pathlib.Path("data/waitlist.json")
-          data = json.loads(path.read_text(encoding="utf-8"))
-          entries = data.get("entries") or []
-          added = not any(e.get("email") == email for e in entries)
-          if added:
-              entries.append(entry)
-          data["entries"] = entries
-          data["updatedAt"] = entry["createdAt"]
-          data["version"] = 1
-          path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-
           out = open(os.environ["GITHUB_OUTPUT"], "a")
-          out.write(f"skip=false\n")
-          out.write(f"added={'true' if added else 'false'}\n")
-          out.write(f"email={email}\n")
+          if not email or "@" not in email:
+              out.write("skip=true\n")
+          else:
+              out.write("skip=false\n")
+              out.write(f"email={email}\n")
           PY
-
-      - name: Commit waitlist.json
-        if: steps.parse.outputs.skip != 'true' && steps.parse.outputs.added == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/waitlist.json
-          git commit -m "Waitlist: ingest from issue #${{ github.event.issue.number }}"
-          git push
 
       - name: Close issue
         if: steps.parse.outputs.skip != 'true'
