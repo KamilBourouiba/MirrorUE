@@ -621,11 +621,5 @@
   }
 
   renderWorkflowSteps(-1);
-  if (!isTouchUI) {
-    setTimeout(startAutoDemo, reduceMotion ? 0 : 900);
-  } else {
-    setApiMode("idle");
-    resetPhone();
-    renderWorkflowSteps(-1);
-  }
+  setTimeout(startAutoDemo, reduceMotion ? 0 : 900);
 })();

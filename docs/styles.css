@@ -413,12 +413,10 @@ a:hover {
   max-width: 560px;
 }
 
-/* Resizable phone frame — 220px design canvas scaled to fit caps */
+/* Resizable phone frame — 220px design canvas; scales down on narrow viewports */
 .phone-shell {
   --phone-design-w: 220;
-  --phone-max-h: min(36dvh, 380px);
-  --phone-max-w: min(72vw, 240px);
-  width: min(var(--phone-max-w), calc(var(--phone-max-h) * 9 / 19.4));
+  width: 220px;
   aspect-ratio: 9 / 19.4;
   margin-inline: auto;
   flex-shrink: 0;
@@ -1766,6 +1764,7 @@ a:hover {
   .phone-shell {
     --phone-max-h: min(30dvh, 320px);
     --phone-max-w: min(64vw, 210px);
+    width: min(var(--phone-max-w), calc(var(--phone-max-h) * 9 / 19.4));
   }
 
   .hero h1 {
@@ -1941,19 +1940,33 @@ html.touch-ui .hero-live {
   padding-top: 0.5rem;
 }
 
-html.touch-ui .api-console,
+html.touch-ui .api-console {
+  width: 100%;
+  max-width: none;
+  max-height: min(36vh, 260px);
+  min-width: 0;
+}
+
 html.touch-ui .control-hint {
-  display: none;
+  display: block;
+  font-size: 0.62rem;
+  line-height: 1.4;
+  padding-inline: 0.25rem;
+  text-align: center;
 }
 
 html.touch-ui .demo-row {
-  gap: 0.35rem;
-  max-width: 100%;
+  grid-template-columns: 1fr;
+  justify-items: stretch;
+  gap: 0.75rem;
+  max-width: min(100%, 380px);
+  margin-inline: auto;
 }
 
 html.touch-ui .phone-shell {
-  --phone-max-h: min(24dvh, 240px);
-  --phone-max-w: min(56vw, 180px);
+  --phone-max-h: min(26dvh, 260px);
+  --phone-max-w: min(52vw, 200px);
+  width: min(var(--phone-max-w), calc(var(--phone-max-h) * 9 / 19.4));
 }
 
 html.touch-ui .phone-shell .phone {
