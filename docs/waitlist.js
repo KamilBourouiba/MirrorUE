@@ -71,7 +71,7 @@
     setFormState(
       form,
       "success",
-      message || "You're on the list — we'll email you when Pro opens."
+      message || "You're on the list — we'll email you at launch."
     );
     form.querySelectorAll("input:not([type=hidden]), textarea, select, button[type=submit]").forEach((el) => {
       el.disabled = true;

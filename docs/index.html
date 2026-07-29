@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>MirrorUE — Free iPhone mirror for Mac</title>
-  <meta name="description" content="Open-source macOS iPhone mirroring: CoreMediaIO video, HID control, keyboard translation, screenshots and screen recording." />
-  <meta property="og:title" content="MirrorUE" />
-  <meta property="og:description" content="Mirror and control a development iPhone from your Mac — free &amp; open source." />
+  <title>MirrorUE — Free iPhone mirror for Mac (120 fps)</title>
+  <meta name="description" content="Download MirrorUE: native macOS iPhone mirroring with touch, keyboard, and recording. Free &amp; open source. Pro automation waitlist open." />
+  <meta property="og:title" content="MirrorUE — Mirror &amp; control your iPhone from Mac" />
+  <meta property="og:description" content="Free developer mirror up to 120 fps. Join the Pro waitlist for path automation." />
   <meta property="og:type" content="website" />
   <meta name="theme-color" content="#eef2ff" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=basic1" />
+  <link rel="stylesheet" href="styles.css?v=conv1" />
 </head>
 <body>
   <div class="bg" aria-hidden="true">
@@ -29,12 +29,10 @@
         <span></span><span></span>
       </label>
       <nav class="nav-links">
-        <a href="#control">Control</a>
-        <a href="#present">Present</a>
-        <a href="#pro">Pro</a>
-        <a href="#waitlist">Waitlist</a>
+        <a href="#features">Features</a>
+        <a href="#waitlist">Pro</a>
         <a href="#pricing">Pricing</a>
-        <a class="nav-cta" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download</a>
+        <a class="nav-cta" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download free</a>
       </nav>
     </div>
   </header>
@@ -42,19 +40,27 @@
   <main id="top">
     <section class="hero">
       <div class="hero-copy">
-        <p class="chip">open source · MIT · USB + CoreDevice</p>
-        <p class="brand">MirrorUE</p>
-        <h1>Mirror a real iPhone.<br />Drive it from your Mac.</h1>
+        <p class="chip">MIT · USB CoreMediaIO · no account</p>
+        <h1>Mirror your iPhone on Mac.<br />Control it with mouse &amp; keyboard.</h1>
         <p class="lede">
-          CoreMediaIO capture up to 120&nbsp;fps, HID control over a CoreDevice tunnel,
-          keyboard translation, screenshots, and screen recording — free for developers
-          who own the device.
+          Native 120&nbsp;fps capture, HID touch, keyboard translation, screenshots
+          and recording — free for development devices you own and trust.
         </p>
+        <ul class="trust-strip" aria-label="Highlights">
+          <li>120 fps ProMotion</li>
+          <li>CoreDevice HID</li>
+          <li>AZERTY / QWERTY</li>
+        </ul>
         <div class="cta">
-          <a class="btn primary" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download free</a>
-          <a class="btn ghost" href="#waitlist" data-waitlist-open data-plan="pro">Join Pro waitlist</a>
+          <div class="cta-primary">
+            <a class="btn primary btn-lg" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download for Mac</a>
+            <span class="cta-note">Free · macOS 14+ · iOS 27+</span>
+          </div>
+          <div class="cta-secondary">
+            <button type="button" class="btn ghost btn-lg" data-waitlist-open data-plan="pro">Get Pro early access</button>
+            <span class="cta-note">Waitlist · founding-member pricing</span>
+          </div>
         </div>
-        <p class="meta">macOS 14+ · iOS 27+ · Developer Mode</p>
       </div>
 
       <div class="hero-live" aria-label="Interactive mirrored iPhone demo">
@@ -112,199 +118,190 @@
                 <button type="button" class="api-replay" id="api-replay" title="Replay demo">replay</button>
               </div>
               <div class="api-feed" id="api-feed"></div>
-              <p class="api-caption">Basic control API demo · Pro adds path automation</p>
+              <p class="api-caption">Live control API · Pro adds path automation</p>
             </aside>
           </div>
-          <p class="control-hint">Tap apps · drag to aim · API drives itself when idle</p>
+          <p class="control-hint">Try the demo · tap apps · API replays when idle</p>
         </div>
       </div>
     </section>
 
-    <section class="note frost">
-      <p>
-        Apple’s iPhone Mirroring isn’t currently available in the EU (DMA uncertainty).
-        MirrorUE is a <strong>developer tool</strong> for phones you pair yourself —
-        not a consumer replacement.
-      </p>
-    </section>
-
-    <section id="control" class="feature">
-      <div class="feature-card frost">
-        <p class="kicker">// control</p>
-        <h2>Mouse, trackpad, keyboard on silicon you own.</h2>
-        <p>
-          Tap and swipe on the mirrored surface. Auto keyboard layout translation
-          when Mac ≠ iPhone. Dock for Home, Lock, volume, screenshot, settings.
-        </p>
-        <ul class="tags">
-          <li>USB CoreMediaIO</li>
-          <li>CoreDevice HID</li>
-          <li>FR / US / DE map</li>
-          <li>Landscape remap</li>
-        </ul>
-      </div>
-    </section>
-
-    <section id="present" class="feature">
-      <div class="feature-card frost">
-        <p class="kicker">// present</p>
-        <h2>Record demos with show-touches.</h2>
-        <p>
-          Screenshot and HEVC recording to Desktop. Touch indicators for tutorials
-          and QA. Performance panel with fps + latency (p95).
-        </p>
-        <ul class="tags">
-          <li>⌘⇧S / ⌘⇧R</li>
-          <li>Show touches</li>
-          <li>Up to 120 fps</li>
-          <li>Diagnostics copy</li>
-        </ul>
-      </div>
-    </section>
-
-    <section id="pro" class="feature">
-      <div class="feature-card frost">
-        <p class="kicker">// mirrorue pro</p>
-        <h2>Path automation — record, replay, export.</h2>
-        <p>
-          Need repeatable flows on a real device? <strong>MirrorUE Pro</strong> adds
-          path recording with live step timeline, latency-aware playback, export to JSON,
-          and a full HTTP + CLI automation surface.
-        </p>
-        <ul class="tags">
-          <li>Record · Play · Export</li>
-          <li>Latency compensation</li>
-          <li>Workflow API + CLI</li>
-          <li>Commercial license</li>
-        </ul>
-        <div class="cta" style="margin-top:1.25rem">
-          <button type="button" class="btn primary" data-waitlist-open data-plan="pro">Join the waitlist</button>
-        </div>
-      </div>
-    </section>
-
-    <section id="waitlist" class="waitlist-section">
+    <section id="waitlist" class="waitlist-section conv-band">
       <div class="waitlist-shell frost">
         <div class="waitlist-copy">
-          <p class="kicker">// early access</p>
-          <h2>MirrorUE Pro is coming.</h2>
+          <p class="kicker">// mirrorue pro</p>
+          <h2>Automate real-device flows.<br />Reserve early access.</h2>
           <p class="waitlist-lede">
-            Path recording, latency-aware replay, and workflow API — for QA teams
-            and solo devs who live on real hardware. Join the list; no spam.
+            Record taps &amp; typing once, replay with latency tuning, export JSON,
+            drive from HTTP + CLI. Built for QA and demo teams on physical iPhones.
           </p>
           <ul class="waitlist-perks">
-            <li>Early access before public launch</li>
-            <li>Founding-member pricing</li>
-            <li>Priority for Fleet (multi-seat)</li>
+            <li>Founding-member pricing at launch</li>
+            <li>Priority onboarding for Fleet teams</li>
+            <li>Free MirrorUE stays MIT — Pro is optional</li>
           </ul>
         </div>
-        <form id="waitlist-inline-form" class="waitlist-form" data-waitlist-form data-source="waitlist-section" data-default-plan="pro" novalidate>
+        <form id="waitlist-inline-form" class="waitlist-form waitlist-form-compact" data-waitlist-form data-source="waitlist-hero" data-default-plan="pro" novalidate>
+          <p class="waitlist-form-title">Join the waitlist</p>
           <label class="waitlist-field">
-            <span>Work email</span>
+            <span>Email</span>
             <input type="email" name="email" autocomplete="email" placeholder="you@company.com" required />
           </label>
           <label class="waitlist-field">
             <span>Plan</span>
             <select name="plan">
-              <option value="pro">MirrorUE Pro</option>
-              <option value="fleet">Fleet / team</option>
+              <option value="pro">Pro — solo / small team</option>
+              <option value="fleet">Fleet — multi-seat</option>
             </select>
           </label>
-          <label class="waitlist-field">
-            <span>Company <small>(optional)</small></span>
-            <input type="text" name="company" autocomplete="organization" placeholder="Acme QA" />
-          </label>
-          <label class="waitlist-field">
-            <span>Note <small>(optional)</small></span>
-            <textarea name="note" rows="2" placeholder="Devices, use case, team size…"></textarea>
-          </label>
+          <details class="waitlist-more">
+            <summary>Company &amp; note (optional)</summary>
+            <label class="waitlist-field">
+              <span>Company</span>
+              <input type="text" name="company" autocomplete="organization" placeholder="Acme QA" />
+            </label>
+            <label class="waitlist-field">
+              <span>Use case</span>
+              <textarea name="note" rows="2" placeholder="Devices, flows, team size…"></textarea>
+            </label>
+          </details>
           <input type="text" name="website" class="waitlist-honeypot" tabindex="-1" autocomplete="off" aria-hidden="true" />
-          <button type="submit" class="btn primary waitlist-submit">Join waitlist</button>
+          <button type="submit" class="btn primary waitlist-submit btn-lg">Reserve my spot</button>
           <p class="waitlist-status" data-waitlist-status="waitlist-inline-form" hidden></p>
-          <p class="waitlist-fine">MIT MirrorUE stays free. Pro is a separate paid product.</p>
+          <p class="waitlist-fine">One email when Pro opens. Unsubscribe anytime.</p>
         </form>
       </div>
+    </section>
+
+    <section id="features" class="features-grid">
+      <article id="control" class="feature-card frost">
+        <p class="kicker">// control</p>
+        <h2>Mouse, trackpad, keyboard.</h2>
+        <p>Tap the mirror. Auto keyboard maps when Mac ≠ iPhone. Dock for Home, Lock, volume, screenshot.</p>
+        <ul class="tags">
+          <li>CoreMediaIO</li>
+          <li>CoreDevice HID</li>
+          <li>Landscape remap</li>
+        </ul>
+      </article>
+      <article id="present" class="feature-card frost">
+        <p class="kicker">// present</p>
+        <h2>Record demos.</h2>
+        <p>HEVC + PNG to Desktop. Show-touches for tutorials. Live fps &amp; p95 latency panel.</p>
+        <ul class="tags">
+          <li>⌘⇧S / ⌘⇧R</li>
+          <li>120 fps target</li>
+          <li>Diagnostics</li>
+        </ul>
+      </article>
+      <article id="pro" class="feature-card frost feature-pro">
+        <p class="kicker">// pro</p>
+        <h2>Path automation.</h2>
+        <p>Record → replay → export. Timeline, latency compensation, workflow API + CLI.</p>
+        <ul class="tags">
+          <li>Record · Play</li>
+          <li>Workflow API</li>
+          <li>Commercial</li>
+        </ul>
+        <a class="feature-link" href="#waitlist">Join waitlist →</a>
+      </article>
+    </section>
+
+    <section class="note frost note-compact">
+      <p>
+        Developer tool for phones you pair (Developer Mode, Trust). Not a consumer
+        replacement — EU iPhone Mirroring availability varies.
+      </p>
     </section>
 
     <section id="pricing" class="pricing">
       <div class="pricing-head">
         <p class="kicker">// pricing</p>
-        <h2>Free mirror. Pro automation.</h2>
-        <p>MirrorUE (this repo) is MIT and free. Pro is the paid automation product.</p>
+        <h2>Start free. Upgrade when you automate.</h2>
+        <p>Download MirrorUE today. Join the waitlist only if you need Pro paths.</p>
       </div>
 
       <div class="plans">
+        <article class="plan frost featured">
+          <p class="badge">most popular</p>
+          <h3>MirrorUE Pro</h3>
+          <p class="price"><span>Waitlist</span></p>
+          <p class="plan-lead">Path record / replay for QA &amp; demos on real hardware.</p>
+          <ul>
+            <li>Everything in free MirrorUE</li>
+            <li>Path record / replay / export</li>
+            <li>Latency-aware timeline</li>
+            <li>Full workflow HTTP + CLI</li>
+          </ul>
+          <button type="button" class="btn primary" data-waitlist-open data-plan="pro">Reserve Pro access</button>
+          <p class="plan-note">Founding pricing · limited early seats</p>
+        </article>
+
         <article class="plan frost">
           <h3>MirrorUE</h3>
           <p class="price"><span>Free</span></p>
-          <p class="plan-lead">Open-source mirror + control on your Mac + iPhone.</p>
+          <p class="plan-lead">Full mirror + control. Open source forever.</p>
           <ul>
-            <li>Native mirroring ≤ 120 fps</li>
+            <li>≤ 120 fps mirroring</li>
             <li>Touch, keyboard, dock</li>
-            <li>Screenshot &amp; screen recording</li>
-            <li>Basic loopback API (tap, type, home)</li>
-            <li>MIT · <a href="https://github.com/KamilBourouiba/MirrorUE">GitHub</a></li>
+            <li>Screenshot &amp; recording</li>
+            <li>Basic control API</li>
           </ul>
-          <a class="btn ghost" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download free</a>
-        </article>
-
-        <article class="plan frost featured">
-          <p class="badge">automation</p>
-          <h3>MirrorUE Pro</h3>
-          <p class="price"><span>Paid</span><small>/seat</small></p>
-          <p class="plan-lead">QA, demos, and physical-device smoke at scale.</p>
-          <ul>
-            <li>Everything in MirrorUE</li>
-            <li>Path record / replay / export</li>
-            <li>Live timeline + latency tuning</li>
-            <li>Full workflow HTTP API + CLI</li>
-          </ul>
-          <button type="button" class="btn primary" data-waitlist-open data-plan="pro">Join waitlist</button>
+          <a class="btn ghost" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download now</a>
         </article>
 
         <article class="plan frost">
           <h3>Fleet</h3>
-          <p class="price"><span>Contact</span></p>
-          <p class="plan-lead">Teams with multiple devices and shared paths.</p>
+          <p class="price"><span>Teams</span></p>
+          <p class="plan-lead">Multi-seat, shared paths, priority support.</p>
           <ul>
             <li>Everything in Pro</li>
-            <li>Multi-seat licensing</li>
             <li>Shared workflow library</li>
-            <li>Priority support</li>
+            <li>Volume licensing</li>
+            <li>Onboarding help</li>
           </ul>
-          <button type="button" class="btn ghost" data-waitlist-open data-plan="fleet">Join Fleet waitlist</button>
+          <button type="button" class="btn ghost" data-waitlist-open data-plan="fleet">Join Fleet list</button>
         </article>
       </div>
     </section>
 
-    <section class="start frost">
-      <h2>Get started (free)</h2>
-      <ol>
-        <li><span>01</span><div><strong>Download</strong><p><a href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Latest release</a> or <code>./tools/package_app.sh</code></p></div></li>
-        <li><span>02</span><div><strong>Connect</strong><p>Trusted USB iPhone · Developer Mode on</p></div></li>
-        <li><span>03</span><div><strong>Mirror</strong><p>Checklist → pick device → control from Mac</p></div></li>
-      </ol>
-      <div class="cta">
-        <a class="btn primary" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Latest release</a>
-        <a class="btn ghost" href="https://github.com/KamilBourouiba/MirrorUE/blob/main/SECURITY.md">Security model</a>
+    <section class="start frost start-conv">
+      <div class="start-inner">
+        <div>
+          <h2>Ready in 3 minutes.</h2>
+          <ol class="start-steps">
+            <li><span>1</span><div><strong>Download</strong><p><a href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Latest .dmg</a> — no signup</p></div></li>
+            <li><span>2</span><div><strong>Connect</strong><p>USB iPhone · Developer Mode · Trust Mac</p></div></li>
+            <li><span>3</span><div><strong>Mirror</strong><p>Pick device → control from your Mac</p></div></li>
+          </ol>
+        </div>
+        <div class="start-cta">
+          <a class="btn primary btn-lg" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download MirrorUE</a>
+          <button type="button" class="btn ghost" data-waitlist-open data-plan="pro">Or join Pro waitlist</button>
+        </div>
       </div>
     </section>
   </main>
 
   <footer class="foot">
-    <p>MIT © Kamil Bourouiba · <a href="https://github.com/KamilBourouiba/MirrorUE">MirrorUE</a> · <a href="#waitlist" data-waitlist-open data-plan="pro">Pro waitlist</a></p>
+    <p>MIT © Kamil Bourouiba · <a href="https://github.com/KamilBourouiba/MirrorUE">GitHub</a> · <a href="#waitlist">Pro waitlist</a></p>
   </footer>
+
+  <aside class="sticky-cta" id="sticky-cta" aria-label="Quick actions" hidden>
+    <a class="btn primary" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download</a>
+    <button type="button" class="btn ghost" data-waitlist-open data-plan="pro">Pro waitlist</button>
+  </aside>
 
   <div id="waitlist-dialog" class="waitlist-dialog" hidden aria-hidden="true" role="dialog" aria-labelledby="waitlist-dialog-title" aria-modal="true">
     <div class="waitlist-backdrop" data-waitlist-close></div>
     <div class="waitlist-panel frost">
       <button type="button" class="waitlist-close" data-waitlist-close aria-label="Close">×</button>
-      <p class="kicker">// waitlist</p>
-      <h2 id="waitlist-dialog-title">Get MirrorUE Pro early</h2>
-      <p class="waitlist-lede">We’ll email you when seats open — usually within a few weeks of launch.</p>
+      <p class="kicker">// early access</p>
+      <h2 id="waitlist-dialog-title">Reserve Pro access</h2>
+      <p class="waitlist-lede">One field. We email you at launch — founding pricing included.</p>
       <form id="waitlist-dialog-form" class="waitlist-form" data-waitlist-form data-source="waitlist-dialog" data-default-plan="pro" novalidate>
         <label class="waitlist-field">
-          <span>Email</span>
+          <span>Work email</span>
           <input type="email" name="email" autocomplete="email" placeholder="you@company.com" required />
         </label>
         <label class="waitlist-field">
@@ -315,14 +312,16 @@
           </select>
         </label>
         <input type="text" name="website" class="waitlist-honeypot" tabindex="-1" autocomplete="off" aria-hidden="true" />
-        <button type="submit" class="btn primary waitlist-submit">Join waitlist</button>
+        <button type="submit" class="btn primary waitlist-submit btn-lg">Reserve my spot</button>
         <p class="waitlist-status" data-waitlist-status="waitlist-dialog-form" hidden></p>
+        <p class="waitlist-fine">No spam · unsubscribe anytime</p>
       </form>
     </div>
   </div>
 
   <script src="waitlist-config.js?v=2" defer></script>
-  <script src="waitlist.js?v=2" defer></script>
-  <script src="demo.js?v=basic1" defer></script>
+  <script src="waitlist.js?v=3" defer></script>
+  <script src="conversion.js?v=1" defer></script>
+  <script src="demo.js?v=conv1" defer></script>
 </body>
 </html>
