@@ -7,10 +7,10 @@ window.MirrorUEWaitlist = {
    * - "formsubmit" — FormSubmit.co (often blocked by iCloud).
    * - "custom" — your own POST URL (Google Apps Script, etc.)
    */
-  provider: "github-issue",
+  provider: "web3forms",
 
   /** Web3Forms.co — free at https://web3forms.com (access key is public in client). */
-  web3formsAccessKey: "",
+  web3formsAccessKey: "a5a3e211-4da8-4a32-9834-973ba577c77b",
 
   /** FormSubmit.co — optional fallback */
   notifyEmail: "kbourouiba@icloud.com",
