@@ -205,8 +205,30 @@
     homeLayer.querySelectorAll(".app.pulse").forEach(function (el) {
       el.classList.remove("pulse");
     });
-    cursor.hidden = false;
-    moveCursor(0.5, 0.45, false);
+    if (isTouchUI) {
+      cursor.hidden = true;
+    } else {
+      cursor.hidden = false;
+      moveCursor(0.5, 0.45, false);
+    }
+  }
+
+  function phoneScale() {
+    var shell = document.querySelector(".phone-shell");
+    if (!shell) return 1;
+    var w = shell.getBoundingClientRect().width;
+    return w > 0 ? w / 220 : 1;
+  }
+
+  function elCenter(el) {
+    if (!el || !screen) return null;
+    var sr = screen.getBoundingClientRect();
+    if (!sr.width || !sr.height) return null;
+    var r = el.getBoundingClientRect();
+    return {
+      x: Math.min(1, Math.max(0, (r.left + r.width / 2 - sr.left) / sr.width)),
+      y: Math.min(1, Math.max(0, (r.top + r.height / 2 - sr.top) / sr.height)),
+    };
   }
 
   function moveCursor(x, y, animate) {
@@ -230,10 +252,12 @@
     ripple.style.top = y * 100 + "%";
     void ripple.offsetWidth;
     ripple.classList.add("pop");
-    cursor.classList.add("down");
-    setTimeout(function () {
-      cursor.classList.remove("down");
-    }, 120);
+    if (!isTouchUI) {
+      cursor.classList.add("down");
+      setTimeout(function () {
+        cursor.classList.remove("down");
+      }, 120);
+    }
   }
 
   function openApp(name, fromApi) {
@@ -370,7 +394,12 @@
         }
         openApp(step.app, true);
       } else {
-        if (!(await autoTap(step.x, step.y, token))) return false;
+        var tapPt = { x: step.x, y: step.y };
+        if (step.action === "cta") {
+          var ctaEl = document.getElementById("web-cta");
+          tapPt = elCenter(ctaEl) || tapPt;
+        }
+        if (!(await autoTap(tapPt.x, tapPt.y, token))) return false;
         if (step.action === "cta") {
           var cta = document.getElementById("web-cta");
           if (cta) cta.classList.add("pulse");
@@ -381,7 +410,14 @@
 
     if (step.kind === "type") {
       stepApiLine(step);
-      moveCursor(step.x || 0.55, step.y || 0.82, true);
+      await wait(reduceMotion ? 0 : 80, token);
+      if (token !== autoToken) return false;
+      var typeEl =
+        step.target === "msg"
+          ? document.querySelector(".composer") || document.getElementById("msg-typed")
+          : document.querySelector(".mock-safari .urlbar") || document.getElementById("url-typed");
+      var typePt = elCenter(typeEl) || { x: step.x || 0.55, y: step.y || 0.82 };
+      moveCursor(typePt.x, typePt.y, true);
       var el =
         step.target === "msg"
           ? document.getElementById("msg-typed")
@@ -396,9 +432,10 @@
 
     if (step.kind === "button") {
       stepApiLine(step);
-      moveCursor(0.5, 0.96, true);
+      var homePt = elCenter(document.getElementById("home-bar")) || { x: 0.5, y: 0.96 };
+      moveCursor(homePt.x, homePt.y, true);
       if (!(await wait(reduceMotion ? 80 : 260, token))) return false;
-      showRipple(0.5, 0.96);
+      showRipple(homePt.x, homePt.y);
       closeApp(true);
       return wait(reduceMotion ? 80 : 320, token);
     }
@@ -441,7 +478,7 @@
   }
 
   async function startAutoDemo() {
-    if (autoRunning || userActive || reduceMotion || isTouchUI) return;
+    if (autoRunning || userActive || reduceMotion) return;
     autoRunning = true;
     var token = ++autoToken;
     if (apiFeed) apiFeed.innerHTML = "";
@@ -611,13 +648,30 @@
     setInterval(function () {
       if (stage.classList.contains("active") || autoRunning) return;
       idle += 1;
+      var bob = 3 * phoneScale();
       phone.style.transform =
         "rotateY(" +
         Math.sin(idle / 18) * 4 +
         "deg) translateY(" +
-        Math.sin(idle / 12) * 3 +
+        Math.sin(idle / 12) * bob +
         "px)";
     }, 40);
+  }
+
+  var resizeTimer = null;
+  function onViewportChange() {
+    isTouchUI = applyTouchClass();
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (userActive || reduceMotion) return;
+      autoToken += 1;
+      autoRunning = false;
+      startAutoDemo();
+    }, 350);
+  }
+  window.addEventListener("resize", onViewportChange);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", onViewportChange);
   }
 
   renderWorkflowSteps(-1);

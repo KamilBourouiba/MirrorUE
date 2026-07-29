@@ -647,21 +647,21 @@ a:hover {
 .app-body {
   flex: 1;
   overflow: hidden;
-  padding: 12px;
+  padding: 0.75rem;
   pointer-events: none;
 }
 
 .mock-msgs {
   display: grid;
-  gap: 8px;
+  gap: 0.5rem;
   align-content: start;
   height: 100%;
 }
 
 .bubble {
   max-width: 88%;
-  padding: 8px 10px;
-  border-radius: 14px;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.875rem;
   font-size: 0.62rem;
   line-height: 1.35;
 }
@@ -682,36 +682,36 @@ a:hover {
   margin-top: auto;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 16px;
+  gap: 0.375rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 1rem;
   background: rgba(28, 31, 46, 0.06);
   font-size: 0.62rem;
   color: var(--text);
-  min-height: 32px;
+  min-height: 2rem;
 }
 
 .composer i {
-  width: 8px;
-  height: 14px;
+  width: 0.5rem;
+  height: 0.875rem;
   background: var(--accent);
   animation: blink-caret 1s step-end infinite;
 }
 
 .mock-safari .urlbar {
-  padding: 8px 10px;
-  border-radius: 12px;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.75rem;
   background: rgba(28, 31, 46, 0.06);
   font-size: 0.6rem;
   color: var(--muted);
-  margin-bottom: 10px;
+  margin-bottom: 0.625rem;
   white-space: nowrap;
   overflow: hidden;
 }
 
 .webcard {
-  padding: 12px;
-  border-radius: 16px;
+  padding: 0.75rem;
+  border-radius: 1rem;
   background: rgba(91, 108, 255, 0.08);
   border: 1px solid rgba(91, 108, 255, 0.15);
 }
@@ -732,7 +732,7 @@ a:hover {
   appearance: none;
   border: 0;
   border-radius: 999px;
-  padding: 7px 12px;
+  padding: 0.4375rem 0.75rem;
   background: var(--accent);
   color: #fff;
   font-family: var(--mono);
@@ -1935,6 +1935,30 @@ a:hover {
 }
 
 /* Touch devices: no 3D hero motion, stable layout */
+html.touch-ui .ripple {
+  width: calc(100cqw * 16px / var(--phone-w));
+  height: calc(100cqw * 16px / var(--phone-w));
+  margin: calc(100cqw * -8px / var(--phone-w)) 0 0 calc(100cqw * -8px / var(--phone-w));
+  background: rgba(91, 108, 255, 0.5);
+}
+
+html.touch-ui .workflow-steps {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 0.15rem;
+}
+
+html.touch-ui .workflow-steps::-webkit-scrollbar {
+  display: none;
+}
+
+html.touch-ui .api-line {
+  grid-template-columns: minmax(36px, 42px) 1fr;
+  font-size: 0.58rem;
+}
+
 html.touch-ui .hero-live {
   animation: none;
   perspective: none;
