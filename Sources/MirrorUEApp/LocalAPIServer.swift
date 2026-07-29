@@ -12,7 +12,6 @@ import ControlKit
 /// GET  /v1/status
 /// GET  /v1/vision/frame         ?maxW=720&format=jpg&encoding=path|b64
 /// POST /v1/control/{tap,swipe,type,home,open,do,…}
-/// POST /v1/workflows/record|play|save   GET /v1/workflows/list
 /// ```
 ///
 /// Legacy aliases without namespace prefix remain supported (`/v1/tap`, `/v1/frame`, …).
@@ -178,10 +177,6 @@ final class LocalAPIServer {
 
         let json = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any] ?? [:]
 
-        if let wfResult = await handleWorkflows(method: method, norm: norm, json: json, body: body) {
-            return wfResult
-        }
-
         if method == "GET" && Self.isFramePath(norm) {
             return handleFrame(query: query)
         }
@@ -264,127 +259,8 @@ final class LocalAPIServer {
             await WorkflowPlayer.shared.runOne(.button(name), control: control, mode: mode)
             return (200, ["ok": true, "action": "button", "name": name])
 
-        case ("POST", "/v1/workflows/run"), ("POST", "/workflows/run"):
-            guard let name = (json["name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else {
-                return (400, ["ok": false, "error": "name required — inline workflow JSON import is disabled"])
-            }
-            do {
-                let wf = try WorkflowStore.load(named: name)
-                for step in wf.steps {
-                    await WorkflowPlayer.shared.runOne(step, control: control, mode: mode)
-                }
-                return (200, ["ok": true, "steps": wf.steps.count, "name": wf.name])
-            } catch {
-                return (404, ["ok": false, "error": "path not found: \(name)"])
-            }
-
         default:
             return (404, ["ok": false, "error": "not found", "path": path, "hint": "GET /v1"])
-        }
-    }
-
-    @MainActor
-    private func handleWorkflows(
-        method: String,
-        norm: String,
-        json: [String: Any],
-        body: Data
-    ) async -> (status: Int, json: [String: Any])? {
-        switch (method, norm) {
-        case ("GET", "/v1/workflows"), ("GET", "/v1/workflows/list"), ("GET", "/workflows/list"):
-            return (200, [
-                "ok": true,
-                "directory": WorkflowStore.directory.path,
-                "workflows": WorkflowStore.listSummaries(),
-                "recording": WorkflowRecorder.shared.isRecording,
-                "playing": WorkflowPlayer.shared.isPlaying,
-                "liveSteps": WorkflowRecorder.shared.steps.count,
-            ])
-        case ("GET", "/v1/workflows/status"), ("GET", "/workflows/status"):
-            return (200, [
-                "ok": true,
-                "recording": WorkflowRecorder.shared.isRecording,
-                "playing": WorkflowPlayer.shared.isPlaying,
-                "liveSteps": WorkflowRecorder.shared.steps.count,
-            ])
-        case ("POST", "/v1/workflows/record/start"), ("POST", "/workflows/record/start"):
-            WorkflowRecorder.shared.start()
-            return (200, ["ok": true, "action": "record-start"])
-        case ("POST", "/v1/workflows/record/stop"), ("POST", "/workflows/record/stop"):
-            let wf = WorkflowRecorder.shared.stop()
-            var payload: [String: Any] = [
-                "ok": true,
-                "action": "record-stop",
-                "steps": wf.steps.count,
-            ]
-            if let name = (json["name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
-                var named = wf
-                named.name = name
-                do {
-                    let url = try WorkflowStore.save(named)
-                    payload["saved"] = url.path
-                    payload["name"] = name
-                } catch {
-                    return (400, ["ok": false, "error": "\(error)"])
-                }
-            }
-            if let data = try? JSONEncoder().encode(wf),
-               let obj = try? JSONSerialization.jsonObject(with: data) {
-                payload["workflow"] = obj
-            }
-            return (200, payload)
-        case ("POST", "/v1/workflows/save"), ("POST", "/workflows/save"):
-            let name = (json["name"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !name.isEmpty else {
-                return (400, ["ok": false, "error": "name required"])
-            }
-            guard !WorkflowRecorder.shared.steps.isEmpty else {
-                return (400, ["ok": false, "error": "no steps — record first"])
-            }
-            var wf = Workflow(name: name, steps: WorkflowRecorder.shared.steps)
-            wf.name = name
-            do {
-                let url = try WorkflowStore.save(wf)
-                return (200, ["ok": true, "path": url.path, "name": name, "steps": wf.steps.count])
-            } catch {
-                return (400, ["ok": false, "error": "\(error)"])
-            }
-        case ("POST", "/v1/workflows/stop"), ("POST", "/workflows/stop"):
-            WorkflowPlayer.shared.cancel()
-            return (200, ["ok": true, "action": "play-stop"])
-        case ("POST", "/v1/workflows/play"), ("POST", "/workflows/play"):
-            guard let control = controlProvider?() else {
-                return (503, ["ok": false, "error": "not connected"])
-            }
-            let mode = touchModeProvider?() ?? .portrait
-            guard let name = (json["name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else {
-                return (400, ["ok": false, "error": "name required — import from disk is disabled"])
-            }
-            let wf: Workflow
-            do {
-                wf = try WorkflowStore.load(named: name)
-            } catch {
-                return (404, ["ok": false, "error": "path not found: \(name)"])
-            }
-            for step in wf.steps {
-                await WorkflowPlayer.shared.runOne(step, control: control, mode: mode)
-            }
-            return (200, ["ok": true, "name": wf.name, "steps": wf.steps.count])
-        case ("POST", "/v1/workflows/export"), ("POST", "/workflows/export"):
-            guard let name = (json["name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else {
-                return (400, ["ok": false, "error": "name required"])
-            }
-            guard let dest = (json["path"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !dest.isEmpty else {
-                return (400, ["ok": false, "error": "path required (destination file)"])
-            }
-            do {
-                let url = try WorkflowStore.export(named: name, to: URL(fileURLWithPath: dest))
-                return (200, ["ok": true, "exported": url.path, "name": name])
-            } catch {
-                return (400, ["ok": false, "error": "\(error)"])
-            }
-        default:
-            return nil
         }
     }
 
@@ -548,28 +424,21 @@ final class LocalAPIServer {
             "ok": true,
             "api": "mirrorue-local",
             "version": 3,
-            "engine": "MirrorUE HID + recorded paths",
+            "engine": "MirrorUE HID control",
             "cli": "./tools/mirrorue <cmd>",
             "docs": "GET /v1/docs · docs/API.md",
             "namespaces": [
-                "workflows": "GET /v1/workflows · POST record/start|stop · save · play",
                 "control": "POST /v1/control/{tap,swipe,type,key,button,home,wait,spotlight,clear,open,do}",
                 "vision": "GET /v1/vision/frame",
             ],
             "endpoints": [
-                "GET  /v1/workflows",
-                "POST /v1/workflows/record/start",
-                "POST /v1/workflows/record/stop {name?}",
-                "POST /v1/workflows/save {name}",
-                "POST /v1/workflows/play {name}",
-                "POST /v1/workflows/stop",
                 "GET  /v1/vision/frame",
                 "POST /v1/control/*",
             ],
-            "pathsDirectory": WorkflowStore.directory.path,
             "legacy": [
-                "/v1/frame", "/v1/tap", "/v1/home", "/v1/open", "/v1/do", "/v1/workflows/run",
+                "/v1/frame", "/v1/tap", "/v1/home", "/v1/open", "/v1/do",
             ],
+            "pro": "Path automation: https://github.com/KamilBourouiba/MirrorUE-Pro",
         ]
     }
 

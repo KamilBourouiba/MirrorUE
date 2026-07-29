@@ -10,10 +10,6 @@ Examples:
   ./tools/mirrorue type 'hello'
   ./tools/mirrorue tap 0.5 0.8
   ./tools/mirrorue do home wait:0.8 open:Snapchat
-  ./tools/mirrorue path record start
-  ./tools/mirrorue path record stop --name open-maps
-  ./tools/mirrorue path list
-  ./tools/mirrorue path play open-maps
   ./tools/mirrorue frame /tmp/phone.jpg
 """
 from __future__ import annotations
@@ -289,49 +285,6 @@ def cmd_do(ns: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_path_list(_: argparse.Namespace) -> int:
-    out(api("GET", "/v1/workflows", timeout=10))
-    return 0
-
-
-def cmd_path_record_start(_: argparse.Namespace) -> int:
-    out(api("POST", "/v1/workflows/record/start", {}, timeout=10))
-    return 0
-
-
-def cmd_path_record_stop(ns: argparse.Namespace) -> int:
-    body: dict[str, Any] = {}
-    if ns.name:
-        body["name"] = ns.name
-    out(api("POST", "/v1/workflows/record/stop", body, timeout=30))
-    return 0
-
-
-def cmd_path_save(ns: argparse.Namespace) -> int:
-    out(api("POST", "/v1/workflows/save", {"name": ns.name}, timeout=15))
-    return 0
-
-
-def cmd_path_play(ns: argparse.Namespace) -> int:
-    out(api("POST", "/v1/workflows/play", {"name": ns.name}, timeout=600))
-    return 0
-
-
-def cmd_path_stop(_: argparse.Namespace) -> int:
-    out(api("POST", "/v1/workflows/stop", {}, timeout=10))
-    return 0
-
-
-def cmd_run(ns: argparse.Namespace) -> int:
-    path = Path(ns.workflow).expanduser()
-    if path.suffix == ".json" and path.is_file():
-        body = json.loads(path.read_text())
-        out(api("POST", "/v1/workflows/play", body, timeout=600))
-    else:
-        out(api("POST", "/v1/workflows/play", {"name": ns.workflow}, timeout=600))
-    return 0
-
-
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="mirrorue",
@@ -411,32 +364,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Tokens: home wait:0.8 open:Snapchat type:hi tap:0.5,0.8",
     )
     do.set_defaults(func=cmd_do)
-
-    rn = sub.add_parser("run", help="Play a saved path name or JSON file")
-    rn.add_argument("workflow", help="Path name or .json file")
-    rn.set_defaults(func=cmd_run)
-
-    path = sub.add_parser("path", help="Record / save / replay paths")
-    ps = path.add_subparsers(dest="path_cmd", required=True)
-
-    ps.add_parser("list", help="List saved paths").set_defaults(func=cmd_path_list)
-
-    pr = ps.add_parser("record", help="Record interactions on the phone")
-    prs = pr.add_subparsers(dest="record_cmd", required=True)
-    prs.add_parser("start", help="Start recording").set_defaults(func=cmd_path_record_start)
-    pr_stop = prs.add_parser("stop", help="Stop recording")
-    pr_stop.add_argument("--name", "-n", help="Save immediately as this name")
-    pr_stop.set_defaults(func=cmd_path_record_stop)
-
-    ps_save = ps.add_parser("save", help="Save live steps under a name")
-    ps_save.add_argument("name")
-    ps_save.set_defaults(func=cmd_path_save)
-
-    ps_play = ps.add_parser("play", help="Replay a saved path")
-    ps_play.add_argument("name")
-    ps_play.set_defaults(func=cmd_path_play)
-
-    ps.add_parser("stop", help="Stop playback").set_defaults(func=cmd_path_stop)
 
     return p
 

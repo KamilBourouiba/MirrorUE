@@ -78,10 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var permissionsGate: PermissionsGateView?
     var settingsPanel: SettingsPanel?
     var performancePanel: PerformancePanel?
-    var workflowStrip: WorkflowLiveStrip!
     var privacyPanel: PrivacyPanel?
-    var pathBar: PathBar!
-    var lastRecorded: Workflow?
     var connectionState: ConnectionState = .idle
     var lastBootDevice: DeviceInfo?
     var recoveryAttempt = 0
@@ -99,8 +96,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var didRevealMirror = false
     /// Top inset above the phone stage (titlebar / traffic lights).
     private let chromeTop: CGFloat = 28
-    /// Gap + agent bar + dock + bottom margin under the stage.
-    private let chromeBottom: CGFloat = 108
+    /// Gap + dock + bottom margin under the stage.
+    private let chromeBottom: CGFloat = 68
     private let sidePad: CGFloat = 8
     private let bezelPad: CGFloat = 2.5
     private var chromeY: CGFloat { chromeTop + chromeBottom }
@@ -118,10 +115,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var pendingOrientationResize = false
     /// Native fullscreen session (aspect lock must not fight the space size).
     private var fullScreenSession = false
-    private var stripWidthConstraint: NSLayoutConstraint!
-    private var stageTrailingToStrip: NSLayoutConstraint!
-    private var stageTrailingToRoot: NSLayoutConstraint!
-    private static let stripWidth: CGFloat = 196
 
     private var inFullScreen: Bool {
         fullScreenSession || window?.styleMask.contains(.fullScreen) == true
@@ -224,25 +217,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         dock.onAction = { [weak self] id in self?.handleDockAction(id) }
         root.addSubview(dock)
 
-        pathBar = PathBar(frame: .zero)
-        pathBar.translatesAutoresizingMaskIntoConstraints = false
-        wirePathBar()
-        root.addSubview(pathBar)
-
-        WorkflowTiming.latencyProvider = { [weak self] in
-            let snap = self?.metalView.presentLatency.snapshot()
-                ?? LatencyWindow.Snapshot(p50Ms: 0, p95Ms: 0, count: 0)
-            return (snap.p50Ms, snap.p95Ms)
-        }
-
         status = StatusChip(frame: .zero)
         status.translatesAutoresizingMaskIntoConstraints = false
         status.stringValue = "waiting for device…"
         metalView.addSubview(status)
-
-        workflowStrip = WorkflowLiveStrip(frame: .zero)
-        workflowStrip.translatesAutoresizingMaskIntoConstraints = false
-        root.addSubview(workflowStrip)
 
         deviceBadge = InfoBadge(frame: .zero)
         deviceBadge.translatesAutoresizingMaskIntoConstraints = false
@@ -254,25 +232,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         linkBadge.set(symbol: "cable.connector", text: "USB · pick a phone", tip: "Connexion USB — choisir un iPhone")
         metalView.addSubview(linkBadge)
 
-        stripWidthConstraint = workflowStrip.widthAnchor.constraint(equalToConstant: 0)
-        stageTrailingToStrip = stage.trailingAnchor.constraint(equalTo: workflowStrip.leadingAnchor, constant: -8)
-        stageTrailingToRoot = stage.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -sidePad)
-        stageTrailingToRoot.isActive = true
-
         NSLayoutConstraint.activate([
             stage.topAnchor.constraint(equalTo: root.topAnchor, constant: chromeTop),
             stage.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: sidePad),
-            stage.bottomAnchor.constraint(equalTo: pathBar.topAnchor, constant: -8),
-
-            workflowStrip.topAnchor.constraint(equalTo: stage.topAnchor),
-            workflowStrip.bottomAnchor.constraint(equalTo: stage.bottomAnchor),
-            workflowStrip.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -sidePad),
-            stripWidthConstraint,
-
-            pathBar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
-            pathBar.trailingAnchor.constraint(equalTo: root.trailingAnchor),
-            pathBar.bottomAnchor.constraint(equalTo: dock.topAnchor, constant: -6),
-            pathBar.heightAnchor.constraint(equalToConstant: 40),
+            stage.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -sidePad),
+            stage.bottomAnchor.constraint(equalTo: dock.topAnchor, constant: -8),
 
             dock.centerXAnchor.constraint(equalTo: root.centerXAnchor),
             dock.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -12),
@@ -321,7 +285,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func afterPermissionsReady() {
-        pathBar?.setStatus("")
     }
 
     private func showPermissionsGate() {
@@ -342,7 +305,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.contentView?.addSubview(view)
         permissionsGate = view
         applyConnectionState(.pickingDevice)
-        pathBar?.setStatus("Grant permissions to continue")
     }
 
     private func startLocalAPI() {
@@ -434,9 +396,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let touches = NSMenuItem(title: "Toggle Show Touches", action: #selector(toggleShowTouches), keyEquivalent: "t")
         touches.keyEquivalentModifierMask = [.command, .shift]
         appMenu.addItem(touches)
-        let steps = NSMenuItem(title: "Toggle Path Timeline", action: #selector(toggleWorkflowStrip), keyEquivalent: "p")
-        steps.keyEquivalentModifierMask = [.command, .shift]
-        appMenu.addItem(steps)
         appMenu.addItem(NSMenuItem.separator())
         appMenu.addItem(withTitle: "Quit MirrorUE", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 
@@ -516,7 +475,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             cv.frame = NSRect(origin: .zero, size: window.contentLayoutRect.size)
             cv.needsLayout = true
         }
-        relayoutWorkflowStrip()
         dock?.setCompact(window.frame.width < ControlCenterDock.preferredWidth)
     }
 
@@ -526,7 +484,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func windowDidExitFullScreen(_ notification: Notification) {
         fullScreenSession = false
-        relayoutWorkflowStrip()
         DispatchQueue.main.async { [weak self] in
             self?.resizeWindowToVideo(animated: true)
         }
@@ -539,7 +496,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if inFullScreen || fullScreenSession { return frameSize }
 
         let padX = sidePad * 2
-        let strip = stripChromeWidth
         let aspect = max(mirrorAspect, 0.01)
         let current = sender.contentRect(forFrameRect: sender.frame).size
         let proposed = sender.contentRect(forFrameRect: NSRect(origin: .zero, size: frameSize)).size
@@ -549,43 +505,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let phoneW: CGFloat
         let phoneH: CGFloat
         if dW >= dH {
-            phoneW = max(160, proposed.width - padX - strip)
+            phoneW = max(160, proposed.width - padX)
             phoneH = phoneW / aspect
         } else {
             phoneH = max(160, proposed.height - chromeY)
             phoneW = phoneH * aspect
         }
-        let sized = NSSize(width: phoneW + padX + strip, height: phoneH + chromeY)
+        let sized = NSSize(width: phoneW + padX, height: phoneH + chromeY)
         return sender.frameRect(forContentRect: NSRect(origin: .zero, size: sized)).size
     }
 
     func windowDidResize(_ notification: Notification) {
         guard dock != nil, !resizing, !liveUserResize else { return }
         dock.setCompact(window.frame.width < ControlCenterDock.preferredWidth)
-        if inFullScreen {
-            relayoutWorkflowStrip()
-        }
     }
 
     private func applyMinSize() {
         guard window != nil else { return }
         let minPhone: CGFloat = 180
         let minContent = NSSize(
-            width: minPhone + sidePad * 2 + stripChromeWidth,
+            width: minPhone + sidePad * 2,
             height: minPhone / max(mirrorAspect, 0.01) + chromeY
         )
         window.minSize = window.frameRect(forContentRect: NSRect(origin: .zero, size: minContent)).size
     }
 
-    private var stripChromeWidth: CGFloat {
-        (workflowStrip?.isHidden == false) ? Self.stripWidth + 8 : 0
-    }
-
     /// Hug the phone bezel: window chrome matches stage + dock, no letterboxing.
     private func fittedContent(for proposed: NSSize) -> NSSize {
         let padX = sidePad * 2
-        let strip = stripChromeWidth
-        let availW = max(160, proposed.width - padX - strip)
+        let availW = max(160, proposed.width - padX)
         let availH = max(160, proposed.height - chromeY)
         let aspect = max(mirrorAspect, 0.01)
 
@@ -598,7 +546,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             phoneW = availW
             phoneH = phoneW / aspect
         }
-        return NSSize(width: phoneW + padX + strip, height: phoneH + chromeY)
+        return NSSize(width: phoneW + padX, height: phoneH + chromeY)
     }
 
     private func resizeWindowToVideo(animated: Bool) {
@@ -623,16 +571,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             )
         }
         let target = fittedContent(for: ideal)
-        let old = window.frame
         var frame = window.frameRect(forContentRect: NSRect(
             origin: .zero, size: target
         ))
-        if stripChromeWidth > 0 {
-            frame.origin.x = old.maxX - frame.width
-        } else {
-            frame.origin.x = old.origin.x
-        }
-        frame.origin.y = old.origin.y + old.height - frame.height
+        frame.origin.x = window.frame.origin.x
+        frame.origin.y = window.frame.origin.y + window.frame.height - frame.height
         applyMinSize()
 
         if animated {
@@ -991,10 +934,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func handleDockAction(_ id: String) {
         switch id {
         case "apps":
-            WorkflowRecorder.shared.button("apps")
             control.appsSwitcher()
         case "cc":
-            WorkflowRecorder.shared.button("cc")
             control.controlCenter()
         case "music":
             musicSafe.toggle()
@@ -1020,156 +961,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case "pasteclip":
             pasteMacClipboard()
         default:
-            WorkflowRecorder.shared.button(id)
             control.button(id)
-        }
-    }
-
-    private func wirePathBar() {
-        pathBar.reloadPaths()
-
-        pathBar.onRecordToggle = { [weak self] in
-            guard let self else { return }
-            if WorkflowRecorder.shared.isRecording {
-                let wf = WorkflowRecorder.shared.stop()
-                self.lastRecorded = wf
-                self.pathBar.setRecording(false, steps: wf.steps.count)
-                self.workflowStrip.setMode(recording: false, playing: false)
-                self.workflowStrip.reload(steps: wf.steps)
-                self.relayoutWorkflowStrip()
-                let name = self.pathBar.pathName.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !name.isEmpty, !wf.steps.isEmpty {
-                    var named = wf
-                    named.name = name
-                    if (try? WorkflowStore.save(named)) != nil {
-                        self.lastRecorded = named
-                        self.pathBar.reloadPaths(select: name)
-                        self.pathBar.setStatus("Saved · \(wf.steps.count) steps")
-                        self.status.stringValue = "path saved · \(name)"
-                    }
-                } else if wf.steps.isEmpty {
-                    self.pathBar.setStatus("No steps recorded")
-                    self.workflowStrip.setVisible(false)
-                    self.relayoutWorkflowStrip()
-                } else {
-                    self.pathBar.setStatus("Name the path to save")
-                }
-            } else {
-                WorkflowRecorder.shared.start()
-                self.pathBar.setRecording(true)
-                self.workflowStrip.setMode(recording: true, playing: false)
-                self.workflowStrip.setVisible(true)
-                self.workflowStrip.reload(steps: [])
-                self.relayoutWorkflowStrip()
-                self.status.stringValue = "recording…"
-            }
-        }
-
-        pathBar.onPlay = { [weak self] name in
-            guard let self, self.didRevealMirror else {
-                self?.pathBar.setStatus("Connect phone first")
-                return
-            }
-            do {
-                let wf = try WorkflowStore.load(named: name)
-                self.pathBar.setPlaying(true)
-                self.workflowStrip.setMode(recording: false, playing: true)
-                self.workflowStrip.setVisible(true)
-                self.workflowStrip.reload(steps: wf.steps)
-                self.relayoutWorkflowStrip()
-                self.status.stringValue = "playing · \(name)"
-                WorkflowPlayer.shared.onStepHighlight = { [weak self] step, index in
-                    self?.flashWorkflowStep(step, index: index, steps: wf.steps)
-                }
-                WorkflowPlayer.shared.onProgress = { [weak self] i, n, _ in
-                    self?.pathBar.setStatus("Play \(i)/\(n)")
-                }
-                WorkflowPlayer.shared.onFinished = { [weak self] ok in
-                    self?.pathBar.setPlaying(false)
-                    self?.workflowStrip.setMode(recording: false, playing: false)
-                    self?.pathBar.setStatus(ok ? "Done" : "Stopped")
-                    self?.status.stringValue = ok ? "path done" : "stopped"
-                }
-                WorkflowPlayer.shared.play(wf, control: self.control, touchMode: self.metalView.touchMode)
-            } catch {
-                self.pathBar.setStatus("Not found: \(name)")
-            }
-        }
-
-        pathBar.onStopPlay = { [weak self] in
-            WorkflowPlayer.shared.cancel()
-            self?.pathBar.setPlaying(false)
-            self?.workflowStrip.setMode(recording: false, playing: false)
-        }
-
-        pathBar.onExport = { [weak self] name in
-            self?.exportPath(named: name)
-        }
-
-        WorkflowRecorder.shared.onChanged = { [weak self] in
-            guard let self, WorkflowRecorder.shared.isRecording else { return }
-            let steps = WorkflowRecorder.shared.steps
-            self.pathBar.setRecording(true, steps: steps.count)
-            self.workflowStrip.reload(steps: steps, highlight: max(0, steps.count - 1))
-        }
-
-        WorkflowRecorder.shared.onStepAdded = { [weak self] step, index in
-            guard let self else { return }
-            self.flashWorkflowStep(step, index: index, steps: WorkflowRecorder.shared.steps)
-        }
-    }
-
-    private func flashWorkflowStep(_ step: WorkflowStep, index: Int, steps: [WorkflowStep]) {
-        workflowStrip.highlight(index: index, steps: steps)
-    }
-
-    private func relayoutWorkflowStrip() {
-        let show = !workflowStrip.isHidden
-        if show && !inFullScreen {
-            widenWindowForStrip()
-        }
-        stripWidthConstraint.constant = show ? Self.stripWidth : 0
-        stageTrailingToRoot.isActive = !show
-        stageTrailingToStrip.isActive = show
-        stage.needsLayout = true
-        window.contentView?.layoutSubtreeIfNeeded()
-    }
-
-    /// Keep the phone size — grow the window leftward so the right edge stays anchored.
-    private func widenWindowForStrip() {
-        guard window != nil, !inFullScreen, stripWidthConstraint.constant == 0 else { return }
-        let extra = Self.stripWidth + 8
-        var frame = window.frame
-        frame.origin.x -= extra
-        frame.size.width += extra
-        window.setFrame(frame, display: true, animate: true)
-    }
-
-    @objc func toggleWorkflowStrip() {
-        workflowStrip.setVisible(workflowStrip.isHidden)
-        relayoutWorkflowStrip()
-    }
-
-    private func exportPath(named name: String) {
-        do {
-            _ = try WorkflowStore.load(named: name)
-        } catch {
-            pathBar.setStatus("Not found: \(name)")
-            return
-        }
-        let panel = NSSavePanel()
-        panel.title = "Export Path"
-        panel.nameFieldStringValue = "\(WorkflowStore.safeName(name)).json"
-        panel.allowedContentTypes = [.json]
-        panel.canCreateDirectories = true
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        do {
-            let out = try WorkflowStore.export(named: name, to: url)
-            pathBar.setStatus("Exported")
-            status.stringValue = "exported · \(out.lastPathComponent)"
-            NSWorkspace.shared.activateFileViewerSelecting([out])
-        } catch {
-            pathBar.setStatus("Export failed")
         }
     }
 
@@ -1603,9 +1395,6 @@ final class FrameView: MTKView, MTKViewDelegate {
         lastDragSent = CACurrentMediaTime()
         control.touch(type: "contact", x: x, y: y)
         updateTouchIndicator(event, pressing: true)
-        if let uv = contentUV(event) {
-            WorkflowRecorder.shared.touchDown(nx: uv.0, ny: uv.1)
-        }
     }
 
     private func updateTouchIndicator(_ event: NSEvent, pressing: Bool) {
@@ -1944,9 +1733,6 @@ final class FrameView: MTKView, MTKViewDelegate {
         lastDragY = y
         // Enforce a firm min hold on the HID queue so light trackpad clicks register.
         control.releaseTouch(x: x, y: y, minHoldUs: Self.minTouchHoldUs, pressedAt: pressedAt)
-        if let uv = contentUV(event) {
-            WorkflowRecorder.shared.touchUp(nx: uv.0, ny: uv.1)
-        }
     }
 
     override func scrollWheel(with event: NSEvent) {
@@ -2005,12 +1791,6 @@ final class FrameView: MTKView, MTKViewDelegate {
                 if let usage = MacHID.usage(forKeyCode: code) {
                 keysDown[code] = (usage, "", mods)
                 control.key(down: true, usage: usage, character: "", mods: mods)
-                let glyph = event.charactersIgnoringModifiers ?? ""
-                if let ch = glyph.first, ch.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) }) {
-                    WorkflowRecorder.shared.typed(String(ch))
-                } else {
-                    WorkflowRecorder.shared.specialKey(usage: usage, mods: mods)
-                }
             }
             return
         }
@@ -2030,11 +1810,6 @@ final class FrameView: MTKView, MTKViewDelegate {
                 if let chord = KeyboardTranslator.resolve(glyph, hostMods: hostMods) {
                     keysDown[code] = (chord.usage, "", chord.mods)
                     control.key(down: true, usage: chord.usage, character: "", mods: chord.mods)
-                    if structural {
-                        WorkflowRecorder.shared.specialKey(usage: chord.usage, mods: chord.mods)
-                    } else {
-                        WorkflowRecorder.shared.typed(glyph)
-                    }
                     return
                 }
                 if KeyboardTranslator.pasteUnmapped, !structural {
@@ -2043,7 +1818,6 @@ final class FrameView: MTKView, MTKViewDelegate {
                         control.key(down: false, usage: chord.usage, character: "", mods: chord.mods)
                     }
                     control.keyboardReset()
-                    WorkflowRecorder.shared.typed(glyph)
                     return
                 }
                 return
@@ -2053,7 +1827,6 @@ final class FrameView: MTKView, MTKViewDelegate {
         if let usage = MacHID.specialUsage(forKeyCode: code) {
             keysDown[code] = (usage, "", mods)
             control.key(down: true, usage: usage, character: "", mods: mods)
-            WorkflowRecorder.shared.specialKey(usage: usage, mods: mods)
         }
     }
 }
