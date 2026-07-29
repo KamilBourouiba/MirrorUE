@@ -2,6 +2,8 @@
   "use strict";
 
   const STORAGE_KEY = "mirrorue_waitlist_v1";
+  const RATE_KEY = "mirrorue_waitlist_rate_v1";
+  const RATE_MS = 60000;
   const cfg = window.MirrorUEWaitlist || {};
 
   const forms = document.querySelectorAll("[data-waitlist-form]");
@@ -10,6 +12,12 @@
 
   function $(sel, root) {
     return (root || document).querySelector(sel);
+  }
+
+  function clamp(value, max) {
+    return String(value || "")
+      .trim()
+      .slice(0, max);
   }
 
   function readJoined() {
@@ -25,7 +33,8 @@
   }
 
   function validEmail(value) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+    const email = clamp(value, 254);
+    return email.length >= 5 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
   function provider() {
@@ -34,14 +43,38 @@
 
   function buildPayload(form) {
     const fd = new FormData(form);
+    const plan = clamp(fd.get("plan") || "pro", 16).toLowerCase();
     return {
-      email: String(fd.get("email") || "").trim().toLowerCase(),
-      plan: String(fd.get("plan") || "pro").trim(),
-      company: String(fd.get("company") || "").trim(),
-      note: String(fd.get("note") || "").trim(),
-      source: form.dataset.source || "site",
-      honeypot: String(fd.get("website") || "").trim(),
+      email: clamp(fd.get("email"), 254).toLowerCase(),
+      plan: plan === "fleet" ? "fleet" : "pro",
+      company: clamp(fd.get("company"), 120),
+      note: clamp(fd.get("note"), 500),
+      source: clamp(form.dataset.source || "site", 64),
+      honeypot: clamp(fd.get("website"), 200),
     };
+  }
+
+  function checkRateLimit() {
+    const last = parseInt(localStorage.getItem(RATE_KEY) || "0", 10);
+    if (Date.now() - last < RATE_MS) return false;
+    localStorage.setItem(RATE_KEY, String(Date.now()));
+    return true;
+  }
+
+  function captchaToken(form) {
+    const el = form.querySelector('[name="h-captcha-response"]');
+    return el ? String(el.value || "").trim() : "";
+  }
+
+  function resetCaptcha(form) {
+    try {
+      if (window.hcaptcha) {
+        form.querySelectorAll(".h-captcha").forEach(function (node) {
+          const id = node.getAttribute("data-hcaptcha-widget-id");
+          if (id) window.hcaptcha.reset(id);
+        });
+      }
+    } catch (err) {}
   }
 
   function setFormState(form, state, message) {
@@ -60,45 +93,56 @@
   }
 
   function markJoinedUI() {
-    document.querySelectorAll("[data-waitlist-open]").forEach((btn) => {
+    document.querySelectorAll("[data-waitlist-open]").forEach(function (btn) {
       btn.textContent = "On the waitlist ✓";
       btn.setAttribute("aria-disabled", "true");
     });
   }
 
   function showSuccess(form, email, plan, message) {
-    writeJoined({ email, plan, at: new Date().toISOString() });
+    writeJoined({ email: email, plan: plan, at: new Date().toISOString() });
     setFormState(
       form,
       "success",
       message || "You're on the list — we'll email you when Pro opens."
     );
-    form.querySelectorAll("input:not([type=hidden]), textarea, select, button[type=submit]").forEach((el) => {
+    form.querySelectorAll("input:not([type=hidden]), textarea, select, button[type=submit]").forEach(function (el) {
       el.disabled = true;
     });
     markJoinedUI();
   }
 
-  async function postWeb3Forms(payload) {
+  async function postWeb3Forms(payload, form) {
     const key = (cfg.web3formsAccessKey || "").trim();
     if (!key) throw new Error("Web3Forms access key not configured");
+
+    const token = captchaToken(form);
+    if (cfg.requireCaptcha !== false && !token) {
+      throw new Error("Please complete the captcha check.");
+    }
+
+    const body = {
+      access_key: key,
+      subject: "MirrorUE waitlist · " + payload.plan,
+      from_name: "MirrorUE Waitlist",
+      email: payload.email,
+      plan: payload.plan,
+      company: payload.company || "(none)",
+      message: payload.note || "(none)",
+      source: payload.source,
+      botcheck: false,
+    };
+    if (token) body["h-captcha-response"] = token;
 
     const res = await fetch("https://api.web3forms.com/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({
-        access_key: key,
-        subject: `MirrorUE waitlist · ${payload.plan}`,
-        from_name: "MirrorUE Waitlist",
-        email: payload.email,
-        plan: payload.plan,
-        company: payload.company || "(none)",
-        message: payload.note || "(none)",
-        source: payload.source,
-      }),
+      body: JSON.stringify(body),
     });
 
-    const data = await res.json().catch(() => ({}));
+    const data = await res.json().catch(function () {
+      return {};
+    });
     if (!res.ok || !data.success) {
       throw new Error(data.message || "Could not submit — try again in a moment.");
     }
@@ -108,7 +152,7 @@
     const to = (cfg.notifyEmail || cfg.fallbackMailto || "").trim();
     if (!to) throw new Error("Set notifyEmail in waitlist-config.js");
 
-    const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(to)}`, {
+    const res = await fetch("https://formsubmit.co/ajax/" + encodeURIComponent(to), {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
@@ -117,14 +161,16 @@
         company: payload.company || "(none)",
         message: payload.note || "(none)",
         source: payload.source,
-        _subject: `MirrorUE waitlist · ${payload.plan}`,
+        _subject: "MirrorUE waitlist · " + payload.plan,
         _template: "table",
         _captcha: "false",
         _honey: "",
       }),
     });
 
-    const data = await res.json().catch(() => ({}));
+    const data = await res.json().catch(function () {
+      return {};
+    });
     const msg = data.message || "";
     if (!res.ok || data.success === "false") {
       throw new Error(msg || "Could not submit — try again in a moment.");
@@ -135,7 +181,15 @@
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ ...payload, createdAt: new Date().toISOString(), page: location.href }),
+      body: JSON.stringify({
+        email: payload.email,
+        plan: payload.plan,
+        company: payload.company,
+        note: payload.note,
+        source: payload.source,
+        createdAt: new Date().toISOString(),
+        page: location.href,
+      }),
     });
     if (!res.ok) throw new Error("Submission failed");
   }
@@ -164,26 +218,37 @@
       payload.source,
     ].join("\n");
 
-    const title = encodeURIComponent(`[Waitlist] ${payload.email}`);
+    const title = encodeURIComponent("[Waitlist] " + payload.email);
     const labels = encodeURIComponent("waitlist");
-    return `https://github.com/${owner}/${repo}/issues/new?title=${title}&body=${encodeURIComponent(body)}&labels=${labels}`;
+    return (
+      "https://github.com/" +
+      owner +
+      "/" +
+      repo +
+      "/issues/new?title=" +
+      title +
+      "&body=" +
+      encodeURIComponent(body) +
+      "&labels=" +
+      labels
+    );
   }
 
   function mailtoFallback(payload) {
     const to = cfg.fallbackMailto || cfg.contactEmail || "kbourouiba@icloud.com";
-    const subject = encodeURIComponent(`MirrorUE ${payload.plan} waitlist`);
+    const subject = encodeURIComponent("MirrorUE " + payload.plan + " waitlist");
     const body = encodeURIComponent(
       [
-        `Email: ${payload.email}`,
-        `Plan: ${payload.plan}`,
-        payload.company ? `Company: ${payload.company}` : "",
-        payload.note ? `Note: ${payload.note}` : "",
-        `Source: ${payload.source}`,
+        "Email: " + payload.email,
+        "Plan: " + payload.plan,
+        payload.company ? "Company: " + payload.company : "",
+        payload.note ? "Note: " + payload.note : "",
+        "Source: " + payload.source,
       ]
         .filter(Boolean)
         .join("\n")
     );
-    location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+    location.href = "mailto:" + to + "?subject=" + subject + "&body=" + body;
   }
 
   async function submit(form) {
@@ -198,6 +263,11 @@
     const joined = readJoined();
     if (joined && joined.email === payload.email) {
       showSuccess(form, payload.email, payload.plan);
+      return;
+    }
+
+    if (!checkRateLimit()) {
+      setFormState(form, "error", "Please wait a minute before trying again.");
       return;
     }
 
@@ -227,7 +297,7 @@
           );
           return;
         }
-        await postWeb3Forms(payload);
+        await postWeb3Forms(payload, form);
       } else if (mode === "custom" && cfg.customEndpoint) {
         await postCustom(cfg.customEndpoint.trim(), payload);
       } else if (mode === "formsubmit") {
@@ -240,6 +310,11 @@
 
       showSuccess(form, payload.email, payload.plan);
     } catch (err) {
+      resetCaptcha(form);
+      if (mode === "web3forms" && cfg.web3formsAccessKey) {
+        setFormState(form, "error", err.message || "Something went wrong. Try again.");
+        return;
+      }
       window.open(githubIssueUrl(payload), "_blank", "noopener,noreferrer");
       showSuccess(
         form,
@@ -254,7 +329,7 @@
     const planInput = form.querySelector('[name="plan"]');
     if (planInput && plan) planInput.value = plan;
     const joined = readJoined();
-    if (joined?.email) {
+    if (joined && joined.email) {
       const emailInput = form.querySelector('[name="email"]');
       if (emailInput) emailInput.value = joined.email;
       if (joined.at) showSuccess(form, joined.email, joined.plan || "pro");
@@ -281,16 +356,16 @@
     document.body.classList.remove("waitlist-open");
   }
 
-  forms.forEach((form) => {
+  forms.forEach(function (form) {
     prefillForm(form, form.dataset.defaultPlan || "pro");
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", function (e) {
       e.preventDefault();
       submit(form);
     });
   });
 
-  triggers.forEach((btn) => {
-    btn.addEventListener("click", (e) => {
+  triggers.forEach(function (btn) {
+    btn.addEventListener("click", function (e) {
       if (btn.getAttribute("aria-disabled") === "true") {
         e.preventDefault();
         return;
@@ -304,17 +379,18 @@
     });
   });
 
-  dialog?.querySelectorAll("[data-waitlist-close]").forEach((el) => {
-    el.addEventListener("click", closeDialog);
-  });
+  if (dialog) {
+    dialog.querySelectorAll("[data-waitlist-close]").forEach(function (el) {
+      el.addEventListener("click", closeDialog);
+    });
+    dialog.addEventListener("click", function (e) {
+      if (e.target.matches("[data-waitlist-close], .waitlist-backdrop")) closeDialog();
+    });
+  }
 
-  dialog?.addEventListener("click", (e) => {
-    if (e.target.matches("[data-waitlist-close], .waitlist-backdrop")) closeDialog();
-  });
-
-  document.addEventListener("keydown", (e) => {
+  document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && dialog && !dialog.hidden) closeDialog();
   });
 
-  if (readJoined()?.email) markJoinedUI();
+  if (readJoined() && readJoined().email) markJoinedUI();
 })();

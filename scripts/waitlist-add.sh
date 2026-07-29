@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Append a signup to data/waitlist.json via GitHub repository_dispatch.
+# Dispatch a waitlist signup to GitHub Actions (artifact export — not committed to git).
 # Requires: gh auth login
+# Download: Actions → Waitlist ingest → waitlist-export artifact
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

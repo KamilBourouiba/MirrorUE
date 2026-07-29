@@ -1,68 +1,67 @@
 # MirrorUE Pro waitlist
 
-Collects signups from [GitHub Pages](https://kamilbourouiba.github.io/MirrorUE/) — **no API keys** on the default setup.
+Collects signups from [GitHub Pages](https://kamilbourouiba.github.io/MirrorUE/).
 
-## Default: GitHub Issues (recommended)
-
-FormSubmit often fails to deliver to iCloud and other strict inboxes. The default provider opens a **prefilled GitHub issue** instead.
-
-**You receive signups via GitHub notification emails** (Settings → Notifications → Issues).
-
-```js
-window.MirrorUEWaitlist = {
-  provider: "github-issue",
-  githubIssue: { owner: "KamilBourouiba", repo: "MirrorUE" },
-};
-```
-
-Flow:
-
-1. User submits the form on the site.
-2. A prefilled GitHub issue opens in a new tab.
-3. They click **Submit new issue** (free GitHub account required).
-4. Action [waitlist-from-issue.yml](../.github/workflows/waitlist-from-issue.yml) validates the issue, comments, and auto-closes it.
-
-Direct link (no site form): **New issue → Pro waitlist signup** template.
-
-## Alternative: Web3Forms (email inbox)
-
-If you prefer email delivery without GitHub:
-
-1. Create a free access key at [web3forms.com](https://web3forms.com) (uses your email).
-2. Set in `docs/waitlist-config.js`:
+## Default: Web3Forms + hCaptcha
 
 ```js
 window.MirrorUEWaitlist = {
   provider: "web3forms",
-  web3formsAccessKey: "YOUR_KEY_HERE",
+  web3formsAccessKey: "YOUR_KEY",
+  requireCaptcha: true,
 };
 ```
 
-If the key is missing or submission fails, the site falls back to the GitHub issue flow.
+### One-time dashboard setup (required)
 
-## Alternative: FormSubmit
+1. [Web3Forms dashboard](https://app.web3forms.com) → your form → **Settings**
+2. **Allowed domains:** add `kamilbourouiba.github.io`
+3. **Captcha:** enable **hCaptcha** as the spam provider
+4. (Recommended) If the access key was ever public in git, **rotate the key** in the dashboard and update `waitlist-config.js`
+
+Submissions arrive by email at the address linked to your Web3Forms account.
+
+### Security on the site
+
+- hCaptcha widget on every waitlist form (Web3Forms client script)
+- Honeypot field + 60s client rate limit per browser
+- Field length limits (email 254, company 120, note 500)
+- GitHub Issues fallback only if Web3Forms fails
+- Admin exports via **Actions artifact** — emails are **not** committed to the public repo
+
+## Alternative: GitHub Issues only
+
+No third-party form email; users confirm via a GitHub issue (good for dev audiences).
 
 ```js
 window.MirrorUEWaitlist = {
-  provider: "formsubmit",
-  notifyEmail: "kbourouiba@icloud.com",
+  provider: "github-issue",
+  requireCaptcha: false,
 };
 ```
 
-Requires one-time “Activate Form” email from FormSubmit. Often blocked by iCloud — prefer GitHub Issues or Web3Forms.
+Flow: form → prefilled issue tab → user clicks **Submit new issue** → Action auto-closes.
 
-## Manual / admin
+## Manual / admin export
 
 ```bash
 ./scripts/waitlist-add.sh user@example.com pro "Acme" "QA team"
 ```
 
-Or **Actions → Waitlist ingest → Run workflow** (appends to `data/waitlist.json` for private admin use).
+Then download the **waitlist-export** artifact from the workflow run (Actions → Waitlist ingest).
+
+Or **Actions → Waitlist ingest → Run workflow** manually.
+
+Copy `data/waitlist.json.example` to `data/waitlist.json` locally if testing the ingest script — never commit real signups.
+
+## Key rotation
+
+If your Web3Forms access key appeared in public git history:
+
+1. Generate a new key at [web3forms.com](https://web3forms.com)
+2. Update `docs/waitlist-config.js`
+3. Revoke the old key in the Web3Forms dashboard
 
 ## Privacy
 
 See [privacy.html](privacy.html) on the site.
-
-- Honeypot field blocks basic bots.
-- `localStorage` remembers if the browser already joined.
-- GitHub issues on a public repo may expose signup details until closed — issues are auto-closed after processing.

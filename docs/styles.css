@@ -1958,6 +1958,15 @@ a:hover {
   pointer-events: none;
 }
 
+.waitlist-captcha {
+  margin: 0.15rem 0 0.35rem;
+  min-height: 78px;
+}
+
+.waitlist-captcha iframe {
+  max-width: 100%;
+}
+
 .waitlist-dialog {
   position: fixed;
   inset: 0;

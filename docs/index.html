@@ -151,7 +151,7 @@
           <p class="waitlist-form-title">Join the waitlist</p>
           <label class="waitlist-field">
             <span>Email</span>
-            <input type="email" name="email" autocomplete="email" placeholder="you@company.com" required />
+            <input type="email" name="email" autocomplete="email" placeholder="you@company.com" maxlength="254" required />
           </label>
           <label class="waitlist-field">
             <span>Plan</span>
@@ -164,14 +164,15 @@
             <summary>Company &amp; note (optional)</summary>
             <label class="waitlist-field">
               <span>Company</span>
-              <input type="text" name="company" autocomplete="organization" placeholder="Acme QA" />
+              <input type="text" name="company" autocomplete="organization" placeholder="Acme QA" maxlength="120" />
             </label>
             <label class="waitlist-field">
               <span>Use case</span>
-              <textarea name="note" rows="2" placeholder="Devices, flows, team size…"></textarea>
+              <textarea name="note" rows="2" maxlength="500" placeholder="Devices, flows, team size…"></textarea>
             </label>
           </details>
           <input type="text" name="website" class="waitlist-honeypot" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <div class="waitlist-captcha h-captcha" data-captcha="true" aria-label="Spam check"></div>
           <button type="submit" class="btn primary waitlist-submit btn-lg">Reserve my spot</button>
           <p class="waitlist-status" data-waitlist-status="waitlist-inline-form" hidden></p>
           <p class="waitlist-fine">One email when Pro opens. <a href="privacy.html">Privacy policy</a>.</p>
@@ -309,7 +310,7 @@
       <form id="waitlist-dialog-form" class="waitlist-form" data-waitlist-form data-source="waitlist-dialog" data-default-plan="pro" novalidate>
         <label class="waitlist-field">
           <span>Work email</span>
-          <input type="email" name="email" autocomplete="email" placeholder="you@company.com" required />
+          <input type="email" name="email" autocomplete="email" placeholder="you@company.com" maxlength="254" required />
         </label>
         <label class="waitlist-field">
           <span>Plan</span>
@@ -319,6 +320,7 @@
           </select>
         </label>
         <input type="text" name="website" class="waitlist-honeypot" tabindex="-1" autocomplete="off" aria-hidden="true" />
+        <div class="waitlist-captcha h-captcha" data-captcha="true" aria-label="Spam check"></div>
         <button type="submit" class="btn primary waitlist-submit btn-lg">Reserve my spot</button>
         <p class="waitlist-status" data-waitlist-status="waitlist-dialog-form" hidden></p>
         <p class="waitlist-fine">No spam · <a href="privacy.html">Privacy policy</a></p>
@@ -326,8 +328,9 @@
     </div>
   </div>
 
-  <script src="waitlist-config.js?v=5" defer></script>
-  <script src="waitlist.js?v=5" defer></script>
+  <script src="https://web3forms.com/client/script.js" async defer></script>
+  <script src="waitlist-config.js?v=6" defer></script>
+  <script src="waitlist.js?v=6" defer></script>
   <script src="conversion.js?v=1" defer></script>
   <script src="demo.js?v=conv2" defer></script>
 </body>

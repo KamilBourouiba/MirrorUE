@@ -12,6 +12,9 @@ window.MirrorUEWaitlist = {
   /** Web3Forms.co — free at https://web3forms.com (access key is public in client). */
   web3formsAccessKey: "a5a3e211-4da8-4a32-9834-973ba577c77b",
 
+  /** Require hCaptcha before Web3Forms submit (enable hCaptcha in Web3Forms dashboard). */
+  requireCaptcha: true,
+
   /** FormSubmit.co — optional fallback */
   notifyEmail: "kbourouiba@icloud.com",
 

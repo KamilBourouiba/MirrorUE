@@ -55,13 +55,16 @@
       <p>When you join the Pro waitlist, your submission is handled as follows:</p>
       <ul>
         <li>
-          <strong>GitHub Issues (default):</strong> a prefilled issue is opened on our public GitHub repository.
-          You confirm by clicking “Submit new issue”. GitHub notifies the maintainer by email.
-          The issue is auto-closed after processing. Issue content may remain visible on GitHub according to their terms.
+          <strong>Web3Forms (primary):</strong> the form sends your details to
+          <a href="https://web3forms.com/privacy" rel="noopener noreferrer">Web3Forms</a>,
+          which forwards them to the maintainer by email. Web3Forms runs server-side spam checks;
+          we also use hCaptcha on the form. Web3Forms may retain submissions for a limited period
+          under their policy.
         </li>
         <li>
-          <strong>Optional providers:</strong> we may use third-party form services (e.g. Web3Forms) if configured.
-          Those providers process data under their own policies.
+          <strong>GitHub Issues (fallback):</strong> if Web3Forms fails, a prefilled issue may open
+          on our public GitHub repository. You confirm by clicking “Submit new issue”.
+          The issue is auto-closed after processing. Issue content may remain visible on GitHub.
         </li>
       </ul>
 
@@ -76,14 +79,16 @@
       <h2>5. Retention</h2>
       <p>
         Waitlist data is kept until Pro launches and follow-up is complete, or until you ask us to delete it —
-        whichever comes first. GitHub issue records may persist according to GitHub’s retention rules.
+        whichever comes first. Web3Forms may retain submissions for a limited time per their policy.
+        GitHub issue records may persist according to GitHub’s retention rules.
       </p>
 
       <h2>6. Sharing</h2>
       <p>We share data only with service providers needed to operate the site and waitlist:</p>
       <ul>
-        <li>GitHub (hosting, issue tracking, notifications)</li>
-        <li>Optional form/email providers if enabled in site configuration</li>
+        <li><a href="https://web3forms.com/privacy" rel="noopener noreferrer">Web3Forms</a> (form delivery and spam protection)</li>
+        <li><a href="https://www.hcaptcha.com/privacy" rel="noopener noreferrer">hCaptcha</a> (captcha verification when you submit the form)</li>
+        <li>GitHub (site hosting; issue fallback and notifications)</li>
       </ul>
 
       <h2>7. Your rights</h2>
@@ -98,7 +103,7 @@
 
       <h2>8. International transfers</h2>
       <p>
-        GitHub and related providers may process data in the United States or other countries.
+        GitHub, Web3Forms, hCaptcha, and related providers may process data in the United States or other countries.
         We rely on their applicable safeguards where required by law.
       </p>
 
