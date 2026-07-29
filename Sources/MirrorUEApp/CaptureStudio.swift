@@ -20,25 +20,57 @@ final class CaptureStudio {
     /// Save a PNG of the current frame to ~/Desktop (or Pictures).
     @discardableResult
     func saveScreenshot(_ pixelBuffer: CVPixelBuffer?) -> URL? {
-        guard let pixelBuffer else { return nil }
-        let ci = CIImage(cvPixelBuffer: pixelBuffer)
+        let dir = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        let url = dir.appendingPathComponent("MirrorUE-\(Self.stamp()).png")
+        return writePNG(pixelBuffer, to: url) ? url : nil
+    }
+
+    /// Write a PNG for the FastVLM agent (no Screen Recording needed).
+    @discardableResult
+    func writePNG(_ pixelBuffer: CVPixelBuffer?, to url: URL) -> Bool {
+        writeFrame(pixelBuffer, to: url, maxWidth: 0, format: "png")
+    }
+
+    /// Export a phone frame for the agent. JPEG + maxWidth keeps VLM fast.
+    @discardableResult
+    func writeFrame(
+        _ pixelBuffer: CVPixelBuffer?,
+        to url: URL,
+        maxWidth: Int = 720,
+        format: String = "jpg",
+        jpegQuality: CGFloat = 0.7
+    ) -> Bool {
+        guard let pixelBuffer else { return false }
+        var ci = CIImage(cvPixelBuffer: pixelBuffer)
+        let w = ci.extent.width
+        if maxWidth > 0, w > CGFloat(maxWidth) {
+            let scale = CGFloat(maxWidth) / w
+            ci = ci.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+        }
         let rep = NSCIImageRep(ciImage: ci)
         let image = NSImage(size: rep.size)
         image.addRepresentation(rep)
         guard let tiff = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiff),
-              let png = bitmap.representation(using: .png, properties: [:]) else { return nil }
+              let bitmap = NSBitmapImageRep(data: tiff) else { return false }
 
-        let dir = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first
-            ?? FileManager.default.temporaryDirectory
-        let name = "MirrorUE-\(Self.stamp()).png"
-        let url = dir.appendingPathComponent(name)
+        let fmt = format.lowercased()
+        let data: Data?
+        if fmt == "jpg" || fmt == "jpeg" {
+            data = bitmap.representation(
+                using: .jpeg,
+                properties: [.compressionFactor: jpegQuality]
+            )
+        } else {
+            data = bitmap.representation(using: .png, properties: [:])
+        }
+        guard let data, !data.isEmpty else { return false }
         do {
-            try png.write(to: url)
-            return url
+            try data.write(to: url)
+            return true
         } catch {
-            fputs("CaptureStudio screenshot failed: \(error)\n", stderr)
-            return nil
+            fputs("CaptureStudio writeFrame failed: \(error)\n", stderr)
+            return false
         }
     }
 

@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Launch FastVLM agent with the preferred Python (conda mirrorue-fastvlm, else env override).
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+
+pick_python() {
+  if [[ -n "${MIRRORUE_FASTVLM_PYTHON:-}" && -x "${MIRRORUE_FASTVLM_PYTHON}" ]]; then
+    echo "$MIRRORUE_FASTVLM_PYTHON"
+    return
+  fi
+  local conda_py="${HOME}/miniforge3/envs/mirrorue-fastvlm/bin/python"
+  if [[ -x "$conda_py" ]]; then
+    echo "$conda_py"
+    return
+  fi
+  conda_py="${HOME}/mambaforge/envs/mirrorue-fastvlm/bin/python"
+  if [[ -x "$conda_py" ]]; then
+    echo "$conda_py"
+    return
+  fi
+  if [[ -x "$ROOT/.venv/bin/python" ]]; then
+    echo "$ROOT/.venv/bin/python"
+    return
+  fi
+  command -v python3
+}
+
+PY="$(pick_python)"
+exec "$PY" "$ROOT/agent.py" "$@"

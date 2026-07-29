@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>MirrorUE — Control a real iPhone from your Mac</title>
-  <meta name="description" content="Native high-refresh iPhone mirroring on macOS with touch, keyboard translation, recording, and physical-device automation. Built for developers." />
+  <title>MirrorUE — Free iPhone mirror for Mac</title>
+  <meta name="description" content="Open-source macOS iPhone mirroring: CoreMediaIO video, HID control, keyboard translation, screenshots and screen recording." />
   <meta property="og:title" content="MirrorUE" />
-  <meta property="og:description" content="Control, present, and automate a real iPhone from your Mac." />
+  <meta property="og:description" content="Mirror and control a development iPhone from your Mac — free &amp; open source." />
   <meta property="og:type" content="website" />
   <meta name="theme-color" content="#eef2ff" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=iphone2" />
+  <link rel="stylesheet" href="styles.css?v=basic1" />
 </head>
 <body>
   <div class="bg" aria-hidden="true">
@@ -31,7 +31,7 @@
       <nav class="nav-links">
         <a href="#control">Control</a>
         <a href="#present">Present</a>
-        <a href="#automate">Automate</a>
+        <a href="#pro">Pro</a>
         <a href="#pricing">Pricing</a>
         <a class="nav-cta" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download</a>
       </nav>
@@ -41,17 +41,17 @@
   <main id="top">
     <section class="hero">
       <div class="hero-copy">
-        <p class="chip">dev tool · MIT · USB + CoreDevice</p>
+        <p class="chip">open source · MIT · USB + CoreDevice</p>
         <p class="brand">MirrorUE</p>
         <h1>Mirror a real iPhone.<br />Drive it from your Mac.</h1>
         <p class="lede">
           CoreMediaIO capture up to 120&nbsp;fps, HID control over a CoreDevice tunnel,
-          keyboard translation, recording, workflows, and a local HTTP API—
-          built for developers who own the device.
+          keyboard translation, screenshots, and screen recording — free for developers
+          who own the device.
         </p>
         <div class="cta">
-          <a class="btn primary" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download release</a>
-          <a class="btn ghost" href="https://github.com/KamilBourouiba/MirrorUE">View source</a>
+          <a class="btn primary" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download free</a>
+          <a class="btn ghost" href="https://github.com/KamilBourouiba/MirrorUE-Pro">MirrorUE Pro →</a>
         </div>
         <p class="meta">macOS 14+ · iOS 27+ · Developer Mode</p>
       </div>
@@ -111,10 +111,10 @@
                 <button type="button" class="api-replay" id="api-replay" title="Replay demo">replay</button>
               </div>
               <div class="api-feed" id="api-feed"></div>
-              <p class="api-caption">Auto demo of the loopback API · pause by touching the phone</p>
+              <p class="api-caption">Basic control API demo · Pro adds path automation</p>
             </aside>
           </div>
-          <p class="control-hint">Tap apps to open · drag to aim · API drives itself when idle</p>
+          <p class="control-hint">Tap apps · drag to aim · API drives itself when idle</p>
         </div>
       </div>
     </section>
@@ -122,7 +122,7 @@
     <section class="note frost">
       <p>
         Apple’s iPhone Mirroring isn’t currently available in the EU (DMA uncertainty).
-        MirrorUE is a <strong>developer tool</strong> for phones you pair yourself—
+        MirrorUE is a <strong>developer tool</strong> for phones you pair yourself —
         not a consumer replacement.
       </p>
     </section>
@@ -133,7 +133,7 @@
         <h2>Mouse, trackpad, keyboard on silicon you own.</h2>
         <p>
           Tap and swipe on the mirrored surface. Auto keyboard layout translation
-          when Mac ≠ iPhone. Dock for Home, Lock, volume.
+          when Mac ≠ iPhone. Dock for Home, Lock, volume, screenshot, settings.
         </p>
         <ul class="tags">
           <li>USB CoreMediaIO</li>
@@ -150,7 +150,7 @@
         <h2>Record demos with show-touches.</h2>
         <p>
           Screenshot and HEVC recording to Desktop. Touch indicators for tutorials
-          and QA. Performance panel with fps + latency.
+          and QA. Performance panel with fps + latency (p95).
         </p>
         <ul class="tags">
           <li>⌘⇧S / ⌘⇧R</li>
@@ -161,77 +161,84 @@
       </div>
     </section>
 
-    <section id="automate" class="feature">
+    <section id="pro" class="feature">
       <div class="feature-card frost">
-        <p class="kicker">// automate</p>
-        <h2>Workflows + loopback API.</h2>
+        <p class="kicker">// mirrorue pro</p>
+        <h2>Path automation — record, replay, export.</h2>
         <p>
-          Record taps, swipes, typing to JSON. Replay in-app or script physical-device
-          smoke tests over <code>127.0.0.1</code>.
+          Need repeatable flows on a real device? <strong>MirrorUE Pro</strong> adds
+          path recording with live step timeline, latency-aware playback, export to JSON,
+          and a full HTTP + CLI automation surface.
         </p>
-        <pre class="terminal" tabindex="0"><code><span class="prompt">$</span> ./tools/mirrorue-cli tap 0.5 0.8
-<span class="prompt">$</span> ./tools/mirrorue-cli type 'hello@example.com'
-<span class="prompt">$</span> ./tools/mirrorue-cli run ./login.json</code></pre>
+        <ul class="tags">
+          <li>Record · Play · Export</li>
+          <li>Latency compensation</li>
+          <li>Workflow API + CLI</li>
+          <li>Commercial license</li>
+        </ul>
+        <div class="cta" style="margin-top:1.25rem">
+          <a class="btn primary" href="https://github.com/KamilBourouiba/MirrorUE-Pro">MirrorUE Pro on GitHub</a>
+        </div>
       </div>
     </section>
 
     <section id="pricing" class="pricing">
       <div class="pricing-head">
         <p class="kicker">// pricing</p>
-        <h2>Open core. Mock seats.</h2>
-        <p>Illustrative plans — the app is MIT today. Checkout isn’t live.</p>
-        <span class="pill">mock · not billed</span>
+        <h2>Free mirror. Pro automation.</h2>
+        <p>MirrorUE (this repo) is MIT and free. Pro is the paid automation product.</p>
       </div>
 
       <div class="plans">
         <article class="plan frost">
-          <h3>Solo</h3>
+          <h3>MirrorUE</h3>
           <p class="price"><span>Free</span></p>
-          <p class="plan-lead">Mirror, control, record on your Mac + iPhone.</p>
+          <p class="plan-lead">Open-source mirror + control on your Mac + iPhone.</p>
           <ul>
             <li>Native mirroring ≤ 120 fps</li>
             <li>Touch, keyboard, dock</li>
-            <li>Screenshot &amp; recording</li>
-            <li>MIT on GitHub</li>
+            <li>Screenshot &amp; screen recording</li>
+            <li>Basic loopback API (tap, type, home)</li>
+            <li>MIT · <a href="https://github.com/KamilBourouiba/MirrorUE">GitHub</a></li>
           </ul>
           <a class="btn ghost" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Download free</a>
         </article>
 
         <article class="plan frost featured">
-          <p class="badge">most useful</p>
-          <h3>Lab</h3>
-          <p class="price"><span>$19</span><small>/seat·mo</small></p>
-          <p class="plan-lead">QA + demos with workflows and local API.</p>
+          <p class="badge">automation</p>
+          <h3>MirrorUE Pro</h3>
+          <p class="price"><span>Paid</span><small>/seat</small></p>
+          <p class="plan-lead">QA, demos, and physical-device smoke at scale.</p>
           <ul>
-            <li>Everything in Solo</li>
-            <li>Workflow record / replay</li>
-            <li>HTTP API + CLI</li>
-            <li>Priority setup notes</li>
+            <li>Everything in MirrorUE</li>
+            <li>Path record / replay / export</li>
+            <li>Live timeline + latency tuning</li>
+            <li>Full workflow HTTP API + CLI</li>
           </ul>
-          <a class="btn primary" href="#pricing" aria-disabled="true">Join waitlist</a>
+          <a class="btn primary" href="https://github.com/KamilBourouiba/MirrorUE-Pro">Get Pro</a>
         </article>
 
         <article class="plan frost">
           <h3>Fleet</h3>
-          <p class="price"><span>$79</span><small>/seat·mo</small></p>
-          <p class="plan-lead">Teams running physical-device smoke at scale.</p>
+          <p class="price"><span>Contact</span></p>
+          <p class="plan-lead">Teams with multiple devices and shared paths.</p>
           <ul>
-            <li>Everything in Lab</li>
-            <li>Multi-device seats</li>
-            <li>Shared workflows</li>
-            <li>Email support (mock)</li>
+            <li>Everything in Pro</li>
+            <li>Multi-seat licensing</li>
+            <li>Shared workflow library</li>
+            <li>Priority support</li>
           </ul>
-          <a class="btn ghost" href="#pricing" aria-disabled="true">Talk to us</a>
+          <a class="btn ghost" href="mailto:hello@mirrorue.dev">Contact</a>
         </article>
       </div>
     </section>
 
     <section class="start frost">
-      <h2>Get started</h2>
+      <h2>Get started (free)</h2>
       <ol>
-        <li><span>01</span><div><strong>Download</strong><p>Latest release or <code>./tools/package_app.sh</code></p></div></li>
+        <li><span>01</span><div><strong>Download</strong><p><a href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Latest release</a> or <code>./tools/package_app.sh</code></p></div></li>
         <li><span>02</span><div><strong>Connect</strong><p>Trusted USB iPhone · Developer Mode on</p></div></li>
-        <li><span>03</span><div><strong>Mirror</strong><p>Checklist → pick device → go</p></div></li>
+        <li><span>03</span><div><strong>Mirror</strong><p>Checklist → pick device → control from Mac</p></div></li>
       </ol>
       <div class="cta">
         <a class="btn primary" href="https://github.com/KamilBourouiba/MirrorUE/releases/latest">Latest release</a>
@@ -241,9 +248,9 @@
   </main>
 
   <footer class="foot">
-    <p>MIT © Kamil Bourouiba · <a href="https://github.com/KamilBourouiba/MirrorUE">GitHub</a></p>
+    <p>MIT © Kamil Bourouiba · <a href="https://github.com/KamilBourouiba/MirrorUE">MirrorUE</a> · <a href="https://github.com/KamilBourouiba/MirrorUE-Pro">Pro</a></p>
   </footer>
 
-  <script src="demo.js?v=iphone2" defer></script>
+  <script src="demo.js?v=basic1" defer></script>
 </body>
 </html>

@@ -9,6 +9,7 @@ public enum MirrorUESettings {
         public static let hidOrient = "mirrorue.hidOrient"
         public static let didShowHints = "mirrorue.didShowFirstHints"
         public static let setupSeen = "mirrorue.setupChecklistSeen"
+        public static let permissionsGate = "mirrorue.permissionsGateCompleted"
         public static let showTouches = "mirrorue.showTouches"
     }
 
@@ -124,6 +125,11 @@ public enum MirrorUESettings {
     public static var setupChecklistSeen: Bool {
         get { defaults.bool(forKey: Keys.setupSeen) }
         set { defaults.set(newValue, forKey: Keys.setupSeen) }
+    }
+
+    public static var permissionsGateCompleted: Bool {
+        get { defaults.bool(forKey: Keys.permissionsGate) }
+        set { defaults.set(newValue, forKey: Keys.permissionsGate) }
     }
 
     public static var showTouches: Bool {

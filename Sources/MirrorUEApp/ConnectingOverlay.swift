@@ -304,10 +304,11 @@ final class InfoBadge: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
-    func set(symbol: String, text: String) {
+    func set(symbol: String, text: String, tip: String? = nil) {
         iconView.image = NSImage(systemSymbolName: symbol, accessibilityDescription: text)?
             .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 10, weight: .semibold))
         label.stringValue = text
+        toolTip = tip ?? text
         isHidden = text.isEmpty
     }
 }

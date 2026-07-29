@@ -1,0 +1,8 @@
+mlx
+mlx-vlm
+pillow
+huggingface_hub
+torch
+timm
+transformers
+pyobjc-framework-Quartz

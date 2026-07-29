@@ -310,9 +310,9 @@
     closeApp(true);
     if (!(await wait(400, token))) return (autoRunning = false);
 
-    // Mail workflow
+    // Mail compose (basic API — type + tap)
     target = appCenter("Mail");
-    apiLine("POST", "/v1/workflows/run", '{"name":"login.json"}');
+    apiLine("POST", "/v1/tap", '{"x":0.72,"y":0.28}');
     if (!(await autoTap(target.x, target.y, token))) return (autoRunning = false);
     openApp("Mail", true);
     if (!(await wait(280, token))) return (autoRunning = false);

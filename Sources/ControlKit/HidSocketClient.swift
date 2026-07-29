@@ -47,6 +47,44 @@ public final class HidSocketClient: @unchecked Sendable {
         }
     }
 
+    /// Atomic tap on the HID queue (contact → hold → release). Avoids coalescing
+    /// a press into the next move when contact/release are posted separately.
+    /// Default hold is intentionally firm — short contacts are often ignored by iOS.
+    public func tap(x: Int, y: Int, holdMs: useconds_t = 160_000) {
+        queue.async { [weak self] in
+            guard let self else { return }
+            // Drain any pending move stream first.
+            while !self.touchBuf.isEmpty {
+                let ev = self.touchBuf.removeFirst()
+                self.sendTouch(contact: ev.contact, x: ev.x, y: ev.y)
+            }
+            self.sendTouch(contact: true, x: x, y: y)
+            // Settle + reaffirm so Indigo doesn't treat a single report as a ghost.
+            usleep(45_000)
+            self.sendTouch(contact: true, x: x, y: y)
+            usleep(max(holdMs, 100_000))
+            self.sendTouch(contact: false, x: x, y: y)
+        }
+    }
+
+    /// Release after ensuring the finger has been down at least `minHoldUs`.
+    /// Used for mouse clicks that would otherwise be too brief for the digitizer.
+    public func release(x: Int, y: Int, minHoldUs: useconds_t, pressedAt: UInt64) {
+        queue.async { [weak self] in
+            guard let self else { return }
+            while !self.touchBuf.isEmpty {
+                let ev = self.touchBuf.removeFirst()
+                self.sendTouch(contact: ev.contact, x: ev.x, y: ev.y)
+            }
+            let now = DispatchTime.now().uptimeNanoseconds
+            let elapsedUs = useconds_t(min(UInt64(useconds_t.max), (now &- pressedAt) / 1_000))
+            if elapsedUs < minHoldUs {
+                usleep(minHoldUs - elapsedUs)
+            }
+            self.sendTouch(contact: false, x: x, y: y)
+        }
+    }
+
     public func button(_ name: String, state: String) {
         queue.async { [weak self] in
             self?.sendButton(name: name, state: state)

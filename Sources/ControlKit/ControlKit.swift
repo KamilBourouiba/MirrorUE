@@ -58,6 +58,33 @@ public final class ControlClient: @unchecked Sendable {
         post("/touch", ["type": type, "x": x, "y": y])
     }
 
+    /// Finger tap (press + release) — preferred over separate contact/release posts.
+    public func tap(x: Int, y: Int) {
+        if let hid, hid.isAvailable {
+            hid.tap(x: x, y: y)
+            return
+        }
+        post("/touch", ["type": "contact", "x": x, "y": y])
+        Thread.sleep(forTimeInterval: 0.045)
+        post("/touch", ["type": "contact", "x": x, "y": y])
+        Thread.sleep(forTimeInterval: 0.16)
+        post("/touch", ["type": "release", "x": x, "y": y])
+    }
+
+    /// Release with a minimum press duration (mouse / trackpad clicks).
+    public func releaseTouch(x: Int, y: Int, minHoldUs: UInt32 = 140_000, pressedAt: UInt64) {
+        if let hid, hid.isAvailable {
+            hid.release(x: x, y: y, minHoldUs: minHoldUs, pressedAt: pressedAt)
+            return
+        }
+        let elapsed = DispatchTime.now().uptimeNanoseconds &- pressedAt
+        let need = UInt64(minHoldUs) * 1_000
+        if elapsed < need {
+            Thread.sleep(forTimeInterval: Double(need - elapsed) / 1_000_000_000)
+        }
+        post("/touch", ["type": "release", "x": x, "y": y])
+    }
+
     public func instant(hard: Bool = false) {
         if let hid, hid.isAvailable {
             hid.instant(hard: hard)

@@ -20,7 +20,7 @@ fi
 
 echo "==> Assembling $APP"
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/Workflows"
 
 cat > "$APP/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -48,6 +48,18 @@ EOF
 cp -f "$ROOT/bin/MirrorUE" "$APP/Contents/MacOS/MirrorUE"
 cp -f "$ROOT/bin/MirrorUEEngine" "$APP/Contents/MacOS/MirrorUEEngine"
 chmod +x "$APP/Contents/MacOS/MirrorUE" "$APP/Contents/MacOS/MirrorUEEngine"
+
+# Bundled paths saved at runtime (export-only to elsewhere).
+mkdir -p "$ROOT/Workflows"
+touch "$ROOT/Workflows/.gitkeep"
+if compgen -G "$ROOT/Workflows/*.json" > /dev/null; then
+  cp -f "$ROOT/Workflows/"*.json "$APP/Contents/Resources/Workflows/" 2>/dev/null || true
+fi
+mkdir -p "$APP/Contents/Resources/tools/fastvlm"
+cp -f "$ROOT/tools/fastvlm/run" "$ROOT/tools/fastvlm/agent.py" \
+  "$ROOT/tools/fastvlm/requirements.txt" "$ROOT/tools/fastvlm/phone_plan.schema.json" \
+  "$APP/Contents/Resources/tools/fastvlm/" 2>/dev/null || true
+chmod +x "$APP/Contents/Resources/tools/fastvlm/run" 2>/dev/null || true
 
 # Ad-hoc sign so Gatekeeper is less angry on local builds (Developer ID later).
 if command -v codesign >/dev/null 2>&1; then

@@ -1,0 +1,97 @@
+{
+    "required": [
+        "summary",
+        "done",
+        "reason",
+        "actions"
+    ],
+    "title": "PhonePlan",
+    "type": "object",
+    "x-order": [
+        "summary",
+        "done",
+        "reason",
+        "actions"
+    ],
+    "properties": {
+        "summary": {
+            "description": "Brief plan summary",
+            "type": "string"
+        },
+        "done": {
+            "description": "True when the user goal is fully achieved",
+            "type": "boolean"
+        },
+        "actions": {
+            "items": {
+                "$ref": "#/$defs/PhoneAction"
+            },
+            "description": "Next 1 to 6 actions",
+            "type": "array"
+        },
+        "reason": {
+            "description": "Why done or what is still needed",
+            "type": "string"
+        }
+    },
+    "additionalProperties": false,
+    "$defs": {
+        "PhoneAction": {
+            "required": [
+                "op"
+            ],
+            "x-order": [
+                "op",
+                "x",
+                "y",
+                "x1",
+                "y1",
+                "ms",
+                "text",
+                "name",
+                "seconds"
+            ],
+            "additionalProperties": false,
+            "title": "PhoneAction",
+            "type": "object",
+            "properties": {
+                "op": {
+                    "description": "home | tap | swipe | type | button | wait | done",
+                    "type": "string"
+                },
+                "x": {
+                    "description": "Normalized X 0..1",
+                    "type": "number"
+                },
+                "y": {
+                    "description": "Normalized Y 0..1",
+                    "type": "number"
+                },
+                "name": {
+                    "description": "Button: home|lock|mute",
+                    "type": "string"
+                },
+                "seconds": {
+                    "type": "number",
+                    "description": "Wait seconds"
+                },
+                "y1": {
+                    "description": "Swipe end Y",
+                    "type": "number"
+                },
+                "text": {
+                    "type": "string",
+                    "description": "Text to type"
+                },
+                "ms": {
+                    "description": "Swipe duration ms",
+                    "type": "integer"
+                },
+                "x1": {
+                    "description": "Swipe end X",
+                    "type": "number"
+                }
+            }
+        }
+    }
+}

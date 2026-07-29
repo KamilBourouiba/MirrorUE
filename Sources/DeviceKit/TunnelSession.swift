@@ -21,13 +21,22 @@ public final class TunnelSession: @unchecked Sendable {
            FileManager.default.isExecutableFile(atPath: p) {
             return URL(fileURLWithPath: p)
         }
-        let candidates: [URL] = [
+        var candidates: [URL] = [
             Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/MirrorUEEngine"),
-            Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("MirrorUEEngine"),
-            URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("bin/MirrorUEEngine"),
-            URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                .deletingLastPathComponent().appendingPathComponent("bin/MirrorUEEngine"),
-        ].compactMap { $0 }
+        ]
+        if let exeDir = Bundle.main.executableURL?.deletingLastPathComponent() {
+            candidates.append(exeDir.appendingPathComponent("MirrorUEEngine"))
+            var dir = exeDir
+            for _ in 0..<10 {
+                candidates.append(dir.appendingPathComponent("bin/MirrorUEEngine"))
+                let parent = dir.deletingLastPathComponent()
+                if parent.path == dir.path { break }
+                dir = parent
+            }
+        }
+        let cwd = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        candidates.append(cwd.appendingPathComponent("bin/MirrorUEEngine"))
+        candidates.append(cwd.deletingLastPathComponent().appendingPathComponent("bin/MirrorUEEngine"))
         for c in candidates {
             if FileManager.default.isExecutableFile(atPath: c.path) { return c }
         }

@@ -20,7 +20,7 @@ final class ControlCenterDock: NSView {
     private static let barRadius: CGFloat = 18
 
     /// Intrinsic width of the glass capsule at full size (for compact threshold).
-    static let preferredWidth: CGFloat = 680
+    static let preferredWidth: CGFloat = 380
 
     /// Never drive the NSWindow size — a required intrinsic width caused
     /// `_changeWindowFrameFromConstraintsIfNecessary` layout-pass crashes.
@@ -86,31 +86,19 @@ final class ControlCenterDock: NSView {
         ])
 
         appendGroup([
-            ("house.fill", "home", "Home"),
-            ("lock.fill", "lock", "Lock"),
-            ("square.stack.3d.up.fill", "apps", "App Switcher"),
-            ("switch.2", "cc", "Control Center"),
+            ("house.fill", "home", "Écran d'accueil — bouton Home iPhone"),
+            ("lock.fill", "lock", "Verrouiller l'iPhone"),
+            ("square.stack.3d.up.fill", "apps", "App Switcher — applications ouvertes"),
         ])
         appendDivider()
         appendGroup([
-            ("waveform", "siri", "Siri"),
-            ("bell.slash.fill", "mute", "Mute"),
+            ("speaker.minus.fill", "volume-down", "Volume −"),
+            ("speaker.plus.fill", "volume-up", "Volume +"),
         ])
         appendDivider()
         appendGroup([
-            ("speaker.minus.fill", "volume-down", "Volume Down"),
-            ("speaker.plus.fill", "volume-up", "Volume Up"),
-        ])
-        appendDivider()
-        appendGroup([
-            ("music.note", "music", "Music Safe"),
-            ("bolt.fill", "instant", "Refresh"),
-            ("camera.fill", "screenshot", "Screenshot"),
-            ("record.circle", "record", "Record video"),
-            ("list.bullet.rectangle", "workflow", "Workflows"),
-            ("doc.on.clipboard", "pasteclip", "Paste clipboard"),
-            ("chart.bar.fill", "perf", "Performance"),
-            ("gearshape.fill", "settings", "Settings"),
+            ("camera.fill", "screenshot", "Capture d'écran du miroir"),
+            ("gearshape.fill", "settings", "Réglages MirrorUE…"),
         ])
     }
 

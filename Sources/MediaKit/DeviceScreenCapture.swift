@@ -71,11 +71,23 @@ public final class DeviceScreenCapture: NSObject, @unchecked Sendable {
 
     public func start() {
         stopped = false
-        // Unsigned binaries sometimes see an empty device list until this returns.
-        AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
+        let finish: (Bool) -> Void = { [weak self] granted in
             fputs("MediaKit: camera access \(granted ? "granted" : "denied")\n", stderr)
             Self.allowScreenCaptureDevices()
             self?.attach(force: true)
+        }
+        // Never re-prompt here — PermissionsGateView owns the one-time ask.
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            finish(true)
+        case .denied, .restricted:
+            finish(false)
+        case .notDetermined:
+            // Gate should have run first; try attach without prompting.
+            fputs("MediaKit: camera notDetermined — skipping prompt, trying attach\n", stderr)
+            finish(false)
+        @unknown default:
+            finish(false)
         }
 
         let center = NotificationCenter.default

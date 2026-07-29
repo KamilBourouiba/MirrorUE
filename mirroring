@@ -2,8 +2,22 @@
 # MirrorUE — Swift/Metal entry (USB release)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-if [[ ! -x "$ROOT/bin/MirrorUE" || ! -x "$ROOT/bin/MirrorUEEngine" ]]; then
+cd "$ROOT"
+
+if [[ ! -x "$ROOT/bin/MirrorUEEngine" ]]; then
   "$ROOT/tools/build_engine.sh"
 fi
+
+# Dev: keep bin/MirrorUE in sync with the last `swift build` (./mirroring was running stale binaries).
+if BUILT_DIR="$(swift build --show-bin-path 2>/dev/null)" && [[ -x "$BUILT_DIR/MirrorUE" ]]; then
+  if [[ ! -x "$ROOT/bin/MirrorUE" || "$BUILT_DIR/MirrorUE" -nt "$ROOT/bin/MirrorUE" ]]; then
+    mkdir -p "$ROOT/bin"
+    cp -f "$BUILT_DIR/MirrorUE" "$ROOT/bin/MirrorUE"
+    chmod +x "$ROOT/bin/MirrorUE"
+  fi
+elif [[ ! -x "$ROOT/bin/MirrorUE" ]]; then
+  "$ROOT/tools/build_engine.sh"
+fi
+
 export MIRRORUE_ENGINE="${MIRRORUE_ENGINE:-$ROOT/bin/MirrorUEEngine}"
 exec "$ROOT/bin/MirrorUE" "$@"

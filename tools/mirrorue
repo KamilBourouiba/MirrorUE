@@ -1,0 +1,457 @@
+#!/usr/bin/env python3
+"""MirrorUE local API CLI — simple shell control of the mirrored iPhone.
+
+Requires MirrorUE.app running and connected (API on 127.0.0.1:8090).
+
+Examples:
+  ./tools/mirrorue status
+  ./tools/mirrorue home
+  ./tools/mirrorue open Snapchat
+  ./tools/mirrorue type 'hello'
+  ./tools/mirrorue tap 0.5 0.8
+  ./tools/mirrorue do home wait:0.8 open:Snapchat
+  ./tools/mirrorue path record start
+  ./tools/mirrorue path record stop --name open-maps
+  ./tools/mirrorue path list
+  ./tools/mirrorue path play open-maps
+  ./tools/mirrorue frame /tmp/phone.jpg
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import sys
+import tempfile
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+from typing import Any
+
+BASE = os.environ.get("MIRRORUE_API", "http://127.0.0.1:8090").rstrip("/")
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def api(method: str, path: str, body: dict | list | None = None, timeout: float = 120.0) -> Any:
+    url = f"{BASE}{path}"
+    data = None
+    headers = {"Accept": "application/json"}
+    if body is not None:
+        data = json.dumps(body).encode()
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read().decode()
+            return json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode() if e.fp else ""
+        try:
+            payload = json.loads(raw) if raw else {"error": str(e)}
+        except json.JSONDecodeError:
+            payload = {"error": raw or str(e)}
+        payload["_http"] = e.code
+        raise SystemExit(f"HTTP {e.code}: {json.dumps(payload, ensure_ascii=False)}") from None
+    except urllib.error.URLError as e:
+        raise SystemExit(
+            f"API unreachable at {BASE} ({e.reason}). Is MirrorUE.app open and connected?"
+        ) from None
+
+
+def out(obj: Any) -> None:
+    if isinstance(obj, (dict, list)):
+        print(json.dumps(obj, indent=2, ensure_ascii=False))
+    else:
+        print(obj)
+
+
+def wait_ready(timeout: float = 60.0) -> dict:
+    """Block until MirrorUE reports connected + live display."""
+    deadline = time.time() + timeout
+    last_err = "unreachable"
+    while time.time() < deadline:
+        try:
+            st = api("GET", "/v1/status", timeout=3)
+            if st.get("connected") and float(st.get("displayFps") or 0) > 1.0:
+                return st
+            last_err = f"state={st.get('state')} fps={st.get('displayFps')}"
+        except SystemExit as e:
+            last_err = str(e)
+        time.sleep(0.6)
+    raise SystemExit(f"MirrorUE not ready within {timeout:.0f}s ({last_err})")
+
+
+def cmd_status(ns: argparse.Namespace) -> int:
+    if ns.wait:
+        out(wait_ready(ns.wait_timeout))
+    else:
+        out(api("GET", "/v1/status", timeout=5))
+    return 0
+
+
+def cmd_help(_: argparse.Namespace) -> int:
+    out(api("GET", "/v1", timeout=5))
+    return 0
+
+
+def cmd_home(_: argparse.Namespace) -> int:
+    out(api("POST", "/v1/home", {}))
+    return 0
+
+
+def cmd_wait(ns: argparse.Namespace) -> int:
+    if ns.ms is not None:
+        body: dict[str, Any] = {"ms": int(ns.ms)}
+    else:
+        body = {"seconds": float(ns.seconds)}
+    out(api("POST", "/v1/wait", body))
+    return 0
+
+
+def cmd_spotlight(ns: argparse.Namespace) -> int:
+    out(api("POST", "/v1/spotlight", {"home": not ns.no_home}))
+    return 0
+
+
+def cmd_clear(ns: argparse.Namespace) -> int:
+    out(api("POST", "/v1/clear", {"backspaces": int(ns.backspaces)}))
+    return 0
+
+
+def cmd_open(ns: argparse.Namespace) -> int:
+    wait_ready(ns.wait_timeout if hasattr(ns, "wait_timeout") else 45)
+    app = " ".join(ns.app).strip()
+    if not app:
+        raise SystemExit("app name required")
+    print(f"opening {app!r} via Search…", file=sys.stderr)
+    out(api("POST", "/v1/open", {"app": app}, timeout=120))
+    return 0
+
+
+def cmd_tap(ns: argparse.Namespace) -> int:
+    out(api("POST", "/v1/tap", {"x": float(ns.x), "y": float(ns.y)}))
+    return 0
+
+
+def cmd_swipe(ns: argparse.Namespace) -> int:
+    out(
+        api(
+            "POST",
+            "/v1/swipe",
+            {
+                "x": float(ns.x),
+                "y": float(ns.y),
+                "x1": float(ns.x1),
+                "y1": float(ns.y1),
+                "ms": int(ns.ms),
+            },
+        )
+    )
+    return 0
+
+
+def cmd_type(ns: argparse.Namespace) -> int:
+    text = " ".join(ns.text)
+    out(api("POST", "/v1/type", {"text": text}))
+    return 0
+
+
+def cmd_key(ns: argparse.Namespace) -> int:
+    out(api("POST", "/v1/key", {"usage": int(ns.usage), "mods": int(ns.mods)}))
+    return 0
+
+
+def cmd_button(ns: argparse.Namespace) -> int:
+    out(api("POST", "/v1/button", {"name": ns.name}))
+    return 0
+
+
+def cmd_frame(ns: argparse.Namespace) -> int:
+    enc = "b64" if ns.b64 else "path"
+    q = f"?maxW={int(ns.max_w)}&format={ns.format}&encoding={enc}"
+    data = api("GET", f"/v1/vision/frame{q}", timeout=10)
+    if ns.b64:
+        import base64
+
+        raw = data.get("b64")
+        if not raw:
+            raise SystemExit(f"no b64 frame: {data}")
+        dest = Path(ns.out) if ns.out else Path(tempfile.gettempdir()) / "mirrorue-frame.jpg"
+        dest.write_bytes(base64.b64decode(raw))
+        print(str(dest.resolve()))
+        if ns.json:
+            out(data)
+        return 0
+    src = data.get("path")
+    if not src or not Path(src).exists():
+        raise SystemExit(f"no frame: {data}")
+    dest = Path(ns.out) if ns.out else Path(src)
+    if ns.out:
+        shutil.copy2(src, dest)
+    print(str(dest.resolve()))
+    if ns.json:
+        out(data)
+    return 0
+
+
+def cmd_vlm_ask(ns: argparse.Namespace) -> int:
+    question = " ".join(ns.question).strip()
+    if not question:
+        raise SystemExit("question required")
+    body: dict[str, Any] = {
+        "question": question,
+        "max_tokens": int(ns.max_tokens),
+        "frame": not ns.no_frame,
+    }
+    out(api("POST", "/v1/vlm/ask", body, timeout=float(ns.timeout)))
+    return 0
+
+
+def cmd_vlm_status(_: argparse.Namespace) -> int:
+    out(api("GET", "/v1/vlm/status", timeout=5))
+    return 0
+
+
+def cmd_llm_chat(ns: argparse.Namespace) -> int:
+    prompt = " ".join(ns.prompt).strip()
+    if not prompt:
+        raise SystemExit("prompt required")
+    body: dict[str, Any] = {"prompt": prompt, "max_tokens": int(ns.max_tokens)}
+    if ns.model:
+        body["model"] = ns.model
+    out(api("POST", "/v1/llm/chat", body, timeout=float(ns.timeout)))
+    return 0
+
+
+def cmd_llm_status(_: argparse.Namespace) -> int:
+    out(api("GET", "/v1/llm/status", timeout=5))
+    return 0
+
+
+def cmd_docs(_: argparse.Namespace) -> int:
+    data = api("GET", "/v1/docs", timeout=5)
+    md = data.get("markdown")
+    if md:
+        print(md)
+    else:
+        out(data)
+    return 0
+
+
+def parse_do_token(tok: str) -> dict[str, Any]:
+    """home | wait:0.8 | open:Snapchat | type:hello | tap:0.5,0.8 | button:home"""
+    if ":" not in tok:
+        op = tok.lower()
+        if op in {"home", "spotlight", "clear"}:
+            return {"op": op}
+        raise SystemExit(f"unknown step {tok!r} (try home, wait:0.8, open:App)")
+    op, rest = tok.split(":", 1)
+    op = op.lower()
+    if op == "wait":
+        if rest.endswith("ms"):
+            return {"op": "wait", "ms": int(rest[:-2])}
+        return {"op": "wait", "seconds": float(rest)}
+    if op == "open":
+        return {"op": "open", "app": rest}
+    if op == "type":
+        return {"op": "type", "text": rest}
+    if op == "button":
+        return {"op": "button", "name": rest}
+    if op == "tap":
+        x, y = rest.split(",", 1)
+        return {"op": "tap", "x": float(x), "y": float(y)}
+    if op == "swipe":
+        parts = rest.split(",")
+        if len(parts) < 4:
+            raise SystemExit("swipe:x,y,x1,y1[,ms]")
+        body: dict[str, Any] = {
+            "op": "swipe",
+            "x": float(parts[0]),
+            "y": float(parts[1]),
+            "x1": float(parts[2]),
+            "y1": float(parts[3]),
+        }
+        if len(parts) > 4:
+            body["ms"] = int(parts[4])
+        return body
+    if op == "clear":
+        return {"op": "clear", "backspaces": int(rest)}
+    if op == "spotlight":
+        return {"op": "spotlight", "home": rest.lower() in {"1", "true", "home", "yes"}}
+    raise SystemExit(f"unknown step {tok!r}")
+
+
+def cmd_do(ns: argparse.Namespace) -> int:
+    steps = [parse_do_token(t) for t in ns.steps]
+    out(api("POST", "/v1/do", {"steps": steps}, timeout=180))
+    return 0
+
+
+def cmd_path_list(_: argparse.Namespace) -> int:
+    out(api("GET", "/v1/workflows", timeout=10))
+    return 0
+
+
+def cmd_path_record_start(_: argparse.Namespace) -> int:
+    out(api("POST", "/v1/workflows/record/start", {}, timeout=10))
+    return 0
+
+
+def cmd_path_record_stop(ns: argparse.Namespace) -> int:
+    body: dict[str, Any] = {}
+    if ns.name:
+        body["name"] = ns.name
+    out(api("POST", "/v1/workflows/record/stop", body, timeout=30))
+    return 0
+
+
+def cmd_path_save(ns: argparse.Namespace) -> int:
+    out(api("POST", "/v1/workflows/save", {"name": ns.name}, timeout=15))
+    return 0
+
+
+def cmd_path_play(ns: argparse.Namespace) -> int:
+    out(api("POST", "/v1/workflows/play", {"name": ns.name}, timeout=600))
+    return 0
+
+
+def cmd_path_stop(_: argparse.Namespace) -> int:
+    out(api("POST", "/v1/workflows/stop", {}, timeout=10))
+    return 0
+
+
+def cmd_run(ns: argparse.Namespace) -> int:
+    path = Path(ns.workflow).expanduser()
+    if path.suffix == ".json" and path.is_file():
+        body = json.loads(path.read_text())
+        out(api("POST", "/v1/workflows/play", body, timeout=600))
+    else:
+        out(api("POST", "/v1/workflows/play", {"name": ns.workflow}, timeout=600))
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="mirrorue",
+        description="Control MirrorUE from the terminal (local API).",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__,
+    )
+    p.add_argument("--api", default=BASE, help="API base URL (env MIRRORUE_API)")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    st = sub.add_parser("status", help="Connection / FPS")
+    st.add_argument("--wait", action="store_true", help="Wait until connected + live display")
+    st.add_argument("--wait-timeout", type=float, default=60)
+    st.set_defaults(func=cmd_status)
+    sub.add_parser("help-api", help="List HTTP endpoints").set_defaults(func=cmd_help)
+    sub.add_parser("home", help="Go to Home Screen (gesture)").set_defaults(func=cmd_home)
+
+    w = sub.add_parser("wait", help="Sleep on device side")
+    g = w.add_mutually_exclusive_group()
+    g.add_argument("seconds", nargs="?", type=float, default=0.5)
+    g.add_argument("--ms", type=int, default=None)
+    w.set_defaults(func=cmd_wait)
+
+    sp = sub.add_parser("spotlight", help="Open Spotlight search")
+    sp.add_argument("--no-home", action="store_true", help="Skip Home first")
+    sp.set_defaults(func=cmd_spotlight)
+
+    cl = sub.add_parser("clear", help="Clear focused text field")
+    cl.add_argument("--backspaces", type=int, default=12)
+    cl.set_defaults(func=cmd_clear)
+
+    op = sub.add_parser("open", help="Open an app via Search (deterministic)")
+    op.add_argument("app", nargs="+", help="App name, e.g. Snapchat")
+    op.add_argument("--wait-timeout", type=float, default=45)
+    op.set_defaults(func=cmd_open)
+
+    tp = sub.add_parser("tap", help="Tap normalized 0..1")
+    tp.add_argument("x", type=float)
+    tp.add_argument("y", type=float)
+    tp.set_defaults(func=cmd_tap)
+
+    sw = sub.add_parser("swipe", help="Swipe normalized 0..1")
+    sw.add_argument("x", type=float)
+    sw.add_argument("y", type=float)
+    sw.add_argument("x1", type=float)
+    sw.add_argument("y1", type=float)
+    sw.add_argument("ms", nargs="?", type=int, default=300)
+    sw.set_defaults(func=cmd_swipe)
+
+    ty = sub.add_parser("type", help="Type text via HID keyboard")
+    ty.add_argument("text", nargs="+")
+    ty.set_defaults(func=cmd_type)
+
+    ky = sub.add_parser("key", help="HID key usage")
+    ky.add_argument("usage", type=int)
+    ky.add_argument("mods", nargs="?", type=int, default=0)
+    ky.set_defaults(func=cmd_key)
+
+    bt = sub.add_parser("button", help="Hardware button name")
+    bt.add_argument("name")
+    bt.set_defaults(func=cmd_button)
+
+    fr = sub.add_parser("frame", help="Save latest phone frame")
+    fr.add_argument("out", nargs="?", default=None, help="Destination path")
+    fr.add_argument("--max-w", type=int, default=720)
+    fr.add_argument("--format", default="jpg", choices=["jpg", "png"])
+    fr.add_argument("--json", action="store_true")
+    fr.add_argument("--b64", action="store_true", help="Request base64 encoding (faster for agents)")
+    fr.set_defaults(func=cmd_frame)
+
+    sub.add_parser("docs-api", help="Print full API documentation").set_defaults(func=cmd_docs)
+
+    do = sub.add_parser("do", help="Run short recipe tokens")
+    do.add_argument(
+        "steps",
+        nargs="+",
+        help="Tokens: home wait:0.8 open:Snapchat type:hi tap:0.5,0.8",
+    )
+    do.set_defaults(func=cmd_do)
+
+    rn = sub.add_parser("run", help="Play a saved path name or JSON file")
+    rn.add_argument("workflow", help="Path name or .json file")
+    rn.set_defaults(func=cmd_run)
+
+    path = sub.add_parser("path", help="Record / save / replay paths")
+    ps = path.add_subparsers(dest="path_cmd", required=True)
+
+    ps.add_parser("list", help="List saved paths").set_defaults(func=cmd_path_list)
+
+    pr = ps.add_parser("record", help="Record interactions on the phone")
+    prs = pr.add_subparsers(dest="record_cmd", required=True)
+    prs.add_parser("start", help="Start recording").set_defaults(func=cmd_path_record_start)
+    pr_stop = prs.add_parser("stop", help="Stop recording")
+    pr_stop.add_argument("--name", "-n", help="Save immediately as this name")
+    pr_stop.set_defaults(func=cmd_path_record_stop)
+
+    ps_save = ps.add_parser("save", help="Save live steps under a name")
+    ps_save.add_argument("name")
+    ps_save.set_defaults(func=cmd_path_save)
+
+    ps_play = ps.add_parser("play", help="Replay a saved path")
+    ps_play.add_argument("name")
+    ps_play.set_defaults(func=cmd_path_play)
+
+    ps.add_parser("stop", help="Stop playback").set_defaults(func=cmd_path_stop)
+
+    return p
+
+
+def main(argv: list[str] | None = None) -> int:
+    global BASE
+    argv = list(sys.argv[1:] if argv is None else argv)
+    # Friendly default when invoked with no args
+    if not argv:
+        argv = ["status"]
+    p = build_parser()
+    ns = p.parse_args(argv)
+    BASE = (ns.api or BASE).rstrip("/")
+    return int(ns.func(ns) or 0)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
