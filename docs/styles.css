@@ -402,16 +402,18 @@ a:hover {
 
 .demo-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 1rem;
+  grid-template-columns: auto minmax(220px, 1fr);
+  gap: 1rem 1.25rem;
   align-items: center;
   width: 100%;
+  max-width: 560px;
 }
 
 .phone {
   position: relative;
   z-index: 1;
   width: 220px;
+  flex-shrink: 0;
   aspect-ratio: 9 / 19.4;
   transform-style: preserve-3d;
   transition: transform 0.12s ease-out;
@@ -526,7 +528,7 @@ a:hover {
   font-size: 0.48rem;
   color: var(--muted);
   cursor: inherit;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .app span {
@@ -899,11 +901,12 @@ a:hover {
 .api-console {
   border-radius: var(--radius-sm);
   padding: 0.75rem 0.85rem 0.7rem;
-  min-width: 0;
-  align-self: stretch;
+  min-width: 220px;
+  width: 100%;
+  align-self: center;
   display: flex;
   flex-direction: column;
-  max-height: 340px;
+  max-height: 360px;
 }
 
 .api-head {
@@ -928,8 +931,80 @@ a:hover {
   font-size: 0.65rem;
 }
 
-.api-replay {
+.api-mode {
   margin-left: auto;
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.api-mode.recording {
+  color: #fff;
+  background: #e74c3c;
+  animation: soft-blink 1s ease-in-out infinite;
+}
+
+.api-mode.playing {
+  color: var(--accent);
+  background: rgba(91, 108, 255, 0.12);
+}
+
+.api-path-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+  font-size: 0.62rem;
+}
+
+.api-path-label {
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.55rem;
+}
+
+.api-path-name {
+  font-weight: 600;
+  color: var(--accent);
+  font-family: var(--mono);
+}
+
+.workflow-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+  min-height: 1.35rem;
+}
+
+.wf-step {
+  font-size: 0.55rem;
+  padding: 0.18rem 0.42rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  color: var(--muted);
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.wf-step.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  transform: scale(1.04);
+}
+
+.wf-step.done {
+  opacity: 0.5;
+}
+
+.api-replay {
+  margin-left: 0.35rem;
   appearance: none;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.7);
@@ -1536,8 +1611,8 @@ a:hover {
   }
 
   .api-console {
-    width: min(100%, 320px);
-    max-height: 200px;
+    width: min(100%, 340px);
+    max-height: 260px;
   }
 
   .phone {

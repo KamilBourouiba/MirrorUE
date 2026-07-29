@@ -111,17 +111,23 @@
               </div>
             </div>
 
-            <aside class="api-console frost" id="api-console" aria-label="Local API activity">
+            <aside class="api-console frost" id="api-console" aria-label="Path replay demo">
               <div class="api-head">
                 <span class="api-dot"></span>
                 <code>127.0.0.1:8090</code>
-                <button type="button" class="api-replay" id="api-replay" title="Replay demo">replay</button>
+                <span class="api-mode" id="api-mode">idle</span>
+                <button type="button" class="api-replay" id="api-replay" title="Replay path">replay</button>
               </div>
+              <div class="api-path-bar">
+                <span class="api-path-label">path</span>
+                <span class="api-path-name" id="api-path-name">login-smoke.json</span>
+              </div>
+              <div class="workflow-steps" id="workflow-steps" aria-label="Path steps"></div>
               <div class="api-feed" id="api-feed"></div>
-              <p class="api-caption">Live control API · Pro adds path automation</p>
+              <p class="api-caption">Pro path replay · tap the phone or press replay</p>
             </aside>
           </div>
-          <p class="control-hint">Try the demo · tap apps · API replays when idle</p>
+          <p class="control-hint">Interactive mirror · workflow drives itself when idle</p>
         </div>
       </div>
     </section>
@@ -322,6 +328,6 @@
   <script src="waitlist-config.js?v=3" defer></script>
   <script src="waitlist.js?v=4" defer></script>
   <script src="conversion.js?v=1" defer></script>
-  <script src="demo.js?v=conv1" defer></script>
+  <script src="demo.js?v=conv2" defer></script>
 </body>
 </html>
