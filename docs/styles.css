@@ -416,12 +416,17 @@ a:hover {
 /* Resizable phone frame — 220px design canvas; scales down on narrow viewports */
 .phone-shell {
   --phone-design-w: 220;
+  --phone-bezel-r: 34;
   width: 220px;
   aspect-ratio: 9 / 19.4;
   margin-inline: auto;
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
+  /* Rounded clip on the shell only (no transform here) — matches scaled 34px bezel */
+  border-radius: calc(100cqw / var(--phone-design-w) * var(--phone-bezel-r) * 1px);
+  background: linear-gradient(145deg, #f2f4fc, #e6eaf6);
+  isolation: isolate;
   container-type: inline-size;
   container-name: phone;
 }
