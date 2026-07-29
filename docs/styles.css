@@ -36,6 +36,10 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+html.touch-ui {
+  scroll-behavior: auto;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -396,7 +400,7 @@ a:hover {
   display: grid;
   place-items: center;
   gap: 0.75rem;
-  touch-action: none;
+  touch-action: pan-y;
   user-select: none;
 }
 
@@ -419,6 +423,7 @@ a:hover {
   transition: transform 0.12s ease-out;
   will-change: transform;
   cursor: none;
+  touch-action: manipulation;
 }
 
 .phone-side {
@@ -1666,36 +1671,57 @@ a:hover {
     min-height: auto;
     gap: 0;
     padding-top: 1rem;
+    padding-bottom: 1.5rem;
   }
 
   .hero-live {
-    order: -1;
-    min-height: 420px;
+    order: 1;
+    min-height: auto;
     height: auto;
-    padding: 0.5rem 0 1rem;
+    padding: 0.25rem 0 0.75rem;
+    animation: none;
+    perspective: none;
+  }
+
+  .hero-copy {
+    order: -1;
+    padding-top: 0;
+    padding-bottom: 0.25rem;
   }
 
   .demo-row {
     grid-template-columns: 1fr;
-    justify-items: center;
+    justify-items: stretch;
+    gap: 0.85rem;
+    width: 100%;
+    max-width: min(100%, 380px);
+    margin-inline: auto;
   }
 
   .api-console {
-    width: min(100%, 340px);
-    max-height: 260px;
+    width: 100%;
+    max-width: none;
+    max-height: min(42vh, 280px);
+    min-width: 0;
   }
 
   .phone {
-    width: 200px;
-    cursor: auto;
-  }
-
-  .hero-copy {
-    padding-top: 0.5rem;
+    width: auto;
+    height: min(38vh, 380px);
+    max-height: 380px;
+    aspect-ratio: 9 / 19.4;
+    margin-inline: auto;
+    cursor: default;
   }
 
   .hero h1 {
     max-width: none;
+    font-size: clamp(1.65rem, 7vw, 2.25rem);
+  }
+
+  .lede {
+    max-width: none;
+    font-size: 0.9rem;
   }
 
   .features-grid {
@@ -1785,16 +1811,38 @@ a:hover {
   }
 
   .hero-live {
-    min-height: 380px;
+    min-height: auto;
     padding-bottom: 0.25rem;
   }
 
   .phone {
-    width: 180px;
+    height: min(36vh, 340px);
   }
 
   .mirror-stage {
     width: 100%;
+    max-width: 100%;
+    padding-inline: 0;
+    touch-action: auto;
+  }
+
+  .phone {
+    touch-action: auto;
+    pointer-events: auto;
+  }
+
+  .control-hint {
+    font-size: 0.62rem;
+    line-height: 1.4;
+    padding-inline: 0.25rem;
+  }
+
+  .api-console {
+    max-height: min(38vh, 240px);
+  }
+
+  .api-caption {
+    display: none;
   }
 
   .plans {
@@ -1828,6 +1876,63 @@ a:hover {
   .note {
     margin-inline: var(--pad);
   }
+}
+
+/* Touch devices: no 3D hero motion, stable layout */
+html.touch-ui .hero-live {
+  animation: none;
+  perspective: none;
+  min-height: auto;
+  padding-top: 0.5rem;
+}
+
+html.touch-ui .api-console,
+html.touch-ui .control-hint {
+  display: none;
+}
+
+html.touch-ui .demo-row {
+  gap: 0;
+  max-width: 100%;
+}
+
+html.touch-ui .phone {
+  transform: none !important;
+  will-change: auto;
+  height: min(34vh, 320px);
+  width: auto;
+  margin-inline: auto;
+}
+
+html.touch-ui .phone-side {
+  display: none;
+}
+
+html.touch-ui .cursor {
+  display: none !important;
+}
+
+html.touch-ui .mirror-stage {
+  touch-action: auto;
+}
+
+html.touch-ui .orb {
+  display: none;
+}
+
+html.touch-ui .hero-copy {
+  animation: none;
+}
+
+html.touch-ui .hero {
+  min-height: auto;
+  padding-bottom: 1rem;
+}
+
+html.touch-ui .plans {
+  width: 100%;
+  margin-inline: 0;
+  padding-inline: 0;
 }
 
 /* ——— Waitlist ——— */

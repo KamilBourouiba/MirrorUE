@@ -26,6 +26,38 @@
   if (!stage || !phone || !screen) return;
 
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var mobileMq = window.matchMedia("(max-width: 734px)");
+  var coarseMq = window.matchMedia("(pointer: coarse)");
+  var isTouchUI =
+    mobileMq.matches ||
+    coarseMq.matches ||
+    (navigator.maxTouchPoints > 0 && mobileMq.matches);
+
+  function applyTouchClass() {
+    var touch =
+      mobileMq.matches ||
+      coarseMq.matches ||
+      (navigator.maxTouchPoints > 0 && window.innerWidth <= 734);
+    document.documentElement.classList.toggle("touch-ui", touch);
+    return touch;
+  }
+  isTouchUI = applyTouchClass();
+  mobileMq.addEventListener("change", function () {
+    isTouchUI = applyTouchClass();
+  });
+  coarseMq.addEventListener("change", function () {
+    isTouchUI = applyTouchClass();
+  });
+
+  function setPhoneTilt(x, y) {
+    if (isTouchUI || reduceMotion) {
+      phone.style.transform = "";
+      return;
+    }
+    var rx = (y - 0.5) * -8;
+    var ry = (x - 0.5) * 12;
+    phone.style.transform = "rotateX(" + rx + "deg) rotateY(" + ry + "deg)";
+  }
   var userActive = false;
   var userTimer = null;
   var autoRunning = false;
@@ -178,6 +210,7 @@
   }
 
   function moveCursor(x, y, animate) {
+    if (isTouchUI) return;
     cursor.hidden = false;
     if (animate && !reduceMotion) {
       cursor.style.transition =
@@ -187,11 +220,7 @@
     }
     cursor.style.left = x * 100 + "%";
     cursor.style.top = y * 100 + "%";
-    if (!reduceMotion && !userActive) {
-      var rx = (y - 0.5) * -8;
-      var ry = (x - 0.5) * 12;
-      phone.style.transform = "rotateX(" + rx + "deg) rotateY(" + ry + "deg)";
-    }
+    if (!userActive) setPhoneTilt(x, y);
   }
 
   function showRipple(x, y) {
@@ -412,7 +441,7 @@
   }
 
   async function startAutoDemo() {
-    if (autoRunning || userActive || reduceMotion) return;
+    if (autoRunning || userActive || reduceMotion || isTouchUI) return;
     autoRunning = true;
     var token = ++autoToken;
     if (apiFeed) apiFeed.innerHTML = "";
@@ -434,51 +463,75 @@
     if (!userActive && token === autoToken) startAutoDemo();
   }
 
-  // Manual interaction
+  // Manual interaction — desktop only; mobile stays scrollable + static demo.
   var dragging = false;
   var startX = 0;
   var startY = 0;
   var moved = false;
+  var interactTarget = phone;
 
-  stage.addEventListener("pointerenter", function () {
-    stage.classList.add("active");
-  });
+  if (isTouchUI) {
+    cursor.hidden = true;
+    phone.style.transform = "";
+    homeLayer.querySelectorAll(".app").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        markUser();
+        openApp(btn.getAttribute("data-app"), false);
+      });
+    });
+  } else {
+    interactTarget.addEventListener("pointerenter", function () {
+      stage.classList.add("active");
+    });
 
-  stage.addEventListener("pointerleave", function () {
-    stage.classList.remove("active");
-    if (!autoRunning) cursor.hidden = true;
-    dragging = false;
-  });
+    interactTarget.addEventListener("pointerleave", function () {
+      stage.classList.remove("active");
+      if (!autoRunning) cursor.hidden = true;
+      dragging = false;
+    });
 
-  stage.addEventListener("pointermove", function (e) {
-    if (autoRunning && !userActive) return;
-    var pt = localPoint(e);
-    moveCursor(pt.x, pt.y, false);
-  });
+    interactTarget.addEventListener("pointermove", function (e) {
+      if (autoRunning && !userActive) return;
+      var pt = localPoint(e);
+      moveCursor(pt.x, pt.y, false);
+    });
 
-  stage.addEventListener("pointerdown", function (e) {
-    if (e.button !== undefined && e.button !== 0) return;
-    markUser();
-    dragging = true;
-    moved = false;
-    startX = e.clientX;
-    startY = e.clientY;
-    var pt = localPoint(e);
-    moveCursor(pt.x, pt.y, false);
-    cursor.classList.add("down");
-    try {
-      stage.setPointerCapture(e.pointerId);
-    } catch (err) {}
-  });
+    interactTarget.addEventListener("pointerdown", function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      markUser();
+      dragging = true;
+      moved = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      var pt = localPoint(e);
+      moveCursor(pt.x, pt.y, false);
+      cursor.classList.add("down");
+      try {
+        interactTarget.setPointerCapture(e.pointerId);
+      } catch (err) {}
+    });
 
-  stage.addEventListener("pointerup", function (e) {
-    cursor.classList.remove("down");
-    var pt = localPoint(e);
-    var dx = e.clientX - startX;
-    var dy = e.clientY - startY;
-    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) moved = true;
+    interactTarget.addEventListener("pointerup", function (e) {
+      cursor.classList.remove("down");
+      var pt = localPoint(e);
+      var dx = e.clientX - startX;
+      var dy = e.clientY - startY;
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) moved = true;
 
-    if (dragging && !moved) {
+      if (dragging && !moved) {
+        handlePhoneTap(pt);
+      }
+      dragging = false;
+    });
+
+    interactTarget.addEventListener("pointercancel", function () {
+      dragging = false;
+      cursor.classList.remove("down");
+    });
+  }
+
+  function handlePhoneTap(pt) {
       showRipple(pt.x, pt.y);
       if (openAppName && pt.y > 0.92) {
         closeApp(false);
@@ -524,9 +577,7 @@
           );
         }
       }
-    }
-    dragging = false;
-  });
+  }
 
   if (appBack) {
     appBack.addEventListener("click", function (e) {
@@ -555,15 +606,7 @@
     });
   }
 
-  stage.addEventListener(
-    "touchmove",
-    function (e) {
-      if (dragging) e.preventDefault();
-    },
-    { passive: false }
-  );
-
-  if (!reduceMotion) {
+  if (!reduceMotion && !isTouchUI) {
     var idle = 0;
     setInterval(function () {
       if (stage.classList.contains("active") || autoRunning) return;
@@ -578,5 +621,11 @@
   }
 
   renderWorkflowSteps(-1);
-  setTimeout(startAutoDemo, reduceMotion ? 0 : 900);
+  if (!isTouchUI) {
+    setTimeout(startAutoDemo, reduceMotion ? 0 : 900);
+  } else {
+    setApiMode("idle");
+    resetPhone();
+    renderWorkflowSteps(-1);
+  }
 })();
