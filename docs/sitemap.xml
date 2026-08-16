@@ -10,8 +10,14 @@
     <image:image>
       <image:loc>https://mirrorue.xyz/og-image.png</image:loc>
       <image:title>MirrorUE — Mirror &amp; Control iPhone on Mac at up to 120 FPS</image:title>
-      <image:caption>Mirror your iPhone on Mac with mouse and keyboard control</image:caption>
+      <image:caption>Mirror your iPhone on Mac with mouse, trackpad, and keyboard control</image:caption>
     </image:image>
+  </url>
+  <url>
+    <loc>https://mirrorue.xyz/iphone-qa-automation.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.98</priority>
   </url>
   <url>
     <loc>https://mirrorue.xyz/iphone-mirroring-eu.html</loc>
@@ -32,16 +38,28 @@
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://mirrorue.xyz/mirrorue-vs-apple-iphone-mirroring.html</loc>
+    <loc>https://mirrorue.xyz/compatibility.html</loc>
     <lastmod>2026-08-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://mirrorue.xyz/mirrorue-vs-quicktime.html</loc>
+    <loc>https://mirrorue.xyz/api-docs.html</loc>
     <lastmod>2026-08-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
+  </url>
+  <url>
+    <loc>https://mirrorue.xyz/mirrorue-vs-apple-iphone-mirroring.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.88</priority>
+  </url>
+  <url>
+    <loc>https://mirrorue.xyz/mirrorue-vs-quicktime.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.88</priority>
   </url>
   <url>
     <loc>https://mirrorue.xyz/benchmarks.html</loc>

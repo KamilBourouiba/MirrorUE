@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18393322142"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'AW-18393322142');
+  </script>
+
+  <meta charset="utf-8" />
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
+  <link rel="canonical" href="https://mirrorue.xyz/compatibility.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+  <title>MirrorUE Compatibility Matrix: iPhones, iPads, iOS &amp; macOS | MirrorUE</title>
+  <meta name="description" content="Official hardware and OS compatibility matrix for MirrorUE. Verified device list, iOS 16-18+ requirements, Apple Silicon support, and cable guidelines." />
+  <meta name="author" content="Kamil Bourouiba" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+  <!-- Open Graph -->
+  <meta property="og:site_name" content="MirrorUE" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://mirrorue.xyz/compatibility.html" />
+  <meta property="og:title" content="MirrorUE Compatibility Matrix: iPhones, iPads &amp; Macs" />
+  <meta property="og:description" content="Verified device list, iOS 16-18+ requirements, and Apple Silicon compatibility for MirrorUE." />
+  <meta property="og:image" content="https://mirrorue.xyz/og-image.png" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="MirrorUE Compatibility Matrix" />
+  <meta name="twitter:description" content="Verified hardware and software compatibility matrix for MirrorUE on macOS." />
+  <meta name="twitter:image" content="https://mirrorue.xyz/twitter-image.png" />
+
+  <meta name="theme-color" content="#0a0c12" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=mobile16" />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://mirrorue.xyz/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Compatibility Matrix",
+            "item": "https://mirrorue.xyz/compatibility.html"
+          }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "MirrorUE Hardware and Operating System Compatibility Matrix",
+        "description": "Comprehensive reference guide of tested iPhones, iPads, iOS versions, macOS releases, and connection requirements for MirrorUE.",
+        "author": {
+          "@type": "Person",
+          "name": "Kamil Bourouiba"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "MirrorUE",
+          "url": "https://mirrorue.xyz/"
+        },
+        "mainEntityOfPage": "https://mirrorue.xyz/compatibility.html",
+        "datePublished": "2026-08-01",
+        "dateModified": "2026-08-16"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+  </div>
+
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="logo" href="index.html">MirrorUE<span class="logo-dot">_</span></a>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" hidden />
+      <label for="nav-toggle" class="nav-burger" aria-label="Menu">
+        <span></span><span></span>
+      </label>
+      <nav class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="iphone-mirroring-eu.html">EU Guide</a>
+        <a href="control-iphone-from-mac.html">Control iPhone</a>
+        <a href="120fps-iphone-mirroring.html">120 FPS</a>
+        <a href="iphone-qa-automation.html">QA Automation</a>
+        <a class="nav-cta" href="MirrorUE.dmg">Download .dmg</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="legal-page" style="max-width: 900px; margin: 2rem auto; padding: 0 1.5rem;">
+    <article class="legal-doc frost" style="padding: 2.5rem;">
+      <p class="kicker">// SYSTEM REQUIREMENTS &amp; DEVICES</p>
+      <h1>MirrorUE Official Compatibility Matrix</h1>
+      <p class="legal-meta">Maintained by Kamil Bourouiba · Updated August 2026</p>
+
+      <p class="lead" style="font-size: 1.15rem; line-height: 1.7; color: #f1f5f9;">
+        MirrorUE is designed for universal compatibility across Apple hardware without requiring kernel extensions or system modifications. Here is the verified compatibility matrix.
+      </p>
+
+      <h2>1. macOS Host Requirements</h2>
+      <div style="overflow-x: auto; margin: 1.5rem 0;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 2px solid rgba(255,255,255,0.1);">
+              <th style="padding: 0.75rem;">macOS Version</th>
+              <th style="padding: 0.75rem;">Architecture</th>
+              <th style="padding: 0.75rem;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 0.75rem;">macOS 15 (Sequoia)</td>
+              <td style="padding: 0.75rem;">Apple Silicon (M1/M2/M3/M4) &amp; Intel x86_64</td>
+              <td style="padding: 0.75rem; color: #4ade80;">✅ Fully Supported (120 FPS Metal)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 0.75rem;">macOS 14 (Sonoma)</td>
+              <td style="padding: 0.75rem;">Apple Silicon &amp; Intel x86_64</td>
+              <td style="padding: 0.75rem; color: #4ade80;">✅ Fully Supported</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 0.75rem;">macOS 13 (Ventura) &amp; older</td>
+              <td style="padding: 0.75rem;">Legacy</td>
+              <td style="padding: 0.75rem; color: #facc15;">⚠️ CoreMediaIO stream works; HID requires macOS 14+</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>2. iOS &amp; iPadOS Device Support</h2>
+      <div style="overflow-x: auto; margin: 1.5rem 0;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 2px solid rgba(255,255,255,0.1);">
+              <th style="padding: 0.75rem;">Device Series</th>
+              <th style="padding: 0.75rem;">Max Refresh Rate</th>
+              <th style="padding: 0.75rem;">Touch &amp; Keyboard Control</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 0.75rem;">iPhone 16 Pro / 16 Pro Max</td>
+              <td style="padding: 0.75rem; color: #4ade80;">⚡ 120 FPS ProMotion</td>
+              <td style="padding: 0.75rem; color: #4ade80;">✅ Full Support</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 0.75rem;">iPhone 15 Pro / 15 Pro Max</td>
+              <td style="padding: 0.75rem; color: #4ade80;">⚡ 120 FPS ProMotion</td>
+              <td style="padding: 0.75rem; color: #4ade80;">✅ Full Support</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 0.75rem;">iPhone 14 Pro / 14 Pro Max</td>
+              <td style="padding: 0.75rem; color: #4ade80;">⚡ 120 FPS ProMotion</td>
+              <td style="padding: 0.75rem; color: #4ade80;">✅ Full Support</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 0.75rem;">iPhone 13 Pro / 13 Pro Max</td>
+              <td style="padding: 0.75rem; color: #4ade80;">⚡ 120 FPS ProMotion</td>
+              <td style="padding: 0.75rem; color: #4ade80;">✅ Full Support</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 0.75rem;">iPhone 11, 12, 13, 14, 15, 16 (Standard / Plus / mini)</td>
+              <td style="padding: 0.75rem;">60 FPS (Hardware limit)</td>
+              <td style="padding: 0.75rem; color: #4ade80;">✅ Full Support</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 0.75rem;">iPad Pro 11" &amp; 12.9"/13" (M1, M2, M4)</td>
+              <td style="padding: 0.75rem; color: #4ade80;">⚡ 120 FPS ProMotion</td>
+              <td style="padding: 0.75rem; color: #4ade80;">✅ Full Support</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>3. Cables &amp; Hardware Connections</h2>
+      <ul style="line-height: 1.8; margin-left: 1.5rem; color: #cbd5e1;">
+        <li><strong>USB-C to USB-C:</strong> Recommended for iPhone 15/16 series and modern iPads. Delivers ultra-low latency with USB 3.0 / USB 2.0 throughput.</li>
+        <li><strong>Lightning to USB-C / USB-A:</strong> Supported on iPhone 14 and earlier models. Requires standard MFi-certified or official Apple cable.</li>
+        <li><strong>Hubs &amp; Docks:</strong> USB-C hubs and Thunderbolt docks are fully supported without signal degradation.</li>
+      </ul>
+
+      <h2>4. Known Technical Limitations</h2>
+      <ul style="line-height: 1.8; margin-left: 1.5rem; color: #cbd5e1;">
+        <li><strong>DRM-Protected Video:</strong> FairPlay-encrypted playback (Netflix, Apple TV+, Disney+) will display a black rectangle during video playback as required by Apple's FairPlay architecture.</li>
+        <li><strong>Biometric Prompts:</strong> Face ID and Touch ID hardware prompts cannot be forged by software injection; passcodes can be entered via Mac keyboard.</li>
+      </ul>
+
+      <div style="text-align: center; margin: 3rem 0;">
+        <a class="btn btn-primary" href="MirrorUE.dmg" style="padding: 1rem 2.5rem; font-size: 1.1rem;">
+          Download MirrorUE for macOS (Free)
+        </a>
+      </div>
+
+      <div style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 3rem; padding-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <a href="iphone-qa-automation.html" style="color: var(--primary); text-decoration: none;">← QA Automation Guide</a>
+        <a href="api-docs.html" style="color: var(--primary); text-decoration: none;">HTTP API Reference →</a>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="logo">MirrorUE<span class="logo-dot">_</span></span>
+        <p>Ultra-low-latency 120 FPS iPhone mirror for macOS.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Solutions</h4>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="iphone-qa-automation.html">iPhone QA Automation</a></li>
+          <li><a href="iphone-mirroring-eu.html">iPhone Mirroring EU</a></li>
+          <li><a href="control-iphone-from-mac.html">Control iPhone from Mac</a></li>
+          <li><a href="120fps-iphone-mirroring.html">120 FPS ProMotion</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="benchmarks.html">Benchmarks</a></li>
+          <li><a href="api-docs.html">HTTP REST API</a></li>
+          <li><a href="compatibility.html">Compatibility Matrix</a></li>
+          <li><a href="about.html">About MirrorUE</a></li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+  <script src="conversion.js"></script>
+</body>
+</html>

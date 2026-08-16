@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-black.svg)](#requirements)
-[![iOS](https://img.shields.io/badge/iOS-27%2B-lightgrey.svg)](#requirements)
+[![iOS](https://img.shields.io/badge/iOS-16%2B-lightgrey.svg)](#requirements)
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)](Package.swift)
 
 **Site:** [mirrorue.xyz](https://mirrorue.xyz/)
@@ -47,7 +47,7 @@ Wi‑Fi / Net → CoreDevice tunnel → UniversalHID (touch · buttons · keyboa
 | Need | Detail |
 |------|--------|
 | Mac | macOS 14+, Xcode Command Line Tools (`swift`) |
-| Phone | **iOS 27+**, USB-paired, unlocked when prompted |
+| Phone | **iOS 16+**, USB-paired, unlocked when prompted |
 | Dev | Developer Mode on; Wi‑Fi / Network usbmux pairing for the HID tunnel |
 | Rebuild | `python3 -m pip install -r tools/requirements.txt` |
 

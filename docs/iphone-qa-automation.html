@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18393322142"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'AW-18393322142');
+  </script>
+
+  <meta charset="utf-8" />
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
+  <link rel="canonical" href="https://mirrorue.xyz/iphone-qa-automation.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+  <title>Real-Device iPhone QA Automation &amp; Testing for Mac | MirrorUE</title>
+  <meta name="description" content="Automate physical iPhone QA testing directly from your Mac. Record and replay gestures, export JSON macros, and trigger automated taps/text via local HTTP API." />
+  <meta name="author" content="Kamil Bourouiba" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+  <!-- Open Graph -->
+  <meta property="og:site_name" content="MirrorUE" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://mirrorue.xyz/iphone-qa-automation.html" />
+  <meta property="og:title" content="Real-Device iPhone QA Automation &amp; Testing for Mac | MirrorUE" />
+  <meta property="og:description" content="Physical iPhone QA testing with 120 FPS USB mirror, record/replay workflows, JSON macros, and local HTTP REST API." />
+  <meta property="og:image" content="https://mirrorue.xyz/og-image.png" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Real-Device iPhone QA Automation on Mac | MirrorUE" />
+  <meta name="twitter:description" content="Automate physical iPhone testing: Record & replay gestures, JSON exports, and local HTTP API." />
+  <meta name="twitter:image" content="https://mirrorue.xyz/twitter-image.png" />
+
+  <meta name="theme-color" content="#0a0c12" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=mobile16" />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://mirrorue.xyz/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "iPhone QA Automation",
+            "item": "https://mirrorue.xyz/iphone-qa-automation.html"
+          }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "Real-Device iPhone QA Automation and Workflow Replay on Mac",
+        "description": "How QA engineers and mobile developers use MirrorUE for automated testing on physical iPhones with record/replay and HTTP API.",
+        "author": {
+          "@type": "Person",
+          "name": "Kamil Bourouiba"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "MirrorUE",
+          "url": "https://mirrorue.xyz/"
+        },
+        "mainEntityOfPage": "https://mirrorue.xyz/iphone-qa-automation.html",
+        "datePublished": "2026-08-01",
+        "dateModified": "2026-08-16"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+  </div>
+
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="logo" href="index.html">MirrorUE<span class="logo-dot">_</span></a>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" hidden />
+      <label for="nav-toggle" class="nav-burger" aria-label="Menu">
+        <span></span><span></span>
+      </label>
+      <nav class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="iphone-mirroring-eu.html">EU Guide</a>
+        <a href="control-iphone-from-mac.html">Control iPhone</a>
+        <a href="120fps-iphone-mirroring.html">120 FPS</a>
+        <a href="benchmarks.html">Benchmarks</a>
+        <a class="nav-cta" href="MirrorUE.dmg">Download .dmg</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="legal-page" style="max-width: 900px; margin: 2rem auto; padding: 0 1.5rem;">
+    <article class="legal-doc frost" style="padding: 2.5rem;">
+      <p class="kicker">// B2B &amp; DEVELOPER QA AUTOMATION</p>
+      <h1>Real-Device iPhone QA Automation &amp; Workflow Replay on Mac</h1>
+      <p class="legal-meta">By Kamil Bourouiba · Updated August 2026 · 5 min read</p>
+
+      <p class="lead" style="font-size: 1.15rem; line-height: 1.7; color: #f1f5f9;">
+        iOS Simulators often fail to catch hardware-specific bugs, thermal throttling, biometric prompts, and camera flows. <strong>MirrorUE</strong> bridges the gap by letting QA and mobile engineering teams automate and replay user journeys directly on physical iPhones over USB.
+      </p>
+
+      <h2>The Real-Device Testing Workflow</h2>
+      <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin: 2rem 0;">
+        <div class="card frost">
+          <h3>⏺️ 1. Record User Journey</h3>
+          <p>Perform taps, scrolls, text input, and screen transitions manually in the 120 FPS mirror feed. MirrorUE captures every event with millisecond timestamps.</p>
+        </div>
+        <div class="card frost">
+          <h3>🔁 2. Instant Replay &amp; Tuning</h3>
+          <p>Replay recorded sessions on any connected iPhone. Adjust playback speed (1x, 2x, 5x) or inject delays between steps to test race conditions.</p>
+        </div>
+        <div class="card frost">
+          <h3>📄 3. Export JSON Macros</h3>
+          <p>Export full test sessions as human-readable JSON files. Commit test suites to Git alongside your iOS codebase.</p>
+        </div>
+      </div>
+
+      <h2>Programmatic CI/CD Automation via Local HTTP API</h2>
+      <p>
+        MirrorUE includes an embedded local HTTP server (<code>http://127.0.0.1:8080</code>) allowing CI test runners (GitHub Actions runners, Jenkins, or custom Python/Node scripts) to control physical devices headlessly:
+      </p>
+
+      <pre style="background: rgba(0,0,0,0.5); padding: 1.25rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; overflow-x: auto; color: #a5f3fc;"><code># Trigger a tap at coordinates (x: 180, y: 320)
+curl -X POST http://127.0.0.1:8080/api/touch \
+  -H "Content-Type: application/json" \
+  -d '{"x": 180, "y": 320, "action": "tap"}'
+
+# Type login credentials into active field
+curl -X POST http://127.0.0.1:8080/api/type \
+  -H "Content-Type: application/json" \
+  -d '{"text": "qa-engineer@mirrorue.xyz"}'
+
+# Capture a pixel-perfect PNG screenshot for visual regression testing
+curl -X GET http://127.0.0.1:8080/api/screenshot --output regression_step_1.png</code></pre>
+
+      <h2>MirrorUE vs Appium &amp; Device Farms</h2>
+      <div style="overflow-x: auto; margin: 2rem 0;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 2px solid rgba(255,255,255,0.1);">
+              <th style="padding: 0.75rem;">Feature</th>
+              <th style="padding: 0.75rem; color: var(--primary);">MirrorUE</th>
+              <th style="padding: 0.75rem; color: var(--muted);">Appium / XCUITest</th>
+              <th style="padding: 0.75rem; color: var(--muted);">Cloud Device Farms</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 0.75rem;">Setup Complexity</td>
+              <td style="padding: 0.75rem; color: #4ade80;">1-Click macOS App</td>
+              <td style="padding: 0.75rem;">Complex WebDriverAgent signing</td>
+              <td style="padding: 0.75rem;">Heavy enterprise setup</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 0.75rem;">Real-Time Frame Rate</td>
+              <td style="padding: 0.75rem; color: #4ade80;">⚡ 120 FPS Metal</td>
+              <td style="padding: 0.75rem;">5 - 15 FPS (Screenshot polling)</td>
+              <td style="padding: 0.75rem;">15 - 30 FPS (WebRTC stream)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 0.75rem;">Cost &amp; Licensing</td>
+              <td style="padding: 0.75rem; color: #4ade80;">Free Core (Open Source)</td>
+              <td style="padding: 0.75rem;">Free (High maintenance cost)</td>
+              <td style="padding: 0.75rem;">$150 - $500 / device / month</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 0.75rem;">Data Privacy</td>
+              <td style="padding: 0.75rem; color: #4ade80;">100% Local (USB cable only)</td>
+              <td style="padding: 0.75rem;">Local</td>
+              <td style="padding: 0.75rem;">Third-party cloud infrastructure</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>JSON Macro Replay Format</h2>
+      <p>
+        Saved macros use a transparent JSON schema that can be easily generated, edited, or parameterized in automated test pipelines:
+      </p>
+
+      <pre style="background: rgba(0,0,0,0.5); padding: 1.25rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; overflow-x: auto; color: #fde047;"><code>{
+  "version": "1.0",
+  "deviceName": "iPhone 15 Pro",
+  "screenResolution": "1179x2556",
+  "events": [
+    { "type": "touchDown", "x": 589, "y": 1420, "timeOffsetMs": 0 },
+    { "type": "touchUp", "x": 589, "y": 1420, "timeOffsetMs": 120 },
+    { "type": "typeText", "text": "test_order_#9021", "timeOffsetMs": 350 },
+    { "type": "swipe", "fromX": 589, "fromY": 2100, "toX": 589, "toY": 800, "durationMs": 250, "timeOffsetMs": 800 }
+  ]
+}</code></pre>
+
+      <div style="text-align: center; margin: 3rem 0;">
+        <a class="btn btn-primary" href="MirrorUE.dmg" style="padding: 1rem 2.5rem; font-size: 1.1rem;">
+          Download MirrorUE for QA Teams
+        </a>
+        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 0.75rem;">
+          Free &amp; Open Source · Universal Binary for Apple Silicon &amp; Intel Macs
+        </p>
+      </div>
+
+      <div style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 3rem; padding-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <a href="control-iphone-from-mac.html" style="color: var(--primary); text-decoration: none;">← Keyboard &amp; Mouse Control</a>
+        <a href="api-docs.html" style="color: var(--primary); text-decoration: none;">HTTP API Documentation →</a>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="logo">MirrorUE<span class="logo-dot">_</span></span>
+        <p>Ultra-low-latency 120 FPS iPhone mirror for macOS.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Solutions</h4>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="iphone-qa-automation.html">iPhone QA Automation</a></li>
+          <li><a href="iphone-mirroring-eu.html">iPhone Mirroring EU</a></li>
+          <li><a href="control-iphone-from-mac.html">Control iPhone from Mac</a></li>
+          <li><a href="120fps-iphone-mirroring.html">120 FPS ProMotion</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="benchmarks.html">Benchmarks</a></li>
+          <li><a href="api-docs.html">HTTP REST API</a></li>
+          <li><a href="compatibility.html">Compatibility Matrix</a></li>
+          <li><a href="about.html">About MirrorUE</a></li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+  <script src="conversion.js"></script>
+</body>
+</html>
