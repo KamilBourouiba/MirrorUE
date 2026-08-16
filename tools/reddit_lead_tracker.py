@@ -196,19 +196,26 @@ def is_relevant_heuristic(title, text):
     return has_device and has_intent
 
 def ai_classify_and_score(title, text):
-    """Uses LM Studio to analyze relevance and user intent."""
-    prompt = f"""Analyze this Reddit post looking for help with iPhone mirroring/control on Mac:
+    """Uses LM Studio to strictly analyze if a user is actively trying to mirror/control an iPhone."""
+    prompt = f"""Analyze this Reddit post to determine if the author is actively trying to mirror, stream, or control their iPhone on a Mac:
 Title: {title}
-Body: {text[:400]}
+Body: {text[:500]}
 
-Respond ONLY with valid JSON in this exact format:
+Evaluation Criteria:
+- High Intent (80-100): User is seeking a tool to mirror iPhone to Mac, type with Mac keyboard, stream at 120 FPS, bypass EU Apple iPhone Mirroring restrictions, or find an iOS equivalent to scrcpy.
+- Medium Intent (60-79): User complaining about QuickTime lag, AirPlay delay, or mirroring crashes.
+- Low / Irrelevant (< 50): General Apple news, rumors, broken screens, battery, or unrelated talk.
+
+Respond ONLY with valid JSON:
 {{
-  "relevance_score": 85,
-  "intent": "EU Alternative | Keyboard Control | 120 FPS / Lag | General",
-  "summary": "Brief 1-sentence summary of what the user needs"
+  "is_lead": true,
+  "relevance_score": 95,
+  "intent": "🇪🇺 EU Block Alternative | ⌨️ Keyboard & Mouse Control | ⚡ 120 FPS / Zero-Lag Stream | 🛠️ Scrcpy / Open-Source Tool",
+  "pain_point": "Exact problem in 6-8 words",
+  "pitch_angle": "Why MirrorUE solves this"
 }}"""
     try:
-        content = call_lmstudio_chat(prompt, system_prompt="You are a precise JSON classifier.")
+        content = call_lmstudio_chat(prompt, system_prompt="You are an expert tech lead qualification AI. Output only valid JSON.")
         json_match = re.search(r'\{.*\}', content, re.DOTALL)
         if json_match:
             return json.loads(json_match.group(0))
@@ -216,30 +223,37 @@ Respond ONLY with valid JSON in this exact format:
         pass
     
     return {
-        "relevance_score": 75,
-        "intent": "Mirroring / Mac Control",
-        "summary": title[:80]
+        "is_lead": True,
+        "relevance_score": 85,
+        "intent": detect_specific_intent(title, text),
+        "pain_point": title[:70],
+        "pitch_angle": "Free 120 FPS native macOS iPhone mirror with keyboard/mouse control"
     }
 
 def ai_generate_reply(title, text, subreddit, author):
-    """Uses LM Studio to generate a bespoke, natural Reddit reply."""
-    prompt = f"""A Reddit user (/u/{author} on r/{subreddit}) posted:
+    """Uses LM Studio to generate a bespoke, authentic indie developer reply."""
+    prompt = f"""A user (/u/{author} on r/{subreddit}) posted:
 Title: "{title}"
-Details: "{text[:400]}"
+Post Details: "{text[:500]}"
 
-Write a polite, super-helpful, authentic 2-sentence Reddit reply recommending MirrorUE (https://mirrorue.xyz).
-Mention that it's a free, native open-source macOS app with 120 FPS USB mirroring, mouse click/drag, and physical keyboard support.
-Do NOT sound like a pushy marketer or bot. Sound like an indie developer helping another user."""
+You are an indie macOS developer who built MirrorUE (https://mirrorue.xyz).
+Write a 2-sentence authentic Reddit reply that:
+1. Directly answers their question or addresses their pain point (e.g. EU region block, QuickTime/AirPlay lag, typing on iPhone from Mac, or finding an open-source tool).
+2. Introduces MirrorUE (https://mirrorue.xyz) as a free, open-source macOS app with zero-copy Metal 120 FPS USB mirroring, mouse clicks, and physical Mac keyboard support.
+3. Sounds like a genuine, friendly developer helping a peer on Reddit (no marketing fluff, no buzzwords)."""
 
     try:
-        reply = call_lmstudio_chat(prompt, system_prompt="You are a helpful Mac developer on Reddit.")
+        reply = call_lmstudio_chat(
+            prompt,
+            system_prompt="You are a friendly, helpful indie Mac software engineer on Reddit. Be authentic and concise."
+        )
         if reply:
             return reply
     except Exception as e:
         print(f"[AI Reply Error] {e}", file=sys.stderr)
 
-    # Fallback template
-    return f"Hey /u/{author}! If you're looking for a smooth solution, I built MirrorUE (https://mirrorue.xyz) — it's a free, open-source macOS app that mirrors your iPhone at 120 FPS with full mouse gestures and physical Mac keyboard support over USB."
+    # High-quality fallback template
+    return f"Hey /u/{author}! If you're looking for a smooth solution, I built [MirrorUE](https://mirrorue.xyz) — it's a free, open-source macOS app that gives you 120 FPS USB mirroring, mouse gestures, and physical Mac keyboard typing with virtually zero latency (works in the EU too)."
 
 def scrape_reddit_worker():
     global SCRAPE_STATE
