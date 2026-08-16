@@ -6,7 +6,7 @@
 - **Website:** https://mirrorue.xyz/
 - **Direct DMG Download:** https://mirrorue.xyz/MirrorUE.dmg
 - **License:** MIT (Free & Open Source)
-- **Platforms:** macOS 14+ (Apple Silicon M1/M2/M3/M4 & Intel), iOS 17+
+- **Platforms:** macOS 14+ (Apple Silicon M1/M2/M3/M4 & Intel), iOS 16+ (iOS 16, 17, 18)
 - **Author:** Kamil Bourouiba
 - **Source Repository:** https://github.com/KamilBourouiba/MirrorUE
 

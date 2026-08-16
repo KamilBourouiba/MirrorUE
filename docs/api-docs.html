@@ -115,59 +115,63 @@
     <article class="legal-doc frost" style="padding: 2.5rem;">
       <p class="kicker">// REST API DOCUMENTATION</p>
       <h1>MirrorUE Local HTTP REST API Reference</h1>
-      <p class="legal-meta">Endpoint: <code>http://127.0.0.1:8080</code> · Updated August 2026</p>
+      <p class="legal-meta">Endpoint: <code>http://127.0.0.1:8090</code> · Updated August 2026</p>
 
       <p class="lead" style="font-size: 1.15rem; line-height: 1.7; color: #f1f5f9;">
-        When MirrorUE is running on your Mac, it exposes a zero-configuration local HTTP REST API on <code>http://127.0.0.1:8080</code> for CI/CD test runners, automated QA scripts, and LLM-assisted UI agents.
+        When MirrorUE is running on your Mac, it exposes a zero-configuration local loopback HTTP REST API on <code>http://127.0.0.1:8090</code> (override with <code>MIRRORUE_API_PORT</code>) for CI/CD test runners, automated QA scripts, and LLM agents.
       </p>
 
-      <h2>1. Touch Injection (<code>POST /api/touch</code>)</h2>
-      <p>Simulate touch events at specific pixel or normalized coordinates on the connected iPhone:</p>
-      <pre><code>curl -X POST http://127.0.0.1:8080/api/touch \
+      <h2>1. Touch &amp; Gesture Injection (<code>POST /v1/tap</code> &amp; <code>POST /v1/swipe</code>)</h2>
+      <p>Simulate touch events at specific pixel coordinates on the connected iPhone:</p>
+      <pre><code># Tap at (x: 375, y: 812)
+curl -X POST http://127.0.0.1:8090/v1/tap \
   -H "Content-Type: application/json" \
-  -d '{
-    "action": "tap",
-    "x": 375,
-    "y": 812
-  }'</code></pre>
+  -d '{"x": 375, "y": 812}'
 
-      <h2>2. Keyboard Input (<code>POST /api/type</code>)</h2>
-      <p>Types an arbitrary string of text into the currently focused iOS text field:</p>
-      <pre><code>curl -X POST http://127.0.0.1:8080/api/type \
+# Swipe up from bottom to top
+curl -X POST http://127.0.0.1:8090/v1/swipe \
   -H "Content-Type: application/json" \
-  -d '{
-    "text": "Hello from automated test runner!"
-  }'</code></pre>
+  -d '{"fromX": 200, "fromY": 700, "toX": 200, "toY": 200, "durationMs": 250}'</code></pre>
 
-      <h2>3. Special Hardware Keys (<code>POST /api/key</code>)</h2>
-      <p>Sends system keycodes such as Return, Backspace, Escape, or Home button simulation:</p>
-      <pre><code>curl -X POST http://127.0.0.1:8080/api/key \
+      <h2>2. Keyboard Typing (<code>POST /v1/type</code>)</h2>
+      <p>Types an arbitrary string of text into the active iOS text field:</p>
+      <pre><code>curl -X POST http://127.0.0.1:8090/v1/type \
   -H "Content-Type: application/json" \
-  -d '{
-    "key": "return"
-  }'</code></pre>
+  -d '{"text": "Automated QA test suite passed"}'</code></pre>
 
-      <h2>4. Visual Screenshot Capture (<code>GET /api/screenshot</code>)</h2>
-      <p>Returns the latest uncompressed raw frame as a PNG image for visual regression testing:</p>
-      <pre><code>curl -X GET http://127.0.0.1:8080/api/screenshot --output screen.png</code></pre>
+      <h2>3. Special Hardware Keys &amp; Buttons (<code>POST /v1/button</code> &amp; <code>POST /v1/key</code>)</h2>
+      <p>Sends system navigation events such as Home bar, Lock, Volume, or Return key:</p>
+      <pre><code># Press Home / swipe up to home screen
+curl -X POST http://127.0.0.1:8090/v1/button \
+  -H "Content-Type: application/json" \
+  -d '{"button": "home"}'
+
+# Press Enter / Return key
+curl -X POST http://127.0.0.1:8090/v1/key \
+  -H "Content-Type: application/json" \
+  -d '{"key": "return"}'</code></pre>
+
+      <h2>4. Visual Screenshot Capture (<code>GET /v1/vision/latest</code> &amp; <code>GET /v1/screenshot</code>)</h2>
+      <p>Returns the latest raw uncompressed frame as a PNG image for visual regression testing:</p>
+      <pre><code>curl -X GET http://127.0.0.1:8090/v1/screenshot --output screen.png</code></pre>
 
       <h2>5. Python Automation Example</h2>
       <pre><code>import requests, time
 
-BASE = "http://127.0.0.1:8080"
+BASE = "http://127.0.0.1:8090"
 
 # Tap search bar
-requests.post(f"{BASE}/api/touch", json={"action": "tap", "x": 200, "y": 120})
+requests.post(f"{BASE}/v1/tap", json={"x": 200, "y": 120})
 time.sleep(0.2)
 
 # Type search query
-requests.post(f"{BASE}/api/type", json={"text": "MirrorUE 120 FPS"})
+requests.post(f"{BASE}/v1/type", json={"text": "MirrorUE 120 FPS"})
 
 # Press Enter
-requests.post(f"{BASE}/api/key", json={"key": "return"})
+requests.post(f"{BASE}/v1/key", json={"key": "return"})
 
 # Capture snapshot
-res = requests.get(f"{BASE}/api/screenshot")
+res = requests.get(f"{BASE}/v1/screenshot")
 with open("result.png", "wb") as f:
     f.write(res.content)
 print("QA test step executed successfully!")</code></pre>

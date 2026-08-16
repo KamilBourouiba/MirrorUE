@@ -143,17 +143,17 @@
       </p>
 
       <pre style="background: rgba(0,0,0,0.5); padding: 1.25rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; overflow-x: auto; color: #a5f3fc;"><code># Trigger a tap at coordinates (x: 180, y: 320)
-curl -X POST http://127.0.0.1:8080/api/touch \
+curl -X POST http://127.0.0.1:8090/v1/tap \
   -H "Content-Type: application/json" \
-  -d '{"x": 180, "y": 320, "action": "tap"}'
+  -d '{"x": 180, "y": 320}'
 
 # Type login credentials into active field
-curl -X POST http://127.0.0.1:8080/api/type \
+curl -X POST http://127.0.0.1:8090/v1/type \
   -H "Content-Type: application/json" \
   -d '{"text": "qa-engineer@mirrorue.xyz"}'
 
 # Capture a pixel-perfect PNG screenshot for visual regression testing
-curl -X GET http://127.0.0.1:8080/api/screenshot --output regression_step_1.png</code></pre>
+curl -X GET http://127.0.0.1:8090/v1/screenshot --output regression_step_1.png</code></pre>
 
       <h2>MirrorUE vs Appium &amp; Device Farms</h2>
       <div style="overflow-x: auto; margin: 2rem 0;">
