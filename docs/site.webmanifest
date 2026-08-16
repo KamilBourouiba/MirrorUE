@@ -1,0 +1,24 @@
+{
+  "name": "MirrorUE — Free 120 FPS iPhone Mirror for Mac",
+  "short_name": "MirrorUE",
+  "description": "Mirror and control your iPhone from macOS with mouse and keyboard at 120 FPS.",
+  "start_url": "https://mirrorue.xyz/",
+  "scope": "https://mirrorue.xyz/",
+  "display": "standalone",
+  "background_color": "#0a0c12",
+  "theme_color": "#007aff",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

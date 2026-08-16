@@ -1,0 +1,9 @@
+# Robots.txt for mirrorue.xyz
+User-agent: *
+Allow: /
+
+# Direct download allowed
+Allow: /MirrorUE.dmg
+
+# Sitemap location
+Sitemap: https://mirrorue.xyz/sitemap.xml

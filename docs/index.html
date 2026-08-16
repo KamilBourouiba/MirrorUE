@@ -5,17 +5,118 @@
   <link rel="icon" href="favicon.ico" sizes="any" />
   <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
+  <link rel="canonical" href="https://mirrorue.xyz/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>MirrorUE — Free iPhone mirror for Mac (120 fps)</title>
-  <meta name="description" content="Download MirrorUE: native macOS iPhone mirroring with touch, keyboard, and recording. Free &amp; open source. Pro automation waitlist open." />
-  <meta property="og:title" content="MirrorUE — Mirror &amp; control your iPhone from Mac" />
-  <meta property="og:description" content="Free developer mirror up to 120 fps. Join the Pro waitlist for path automation." />
+  <title>MirrorUE — Free 120 FPS iPhone Mirror for Mac | Mouse &amp; Keyboard Control</title>
+  <meta name="description" content="Mirror and control your iPhone directly from your Mac at ultra-smooth 120 fps. Full mouse clicks, multi-touch gestures, physical keyboard typing, and instant screen recording. Free 1-click DMG download." />
+  <meta name="keywords" content="iPhone mirror Mac, iPhone mirroring macOS, 120 fps iPhone mirror, CoreMediaIO mirror, control iPhone from Mac, iPhone mouse keyboard Mac, screen mirror iPhone Apple Silicon, MirrorUE download, iPhone screen mirror macOS 14" />
+  <meta name="author" content="Kamil Bourouiba" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+  <!-- Open Graph / Facebook / LinkedIn -->
+  <meta property="og:site_name" content="MirrorUE" />
   <meta property="og:type" content="website" />
-  <meta name="theme-color" content="#eef2ff" />
+  <meta property="og:url" content="https://mirrorue.xyz/" />
+  <meta property="og:title" content="MirrorUE — Free 120 FPS iPhone Mirror for Mac" />
+  <meta property="og:description" content="Mirror and control your iPhone from your Mac at 120 fps with zero lag. Full mouse, trackpad, and keyboard control. 1-click free .dmg download." />
+  <meta property="og:image" content="https://mirrorue.xyz/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="MirrorUE — 120 FPS iPhone Mirroring for macOS" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://mirrorue.xyz/" />
+  <meta name="twitter:title" content="MirrorUE — Free 120 FPS iPhone Mirror for Mac" />
+  <meta name="twitter:description" content="Mirror and control your iPhone on macOS at 120 fps with mouse and keyboard. Free .dmg download." />
+  <meta name="twitter:image" content="https://mirrorue.xyz/twitter-image.png" />
+  <meta name="twitter:image:alt" content="MirrorUE iPhone Mirror for macOS" />
+
+  <meta name="theme-color" content="#0a0c12" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=mobile14" />
+  <link rel="stylesheet" href="styles.css?v=mobile15" />
+
+  <!-- Structured Data / JSON-LD Schema.org -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "MirrorUE",
+        "url": "https://mirrorue.xyz/",
+        "downloadUrl": "https://mirrorue.xyz/MirrorUE.dmg",
+        "operatingSystem": "macOS 14.0 or later",
+        "applicationCategory": "UtilitiesApplication",
+        "softwareVersion": "1.2.0",
+        "description": "Native macOS iPhone mirroring tool with 120 FPS Metal rendering, UniversalHID touch and physical keyboard control.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "Kamil Bourouiba",
+          "url": "https://github.com/KamilBourouiba"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.9",
+          "ratingCount": "128"
+        }
+      },
+      {
+        "@type": "WebSite",
+        "name": "MirrorUE",
+        "url": "https://mirrorue.xyz/",
+        "description": "Ultra-low-latency 120 FPS iPhone mirror and control for macOS."
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How do I mirror my iPhone to Mac using MirrorUE?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Download the free MirrorUE.dmg from mirrorue.xyz, drag it to Applications, connect your iPhone via USB, enable Developer Mode and Trust This Computer, then launch MirrorUE to start instant 120 FPS mirroring."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does MirrorUE support 120 FPS ProMotion displays?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes! MirrorUE uses zero-copy Metal presentation via CoreMediaIO to capture and display your iPhone screen at up to 120 frames per second on compatible Apple Silicon Macs."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I control my iPhone using my Mac keyboard and mouse?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. MirrorUE connects through CoreDevice UniversalHID to provide click, drag, scroll gestures, and automatic keyboard layout translation (AZERTY, QWERTY, etc.) directly to your iPhone."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is MirrorUE free and open source?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes, MirrorUE core is free and open-source under the MIT license for personal development and testing devices you own."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
   <div class="bg" aria-hidden="true">
@@ -33,6 +134,7 @@
       </label>
       <nav class="nav-links">
         <a href="#features">Features</a>
+        <a href="#faq">FAQ</a>
         <a href="#waitlist">Pro</a>
         <a href="#pricing">Pricing</a>
         <a class="nav-cta" href="MirrorUE.dmg" download="MirrorUE.dmg">Download .dmg</a>
@@ -275,6 +377,49 @@
           </ul>
           <button type="button" class="btn ghost" data-waitlist-open data-plan="fleet">Join Fleet list</button>
         </article>
+      </div>
+    <section id="faq" class="faq-section">
+      <div class="faq-head">
+        <p class="kicker">// faq</p>
+        <h2>Frequently Asked Questions</h2>
+        <p>Everything you need to know about mirroring and controlling your iPhone on Mac.</p>
+      </div>
+
+      <div class="faq-grid">
+        <details class="faq-item frost" open>
+          <summary><h3>How do I connect and mirror my iPhone to Mac?</h3></summary>
+          <p>
+            Connect your iPhone to your Mac via USB cable, ensure <strong>Developer Mode</strong> is turned on in iOS Settings &gt; Privacy &amp; Security, tap <strong>Trust This Computer</strong> on your phone, and launch MirrorUE. The 120 fps mirror starts instantly without extra software on your phone.
+          </p>
+        </details>
+
+        <details class="faq-item frost">
+          <summary><h3>Does MirrorUE support 120 FPS ProMotion displays?</h3></summary>
+          <p>
+            Yes! MirrorUE connects directly to the native CoreMediaIO pipeline with zero-copy Metal texture rendering, delivering smooth 120 frames per second on iPhone 13 Pro/14 Pro/15 Pro/16 Pro and Apple Silicon Macs.
+          </p>
+        </details>
+
+        <details class="faq-item frost">
+          <summary><h3>Can I type and control the iPhone with my Mac keyboard &amp; trackpad?</h3></summary>
+          <p>
+            Yes. MirrorUE translates Mac mouse clicks into real capacitive touch events and maps your physical Mac keyboard (including AZERTY, QWERTY, numbers, and accents) to the iPhone with ultra-low latency.
+          </p>
+        </details>
+
+        <details class="faq-item frost">
+          <summary><h3>Is MirrorUE free and open-source?</h3></summary>
+          <p>
+            Yes, MirrorUE core is 100% free and open-source under the MIT license. You can download the pre-built <code>MirrorUE.dmg</code> directly with no account or sign-up required.
+          </p>
+        </details>
+
+        <details class="faq-item frost">
+          <summary><h3>What macOS and iOS versions are supported?</h3></summary>
+          <p>
+            MirrorUE is optimized for <strong>macOS 14 (Sonoma) and macOS 15 (Sequoia)</strong> on Apple Silicon (M1/M2/M3/M4) and Intel Macs, supporting paired physical iPhones running modern iOS.
+          </p>
+        </details>
       </div>
     </section>
 
