@@ -24,8 +24,6 @@ Wi‑Fi / Net → CoreDevice tunnel → UniversalHID (touch · buttons · keyboa
 > development (Developer Mode, Trust This Computer). DRM apps may blank while
 > mirrored.
 
-**Need path automation?** See [MirrorUE Pro](https://github.com/KamilBourouiba/MirrorUE-Pro) (record / replay / export flows).
-
 ---
 
 ## Features
@@ -38,7 +36,9 @@ Wi‑Fi / Net → CoreDevice tunnel → UniversalHID (touch · buttons · keyboa
 | **Dock** | Home, Lock, App Switcher, Control Center, Siri, mute, volume, music-safe, instant |
 | **Capture** | Screenshot & HEVC screen recording with show-touches |
 | **API** | Loopback HTTP + CLI for tap, type, home, open app, frame grab |
-| **Window** | Aspect-locked phone frame, portrait ↔ landscape follow, native fullscreen |
+| **Workflows** | Record, save, replay and export validated manual phone workflows |
+| **AI agent** | LM Studio / OpenAI-compatible provider profiles, local OCR, bounded validated actions |
+| **Window** | Aspect-locked phone plus a collapsible Workflow / AI Runs sidebar |
 
 ---
 
@@ -55,33 +55,21 @@ Wi‑Fi / Net → CoreDevice tunnel → UniversalHID (touch · buttons · keyboa
 
 ## Quick start
 
-### App (recommended)
+### 1-Click Install (Recommended)
 
 ```bash
-./tools/package_app.sh          # builds binaries + dist/MirrorUE.app + .dmg
-open dist/MirrorUE.app
+./install.sh
 ```
 
-First launch shows a short setup checklist (USB, Trust, Developer Mode, Network
-pairing, camera permission). Then pick your iPhone. Settings live in the dock
-gear or **⌘,**.
+This compiles Apple Silicon / Metal optimizations, codesigns the app with camera/screen entitlements, and installs **`MirrorUE.app`** directly into your **`/Applications`** folder and sets up the `mirrorue` CLI shortcut!
 
-> Unsigned local builds: right-click the app → **Open** the first time.
+### Launching MirrorUE
 
-### Developers
+- **Spotlight:** Press **`⌘ + Space`**, type **`MirrorUE`**, press Enter.
+- **Finder:** Open **`/Applications/MirrorUE.app`**.
+- **Terminal:** Run **`mirrorue`** or **`./bin/MirrorUE`**.
 
-```bash
-./tools/build_engine.sh   # once (or after pulling)
-./mirroring               # device picker, or pass --udid
-```
-
-```bash
-./mirroring --udid YOUR_UDID
-./mirroring --width 390 --height 844
-```
-
-Binaries land in `bin/MirrorUE` (UI) and `bin/MirrorUEEngine` (frozen CoreDevice
-worker). The packaged `.app` embeds both under `Contents/MacOS/`.
+First launch shows a short setup checklist (USB, Trust, Developer Mode, Network pairing, camera permission). Then pick your iPhone. Settings live in the dock gear or **⌘,**.
 
 ---
 
@@ -126,7 +114,77 @@ Click once inside the mirror so it is first responder.
 | Record | .mov to Desktop (`⌘⇧R`) |
 | Paste clipboard | Cmd+V on device (`⌘⇧V`) |
 | Performance | Live fps / latency (`⌘P`) |
+| Agent | Run or stop a bounded natural-language phone task |
 | Settings | FPS, keyboard, landscape (`⌘,`) |
+
+### Automation sidebar
+
+The right sidebar is the current-source automation UI. It is collapsible and
+has two tabs:
+
+- **Workflow** records manual taps, swipes, typing, and dock buttons; names and
+  saves the result in `Workflows/`; then replays or exports it as JSON.
+- **AI Runs** shows the selected provider, effective agent mode, screenshot
+  latency status, current goal, Stop control, and bounded live logs.
+
+Workflow playback and AI action batches cannot overlap. Playback holds the
+device-control lease for the complete run, and recording/playback is rejected
+while an AI run is starting, observing, or thinking.
+
+```bash
+./tools/mirrorue workflow list
+./tools/mirrorue workflow record start
+./tools/mirrorue workflow record stop --name open-settings
+./tools/mirrorue workflow play open-settings
+./tools/mirrorue workflow export open-settings /tmp/open-settings.json
+./tools/mirrorue workflow stop
+```
+
+### AI phone agent
+
+Start an OpenAI-compatible server such as LM Studio, load a tool-capable Qwen
+model, then open **AI Provider…** in MirrorUE. The default LM Studio URL is
+`http://127.0.0.1:1234/v1`; **Test Connection** discovers available models.
+Optional API tokens are stored in macOS Keychain.
+
+Reasoning effort is configured per provider. Generic OpenAI-compatible
+profiles default to **Provider default**, which omits `reasoning_effort` for
+maximum API compatibility. The saved value controls general chat. Phone-agent
+requests through the LM Studio preset always use **None** so hidden reasoning
+cannot consume the strict tool-call token budget; the AI Runs tab shows this
+effective override. Generic compatible providers use the saved value.
+
+Compatibility note: Chat Completions reasoning controls require LM Studio
+0.4.8 or newer. A local smoke test on LM Studio 0.4.20 with
+`qwen/qwen3.5-9b` reduced an otherwise comparable request from 55.9 s to 8.3 s
+and reported reasoning tokens from 138 to 0. This is model-, prompt-, and
+machine-dependent, not a performance guarantee; unsupported OpenAI-compatible
+servers may reject `reasoning_effort`, in which case use **Provider default**.
+
+Open the sidebar's **AI Runs** tab, enter a small goal such as `Open Settings`,
+and run it.
+MirrorUE performs fast OCR locally, asks the model for a strictly validated
+micro-plan ending at the next screen checkpoint, executes it through the
+existing HID path, and observes again. Every model turn checks success first;
+after an action batch, a new observation must verify the goal before the run
+stops. Safe consecutive actions can share one model call, but planning stops
+before an action depends on an unseen UI result. `open_app` uses CoreDevice's
+direct app service when available, with the HID Search macro as a compatibility
+fallback. A lightweight foreground-app notification supplies trusted bundle
+identity, so an icon label on the Home Screen cannot count as an open app.
+Enable screenshot sharing only for a provider/model you trust and that supports
+vision; otherwise only OCR text and normalized coordinates are sent.
+
+```bash
+./tools/mirrorue llm-status
+./tools/mirrorue llm-chat "Reply with one word"
+./tools/mirrorue agent "Open Settings"
+./tools/mirrorue agent-status
+./tools/mirrorue agent-stop
+```
+
+One run is allowed at a time and all runs have step/action/context limits.
+Stopping a run cooperatively cancels model I/O and in-progress HID macros.
 
 ### Local control API
 
@@ -147,7 +205,10 @@ While connected, a **loopback-only** HTTP API listens on
 | Namespace | Endpoints |
 |-----------|-----------|
 | **control** | `POST /v1/control/{tap,swipe,type,home,open,do,…}` |
+| **workflows** | `GET /v1/workflows`, `POST /v1/workflows/{record/start,record/stop,save,play,stop,export}` |
 | **vision** | `GET /v1/vision/frame?maxW=720&format=jpg&encoding=b64` |
+| **llm** | `GET /v1/llm/status`, `POST /v1/llm/chat` |
+| **agent** | `POST /v1/agent/run`, `GET /v1/agent/{status,logs}`, `POST /v1/agent/stop` |
 
 Full reference: [docs/API.md](docs/API.md)
 
@@ -160,6 +221,7 @@ See [SECURITY.md](SECURITY.md) — do not expose this port publicly.
 | Variable | Default | Effect |
 |----------|---------|--------|
 | `MIRRORUE_CAPTURE_FPS` | `120` | CoreMediaIO target FPS |
+| `MIRRORUE_CAPTURE_SLOTS` | `6` | Retained zero-copy frames (raise only if display stalls) |
 | `MIRRORUE_KB_PHONE` | `auto` | Phone HID layout strategy |
 | `MIRRORUE_LANDSCAPE` | `right` | Home indicator side for landscape taps |
 | `MIRRORUE_API_PORT` | `8090` | Local HTTP API port |

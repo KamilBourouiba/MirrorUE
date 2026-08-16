@@ -8,7 +8,10 @@ import contextlib
 import json
 import logging
 import os
+import time
+import unicodedata
 import uuid
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from hid_socket import HID_PATH, HidSocketServer
@@ -27,6 +30,132 @@ BUTTONS = {
 
 USE_NATIVE = os.environ.get("MIRRORUE_NATIVE", "").strip() in ("1", "true", "yes", "on")
 VIDEO_TRANSPORT = "unix"
+APP_CATALOG_TTL_SECONDS = 300.0
+MAX_OPEN_APP_BODY_BYTES = 4_096
+MAX_APP_IDENTIFIER_CHARACTERS = 256
+MIN_APP_NAME_PREFIX_CHARACTERS = 4
+FOREGROUND_CONFIRM_TIMEOUT_SECONDS = 1.25
+
+
+@dataclass(frozen=True)
+class AppRecord:
+    name: str
+    bundle_id: str
+
+
+@dataclass(frozen=True)
+class ForegroundApp:
+    bundle_id: str
+    name: str
+    state: str
+    timestamp: float
+
+
+class AppLookupError(Exception):
+    def __init__(
+        self,
+        status: int,
+        code: str,
+        message: str,
+        candidates: Optional[list[AppRecord]] = None,
+    ) -> None:
+        super().__init__(message)
+        self.status = status
+        self.code = code
+        self.candidates = candidates or []
+
+
+def _normalized_app_key(value: str) -> str:
+    """Exact app matching after Unicode, case, and whitespace normalization."""
+    return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
+
+
+def _compact_app_catalog(raw_apps: Any) -> tuple[AppRecord, ...]:
+    if not isinstance(raw_apps, list):
+        raise RuntimeError("app service returned a non-list catalog")
+    by_bundle: dict[str, AppRecord] = {}
+    for raw in raw_apps:
+        if not isinstance(raw, dict):
+            continue
+        name = raw.get("name")
+        bundle_id = raw.get("bundleIdentifier")
+        if not isinstance(name, str) or not isinstance(bundle_id, str):
+            continue
+        name = name.strip()
+        bundle_id = bundle_id.strip()
+        if (
+            not name
+            or not bundle_id
+            or len(name) > MAX_APP_IDENTIFIER_CHARACTERS
+            or len(bundle_id) > MAX_APP_IDENTIFIER_CHARACTERS
+        ):
+            continue
+        by_bundle.setdefault(_normalized_app_key(bundle_id), AppRecord(name, bundle_id))
+    catalog = sorted(by_bundle.values(), key=lambda app: (app.name.casefold(), app.bundle_id.casefold()))
+    if not catalog:
+        raise RuntimeError("app service returned no launchable applications")
+    return tuple(catalog)
+
+
+def _resolve_app_record(identifier: str, catalog: tuple[AppRecord, ...]) -> AppRecord:
+    key = _normalized_app_key(identifier)
+    bundle_matches = [app for app in catalog if _normalized_app_key(app.bundle_id) == key]
+    if len(bundle_matches) == 1:
+        return bundle_matches[0]
+
+    name_matches = [app for app in catalog if _normalized_app_key(app.name) == key]
+    if len(name_matches) == 1:
+        return name_matches[0]
+    if len(name_matches) > 1:
+        raise AppLookupError(
+            409,
+            "ambiguous_app_name",
+            f"Multiple installed apps have the exact display name {identifier!r}",
+            name_matches[:16],
+        )
+
+    # A short natural-language request such as "insta" is common. Permit only a
+    # unique display-name prefix of meaningful length; bundle IDs never use
+    # prefix matching, and ambiguity still fails closed.
+    if len(key) >= MIN_APP_NAME_PREFIX_CHARACTERS:
+        prefix_matches = [
+            app for app in catalog if _normalized_app_key(app.name).startswith(key)
+        ]
+        if len(prefix_matches) == 1:
+            return prefix_matches[0]
+        if len(prefix_matches) > 1:
+            raise AppLookupError(
+                409,
+                "ambiguous_app_name",
+                f"Multiple installed app display names begin with {identifier!r}",
+                prefix_matches[:16],
+            )
+    raise AppLookupError(
+        404,
+        "app_not_found",
+        f"No installed app exactly matches {identifier!r}",
+    )
+
+
+def _nested_dicts(value: Any, depth: int = 0):
+    """Yield bounded dictionaries from DTX notification tuple/list wrappers."""
+    if depth > 5:
+        return
+    if isinstance(value, dict):
+        yield value
+        for nested in list(value.values())[:32]:
+            yield from _nested_dicts(nested, depth + 1)
+    elif isinstance(value, (list, tuple)):
+        for nested in list(value)[:32]:
+            yield from _nested_dicts(nested, depth + 1)
+
+
+def _launch_pid(response: Any) -> Optional[int]:
+    for payload in _nested_dicts(response):
+        value = payload.get("processIdentifier", payload.get("pid"))
+        if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+            return value
+    return None
 
 
 async def open_tunnel(udid: str, connection_type: str):
@@ -77,6 +206,20 @@ class MirrorEngine:
         # so touch keeps working while we retry registration later.
         self._kb_fail_streak = 0
         self._kb_retry_after = 0.0
+        # The DVT monitor keeps only one foreground record. While its channel is
+        # connected, that record remains authoritative until the next app-state
+        # transition; its wall-clock age alone does not make it stale.
+        self._foreground_app: Optional[ForegroundApp] = None
+        self._foreground_monitor_connected = False
+        self._foreground_monitor_error: Optional[str] = None
+        self._foreground_last_state = "unknown"
+        self._foreground_last_transition_at: Optional[float] = None
+        self._foreground_condition = asyncio.Condition()
+        # AppService metadata is compacted to two short strings per app and
+        # refreshed at most once every five minutes.
+        self._app_catalog: tuple[AppRecord, ...] = ()
+        self._app_catalog_loaded_at = 0.0
+        self._app_catalog_lock = asyncio.Lock()
         if USE_NATIVE:
             orig = self._vnc._broadcast_frame
             from vt_direct import apply_direct_frames
@@ -119,6 +262,19 @@ class MirrorEngine:
                     k, v = line.decode("utf-8", "replace").split(":", 1)
                     headers[k.strip().lower()] = v.strip()
             clen = int(headers.get("content-length", "0"))
+            if path == "/open-app" and clen > MAX_OPEN_APP_BODY_BYTES:
+                await self._json(
+                    writer,
+                    413,
+                    {
+                        "ok": False,
+                        "error": {
+                            "code": "request_too_large",
+                            "message": f"request body exceeds {MAX_OPEN_APP_BODY_BYTES} bytes",
+                        },
+                    },
+                )
+                return
             body = b""
             if clen > 0:
                 body = await reader.readexactly(clen)
@@ -131,10 +287,14 @@ class MirrorEngine:
                     "h": self._vnc._fb_height,
                     "music_safe": self._music_safe,
                     "frames_emitted": getattr(self._vnc, "_frames_emitted", 0),
+                    "foreground": self._foreground_status(),
                 }
                 if self._video is not None:
                     payload["native"] = self._video.metrics()
                 await self._json(writer, 200, payload)
+            elif path == "/open-app" and method == "POST":
+                code, payload = await self._open_app_request(body)
+                await self._json(writer, code, payload)
             elif path == "/touch" and method == "POST":
                 d = json.loads(body.decode("utf-8"))
                 await self._touch(d.get("type", "contact"), int(d.get("x", 0)), int(d.get("y", 0)))
@@ -190,6 +350,322 @@ class MirrorEngine:
         )
         writer.write(body)
         await writer.drain()
+
+    def _foreground_status(self) -> dict[str, Any]:
+        app = self._foreground_app
+        connected = self._foreground_monitor_connected
+        monitor = "connected" if connected else ("retrying" if self._foreground_monitor_error else "starting")
+        payload: dict[str, Any] = {
+            "available": app is not None,
+            "fresh": connected and app is not None,
+            "monitor": monitor,
+            "bundleId": app.bundle_id if app is not None else None,
+            "name": app.name if app is not None else None,
+            "state": app.state if app is not None else self._foreground_last_state,
+            "timestamp": app.timestamp if app is not None else self._foreground_last_transition_at,
+        }
+        if app is not None:
+            payload["ageMs"] = max(0, int((time.time() - app.timestamp) * 1_000))
+        if self._foreground_monitor_error:
+            payload["error"] = self._foreground_monitor_error
+        return payload
+
+    async def _set_foreground_monitor_state(
+        self,
+        *,
+        connected: bool,
+        error: Optional[str] = None,
+    ) -> None:
+        async with self._foreground_condition:
+            self._foreground_monitor_connected = connected
+            self._foreground_monitor_error = error
+            self._foreground_condition.notify_all()
+
+    async def _consume_foreground_notification(self, event: Any) -> bool:
+        """Cache a DVT `Foreground Running` transition, or clear its matching app."""
+        consumed = False
+        for payload in _nested_dicts(event):
+            raw_bundle = payload.get("displayID", payload.get("bundleIdentifier"))
+            raw_state = payload.get(
+                "state_description",
+                payload.get("elevated_state_description", ""),
+            )
+            if not isinstance(raw_bundle, str) or not raw_bundle.strip():
+                continue
+            state = raw_state.strip() if isinstance(raw_state, str) else ""
+            raw_numeric_state = payload.get("state", payload.get("elevated_state"))
+            is_foreground = _normalized_app_key(state) == "foreground running"
+            if not state and isinstance(raw_numeric_state, int) and raw_numeric_state == 8:
+                state = "Foreground Running"
+                is_foreground = True
+            if not state:
+                continue
+
+            bundle_id = raw_bundle.strip()
+            raw_name = payload.get("appName", payload.get("name", ""))
+            name = raw_name.strip() if isinstance(raw_name, str) else ""
+            observed_at = time.time()
+            async with self._foreground_condition:
+                self._foreground_last_state = state
+                self._foreground_last_transition_at = observed_at
+                if is_foreground:
+                    self._foreground_app = ForegroundApp(
+                        bundle_id=bundle_id,
+                        name=name or bundle_id,
+                        state=state,
+                        timestamp=observed_at,
+                    )
+                elif (
+                    self._foreground_app is not None
+                    and _normalized_app_key(self._foreground_app.bundle_id)
+                    == _normalized_app_key(bundle_id)
+                ):
+                    self._foreground_app = None
+                self._foreground_condition.notify_all()
+            consumed = True
+        return consumed
+
+    async def _open_foreground_monitor(self):
+        from pymobiledevice3.services.dvt.instruments.dvt_provider import DvtProvider
+        from pymobiledevice3.services.dvt.instruments.notifications import Notifications
+
+        provider = DvtProvider(self._rsd)
+        notifications = Notifications(provider)
+        try:
+            await provider.connect()
+            await notifications.connect()
+            # The high-level Notifications context also enables noisy memory
+            # events. MirrorUE needs only application-state transitions.
+            await notifications.service.set_application_state_notifications_enabled_(True)
+            return provider, notifications
+        except BaseException:
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await provider.close()
+            raise
+
+    async def _foreground_monitor_loop(self) -> None:
+        retry_delay = 1.0
+        while True:
+            provider = None
+            notifications = None
+            retry = False
+            try:
+                provider, notifications = await self._open_foreground_monitor()
+                await self._set_foreground_monitor_state(connected=True)
+                LOG.info("foreground app monitor connected")
+                retry_delay = 1.0
+                while True:
+                    event = await notifications.service.events.get()
+                    await self._consume_foreground_notification(event)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                detail = str(exc).strip() or type(exc).__name__
+                detail = detail[:240]
+                await self._set_foreground_monitor_state(connected=False, error=detail)
+                LOG.warning(
+                    "foreground app monitor unavailable (%s) — retrying in %.0fs",
+                    detail,
+                    retry_delay,
+                )
+                retry = True
+            finally:
+                await self._set_foreground_monitor_state(
+                    connected=False,
+                    error=self._foreground_monitor_error,
+                )
+                if notifications is not None:
+                    with contextlib.suppress(asyncio.CancelledError, Exception):
+                        await asyncio.wait_for(
+                            notifications.service.set_application_state_notifications_enabled_(False),
+                            timeout=1.0,
+                        )
+                if provider is not None:
+                    with contextlib.suppress(asyncio.CancelledError, Exception):
+                        await provider.close()
+            if retry:
+                await asyncio.sleep(retry_delay)
+                retry_delay = min(30.0, retry_delay * 2)
+
+    def _make_app_service(self):
+        from pymobiledevice3.remote.core_device.app_service import AppServiceService
+
+        return AppServiceService(self._rsd)
+
+    async def _get_app_catalog(self, *, force: bool = False) -> tuple[AppRecord, ...]:
+        now = time.monotonic()
+        if (
+            not force
+            and self._app_catalog
+            and now - self._app_catalog_loaded_at < APP_CATALOG_TTL_SECONDS
+        ):
+            return self._app_catalog
+
+        async with self._app_catalog_lock:
+            now = time.monotonic()
+            if (
+                not force
+                and self._app_catalog
+                and now - self._app_catalog_loaded_at < APP_CATALOG_TTL_SECONDS
+            ):
+                return self._app_catalog
+            service = self._make_app_service()
+            try:
+                await service.connect()
+                raw_apps = await service.list_apps(
+                    include_app_clips=False,
+                    include_removable_apps=True,
+                    include_hidden_apps=False,
+                    include_internal_apps=False,
+                    include_default_apps=True,
+                )
+            finally:
+                with contextlib.suppress(asyncio.CancelledError, Exception):
+                    await service.close()
+            catalog = _compact_app_catalog(raw_apps)
+            self._app_catalog = catalog
+            self._app_catalog_loaded_at = time.monotonic()
+            return catalog
+
+    async def _wait_for_foreground(self, bundle_id: str, timeout: float) -> bool:
+        if not self._foreground_monitor_connected:
+            return False
+        target = _normalized_app_key(bundle_id)
+        deadline = asyncio.get_running_loop().time() + max(0.0, timeout)
+        async with self._foreground_condition:
+            while True:
+                app = self._foreground_app
+                if (
+                    self._foreground_monitor_connected
+                    and app is not None
+                    and _normalized_app_key(app.bundle_id) == target
+                ):
+                    return True
+                if not self._foreground_monitor_connected:
+                    return False
+                remaining = deadline - asyncio.get_running_loop().time()
+                if remaining <= 0:
+                    return False
+                try:
+                    await asyncio.wait_for(self._foreground_condition.wait(), remaining)
+                except asyncio.TimeoutError:
+                    return False
+
+    @staticmethod
+    def _app_error(
+        status: int,
+        code: str,
+        message: str,
+        **extra: Any,
+    ) -> tuple[int, dict[str, Any]]:
+        error: dict[str, Any] = {"code": code, "message": message[:512]}
+        error.update(extra)
+        return status, {"ok": False, "error": error}
+
+    async def _open_app_request(self, body: bytes) -> tuple[int, dict[str, Any]]:
+        if not body:
+            return self._app_error(400, "invalid_request", "JSON body is required")
+        try:
+            request = json.loads(body.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return self._app_error(400, "invalid_json", "request body must be valid UTF-8 JSON")
+        if not isinstance(request, dict):
+            return self._app_error(400, "invalid_request", "request body must be a JSON object")
+
+        allowed = {"name", "bundleId", "bundle_id"}
+        unknown = sorted(set(request) - allowed)
+        if unknown:
+            return self._app_error(
+                400,
+                "invalid_request",
+                f"unknown property {unknown[0]!r}",
+            )
+        selectors = [(key, request[key]) for key in ("name", "bundleId", "bundle_id") if key in request]
+        if len(selectors) != 1:
+            return self._app_error(
+                400,
+                "invalid_request",
+                "provide exactly one of name or bundleId",
+            )
+        _, raw_identifier = selectors[0]
+        if not isinstance(raw_identifier, str):
+            return self._app_error(400, "invalid_identifier", "app identifier must be a string")
+        identifier = raw_identifier.strip()
+        if (
+            not identifier
+            or len(identifier) > MAX_APP_IDENTIFIER_CHARACTERS
+            or any(ord(char) < 0x20 for char in identifier)
+        ):
+            return self._app_error(
+                400,
+                "invalid_identifier",
+                f"app identifier must contain 1...{MAX_APP_IDENTIFIER_CHARACTERS} printable characters",
+            )
+
+        had_fresh_cache = (
+            bool(self._app_catalog)
+            and time.monotonic() - self._app_catalog_loaded_at < APP_CATALOG_TTL_SECONDS
+        )
+        try:
+            catalog = await self._get_app_catalog()
+            try:
+                app = _resolve_app_record(identifier, catalog)
+            except AppLookupError as exc:
+                if exc.code != "app_not_found" or not had_fresh_cache:
+                    raise
+                app = _resolve_app_record(
+                    identifier,
+                    await self._get_app_catalog(force=True),
+                )
+        except AppLookupError as exc:
+            candidates = [
+                {"name": item.name, "bundleId": item.bundle_id}
+                for item in exc.candidates
+            ]
+            return self._app_error(
+                exc.status,
+                exc.code,
+                str(exc),
+                candidates=candidates,
+            )
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            detail = (str(exc).strip() or type(exc).__name__)[:300]
+            return self._app_error(503, "app_service_unavailable", detail)
+
+        service = self._make_app_service()
+        try:
+            await service.connect()
+            launch_response = await service.launch_application(
+                app.bundle_id,
+                kill_existing=False,
+                start_suspended=False,
+            )
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            detail = (str(exc).strip() or type(exc).__name__)[:300]
+            return self._app_error(503, "launch_failed", detail)
+        finally:
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await service.close()
+
+        confirmed = await self._wait_for_foreground(
+            app.bundle_id,
+            FOREGROUND_CONFIRM_TIMEOUT_SECONDS,
+        )
+        return 200, {
+            "ok": True,
+            "action": "open_app",
+            "requested": identifier,
+            "name": app.name,
+            "bundleId": app.bundle_id,
+            "pid": _launch_pid(launch_response),
+            "launchAccepted": True,
+            "foregroundConfirmed": confirmed,
+            "foreground": self._foreground_status(),
+        }
 
     @staticmethod
     def _is_hid_transport_error(exc: BaseException) -> bool:
@@ -535,6 +1011,7 @@ async def _mirror_engine_run(self) -> None:
         asyncio.create_task(self._vnc._udp_recv_and_pipe(transport)),
         asyncio.create_task(self._vnc._decoder_refresh_loop()),
         asyncio.create_task(self._vnc._rtcp_send_loop(transport)),
+        asyncio.create_task(self._foreground_monitor_loop(), name="foreground-monitor"),
     ]
     self._write_rsd_meta(transport)
     hid = HidSocketServer()
@@ -551,7 +1028,12 @@ async def _mirror_engine_run(self) -> None:
     await self._warm_hid()
     if self._video is not None:
         await self._video.start()
-    server = await asyncio.start_server(self._handle_http, "127.0.0.1", self._http_port)
+    try:
+        server = await asyncio.start_server(self._handle_http, "127.0.0.1", self._http_port, reuse_address=True)
+    except OSError:
+        server = await asyncio.start_server(self._handle_http, "127.0.0.1", 0, reuse_address=True)
+        self._http_port = server.sockets[0].getsockname()[1]
+        self._write_rsd_meta(transport)
     LOG.info("control http://127.0.0.1:%s/", self._http_port)
     try:
         await server.serve_forever()

@@ -83,10 +83,13 @@ final class SettingsPanel: NSView {
         effect.addSubview(form)
         effect.addSubview(buttons)
 
+        let preferredWidth = effect.widthAnchor.constraint(equalToConstant: 380)
+        preferredWidth.priority = .defaultHigh
         NSLayoutConstraint.activate([
             effect.centerXAnchor.constraint(equalTo: centerXAnchor),
             effect.centerYAnchor.constraint(equalTo: centerYAnchor),
-            effect.widthAnchor.constraint(equalToConstant: 380),
+            preferredWidth,
+            effect.widthAnchor.constraint(lessThanOrEqualTo: widthAnchor, constant: -16),
 
             title.topAnchor.constraint(equalTo: effect.topAnchor, constant: 20),
             title.leadingAnchor.constraint(equalTo: effect.leadingAnchor, constant: 20),

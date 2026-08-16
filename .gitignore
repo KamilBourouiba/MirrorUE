@@ -38,3 +38,7 @@ data/waitlist.json
 dist/
 Workflows/*.json
 bin/Workflows/
+
+# Generated marketing assets
+tools/reels/output/
+tools/reels/config.json

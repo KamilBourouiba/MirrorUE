@@ -28,6 +28,15 @@ enum LocalAPIMacros {
     }
 
     @MainActor
+    static func sleepMsCancellable(_ ms: Int) async throws {
+        try Task.checkCancellation()
+        let n = max(0, ms)
+        if n > 0 {
+            try await Task.sleep(nanoseconds: UInt64(n) * 1_000_000)
+        }
+    }
+
+    @MainActor
     static func run(
         _ steps: [WorkflowStep],
         control: ControlClient,
@@ -57,6 +66,40 @@ enum LocalAPIMacros {
             control: control, mode: mode
         )
         await sleepMs(800)
+    }
+
+    /// Cancellation-aware form used by the phone agent. Each pause and HID
+    /// action propagates `CancellationError`, so Stop cannot accelerate through
+    /// the remainder of this multi-step macro.
+    @MainActor
+    static func goHomeCancellable(
+        control: ControlClient,
+        mode: TouchMap.Mode
+    ) async throws {
+        try await WorkflowPlayer.shared.executeCancellable(
+            jiggleDone,
+            control: control,
+            mode: mode
+        )
+        try await sleepMsCancellable(150)
+        try await WorkflowPlayer.shared.executeCancellable(
+            .swipe(x0: 0.5, y0: 0.98, x1: 0.5, y1: 0.35, ms: 420),
+            control: control,
+            mode: mode
+        )
+        try await sleepMsCancellable(550)
+        try await WorkflowPlayer.shared.executeCancellable(
+            .button("home"),
+            control: control,
+            mode: mode
+        )
+        try await sleepMsCancellable(450)
+        try await WorkflowPlayer.shared.executeCancellable(
+            .swipe(x0: 0.5, y0: 0.98, x1: 0.5, y1: 0.40, ms: 380),
+            control: control,
+            mode: mode
+        )
+        try await sleepMsCancellable(800)
     }
 
     /// Open iOS Search (Spotlight) from Home.
@@ -114,5 +157,63 @@ enum LocalAPIMacros {
         await sleepMs(350)
         await WorkflowPlayer.shared.runOne(.key(usage: 40, mods: 0), control: control, mode: mode)
         await sleepMs(900)
+    }
+
+    @MainActor
+    static func openAppCancellable(
+        _ appName: String,
+        control: ControlClient,
+        mode: TouchMap.Mode
+    ) async throws {
+        let app = appName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !app.isEmpty else { return }
+
+        try await goHomeCancellable(control: control, mode: mode)
+        try await WorkflowPlayer.shared.executeCancellable(
+            searchPill,
+            control: control,
+            mode: mode
+        )
+        try await sleepMsCancellable(1_200)
+
+        control.keyboardReset()
+        try await sleepMsCancellable(50)
+        try await WorkflowPlayer.shared.executeCancellable(
+            .key(usage: 0x9C, mods: 0),
+            control: control,
+            mode: mode
+        )
+        let backspaces = min(20, max(12, app.count))
+        for _ in 0..<backspaces {
+            try await WorkflowPlayer.shared.executeCancellable(
+                .key(usage: 42, mods: 0),
+                control: control,
+                mode: mode
+            )
+        }
+        try await WorkflowPlayer.shared.runTypeCancellable(
+            app,
+            control: control,
+            resetBefore: false
+        )
+        try await sleepMsCancellable(1_500)
+        try await WorkflowPlayer.shared.executeCancellable(
+            topHit,
+            control: control,
+            mode: mode
+        )
+        try await sleepMsCancellable(900)
+        try await WorkflowPlayer.shared.executeCancellable(
+            openButton,
+            control: control,
+            mode: mode
+        )
+        try await sleepMsCancellable(350)
+        try await WorkflowPlayer.shared.executeCancellable(
+            .key(usage: 40, mods: 0),
+            control: control,
+            mode: mode
+        )
+        try await sleepMsCancellable(900)
     }
 }

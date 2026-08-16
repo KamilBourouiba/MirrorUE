@@ -151,6 +151,11 @@ public enum KeyboardTranslator {
         case .de: table = asciiToHID_DE
         case .physical: return nil
         }
+        if phoneLayout == .fr, key == "@" {
+            // French iOS hardware keyboard: @ is Option+0. Mapping it avoids
+            // the paste fallback, which triggers iOS "Allow Paste" prompts.
+            return Chord(usage: 0x27, token: key, mods: (hostMods & 0x0A) | 0x04)
+        }
         guard let (usage, needsShift) = table[key]
             ?? table[key.lowercased()]
             ?? table[key.uppercased()]

@@ -5,14 +5,29 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 PY="${PYTHON:-python3}"
 
-echo "==> swift build -c release"
-swift build -c release
-BIN="$(swift build -c release --show-bin-path)/MirrorUE"
+echo "==> swift build -c release --product MirrorUE"
+swift build -c release --product MirrorUE
+BIN_DIR="$ROOT/.build/arm64-apple-macosx/release"
+if [[ ! -d "$BIN_DIR" ]]; then
+  BIN_DIR="$(swift build -c release --show-bin-path 2>/dev/null | tail -n 1 | tr -d '\r\n')"
+fi
+BIN="$BIN_DIR/MirrorUE"
+if [[ ! -f "$BIN" ]]; then
+  BIN="$BIN_DIR/MirrorUEApp"
+fi
+if [[ ! -f "$BIN" ]]; then
+  BIN="$(find "$ROOT/.build" \( -name "MirrorUE" -o -name "MirrorUEApp" \) -type f 2>/dev/null | head -n 1)"
+fi
+if [[ -z "$BIN" || ! -f "$BIN" ]]; then
+  echo "Error: MirrorUE binary build failed or not found." >&2
+  exit 1
+fi
 mkdir -p bin
 cp -f "$BIN" bin/MirrorUE
 chmod +x bin/MirrorUE
 
 echo "==> PyInstaller MirrorUEEngine"
+mkdir -p "$ROOT/.build/pyinstaller/MirrorUEEngine"
 "$PY" -m PyInstaller \
   --noconfirm --clean --onefile \
   --name MirrorUEEngine \

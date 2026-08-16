@@ -32,6 +32,48 @@ final class CaptureStudio {
         writeFrame(pixelBuffer, to: url, maxWidth: 0, format: "png")
     }
 
+    /// Shared CIContext for screenshots/screenshots (full quality, GPU).
+    private static let ciContext = CIContext(options: [.useSoftwareRenderer: false])
+
+    /// Dedicated streaming context: bound to default Metal device, sRGB working
+    /// space (matches phone display), no intermediate color conversion overhead.
+    /// Separate from ciContext so screenshot and stream renders don't serialize.
+    private static let streamContext: CIContext = {
+        let opts: [CIContextOption: Any] = [
+            .useSoftwareRenderer: false,
+            .workingColorSpace: CGColorSpace(name: CGColorSpace.sRGB) as Any,
+            .outputColorSpace: CGColorSpace(name: CGColorSpace.sRGB) as Any,
+            .cacheIntermediates: false,  // don't cache — streaming frames are never reused
+        ]
+        if let device = MTLCreateSystemDefaultDevice() {
+            return CIContext(mtlDevice: device, options: opts)
+        }
+        return CIContext(options: opts)
+    }()
+
+    /// High-performance GPU hardware JPEG encoder (~2ms vs 250ms).
+    func encodeJPEG(
+        _ pixelBuffer: CVPixelBuffer?,
+        maxWidth: Int = 720,
+        quality: CGFloat = 0.75,
+        forStreaming: Bool = false
+    ) -> Data? {
+        guard let pixelBuffer else { return nil }
+        var ci = CIImage(cvPixelBuffer: pixelBuffer)
+        let w = ci.extent.width
+        if maxWidth > 0, w > CGFloat(maxWidth) {
+            let scale = CGFloat(maxWidth) / w
+            ci = ci.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+        }
+        let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+        let ctx = forStreaming ? Self.streamContext : Self.ciContext
+        return ctx.jpegRepresentation(
+            of: ci,
+            colorSpace: colorSpace,
+            options: [kCGImageDestinationLossyCompressionQuality as CIImageRepresentationOption: quality]
+        )
+    }
+
     /// Export a phone frame for the agent. JPEG + maxWidth keeps VLM fast.
     @discardableResult
     func writeFrame(
@@ -41,6 +83,17 @@ final class CaptureStudio {
         format: String = "jpg",
         jpegQuality: CGFloat = 0.7
     ) -> Bool {
+        let fmt = format.lowercased()
+        if fmt == "jpg" || fmt == "jpeg" {
+            guard let data = encodeJPEG(pixelBuffer, maxWidth: maxWidth, quality: jpegQuality) else { return false }
+            do {
+                try data.write(to: url)
+                return true
+            } catch {
+                return false
+            }
+        }
+        
         guard let pixelBuffer else { return false }
         var ci = CIImage(cvPixelBuffer: pixelBuffer)
         let w = ci.extent.width
@@ -52,19 +105,8 @@ final class CaptureStudio {
         let image = NSImage(size: rep.size)
         image.addRepresentation(rep)
         guard let tiff = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiff) else { return false }
-
-        let fmt = format.lowercased()
-        let data: Data?
-        if fmt == "jpg" || fmt == "jpeg" {
-            data = bitmap.representation(
-                using: .jpeg,
-                properties: [.compressionFactor: jpegQuality]
-            )
-        } else {
-            data = bitmap.representation(using: .png, properties: [:])
-        }
-        guard let data, !data.isEmpty else { return false }
+              let bitmap = NSBitmapImageRep(data: tiff),
+              let data = bitmap.representation(using: .png, properties: [:]) else { return false }
         do {
             try data.write(to: url)
             return true

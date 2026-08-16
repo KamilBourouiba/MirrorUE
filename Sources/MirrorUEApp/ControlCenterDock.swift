@@ -20,7 +20,7 @@ final class ControlCenterDock: NSView {
     private static let barRadius: CGFloat = 18
 
     /// Intrinsic width of the glass capsule at full size (for compact threshold).
-    static let preferredWidth: CGFloat = 380
+    static let preferredWidth: CGFloat = 422
 
     /// Never drive the NSWindow size — a required intrinsic width caused
     /// `_changeWindowFrameFromConstraintsIfNecessary` layout-pass crashes.
@@ -97,8 +97,7 @@ final class ControlCenterDock: NSView {
         ])
         appendDivider()
         appendGroup([
-            ("camera.fill", "screenshot", "Capture d'écran du miroir"),
-            ("gearshape.fill", "settings", "Réglages MirrorUE…"),
+            ("sparkles", "agent", "Assistant IA — contrôler l'iPhone par objectif"),
         ])
     }
 

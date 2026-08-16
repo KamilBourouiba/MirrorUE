@@ -32,11 +32,7 @@ public final class HidSocketClient: @unchecked Sendable {
         let contact = type != "release"
         queue.async { [weak self] in
             guard let self else { return }
-            if contact, let last = self.touchBuf.last, last.contact {
-                self.touchBuf[self.touchBuf.count - 1] = (true, x, y)
-            } else {
-                self.touchBuf.append((contact, x, y))
-            }
+            self.touchBuf.append((contact, x, y))
             guard !self.touchPumping else { return }
             self.touchPumping = true
             while !self.touchBuf.isEmpty {

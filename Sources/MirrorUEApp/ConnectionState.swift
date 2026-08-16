@@ -95,4 +95,9 @@ enum ConnectionState: Equatable {
         if case .failed = self { return true }
         return false
     }
+
+    var isConnected: Bool {
+        if case .connected = self { return true }
+        return false
+    }
 }

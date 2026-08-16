@@ -2,13 +2,32 @@
 # Package MirrorUE as a double-clickable .app (+ optional .dmg).
 # Requires a prior or inline engine build (bin/MirrorUE + bin/MirrorUEEngine).
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$ROOT"
 
-DIST="${MIRRORUE_DIST:-$ROOT/dist}"
+DIST="$ROOT/dist"
 APP="$DIST/MirrorUE.app"
 DMG="$DIST/MirrorUE.dmg"
 VERSION="${MIRRORUE_VERSION:-1.1.0}"
+
+CLEAN_BUILD="${MIRRORUE_CLEAN:-0}"
+for arg in "$@"; do
+  if [[ "$arg" == "--clean" ]]; then
+    CLEAN_BUILD=1
+  fi
+done
+
+if [[ "$CLEAN_BUILD" == "1" ]]; then
+  echo "==> Cleaning build caches and killing running instances"
+  killall MirrorUE 2>/dev/null || true
+  swift package clean 2>/dev/null || true
+  rm -rf "$ROOT/bin" "$ROOT/dist" "$ROOT/.build/pyinstaller"
+  rm -rf "$HOME/Library/Application Support/pyinstaller"
+fi
+
+# Always terminate old instances of MirrorUE before building so `open` doesn't focus an old process
+killall MirrorUE 2>/dev/null || true
 
 if [[ "${MIRRORUE_SKIP_BUILD:-0}" != "1" ]]; then
   echo "==> Building binaries"
@@ -45,7 +64,11 @@ cat > "$APP/Contents/Info.plist" <<EOF
 </plist>
 EOF
 
-cp -f "$ROOT/bin/MirrorUE" "$APP/Contents/MacOS/MirrorUE"
+if [[ -f "$ROOT/bin/MirrorUE" ]]; then
+  cp -f "$ROOT/bin/MirrorUE" "$APP/Contents/MacOS/MirrorUE"
+elif [[ -f "$ROOT/bin/MirrorUEApp" ]]; then
+  cp -f "$ROOT/bin/MirrorUEApp" "$APP/Contents/MacOS/MirrorUE"
+fi
 cp -f "$ROOT/bin/MirrorUEEngine" "$APP/Contents/MacOS/MirrorUEEngine"
 chmod +x "$APP/Contents/MacOS/MirrorUE" "$APP/Contents/MacOS/MirrorUEEngine"
 
@@ -64,8 +87,12 @@ ln -sf /Applications "$STAGE/Applications"
 hdiutil create -volname "MirrorUE" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
 rm -rf "$STAGE"
 
-ls -lh "$APP/Contents/MacOS/" "$DMG"
+mkdir -p "$ROOT/docs"
+cp -f "$DMG" "$ROOT/docs/MirrorUE.dmg"
+
+ls -lh "$APP/Contents/MacOS/" "$DMG" "$ROOT/docs/MirrorUE.dmg"
 echo ""
 echo "Open:  open \"$APP\""
 echo "DMG:   $DMG"
+echo "Web:   $ROOT/docs/MirrorUE.dmg (Direct Download)"
 echo "Tip:   unsigned builds may need right-click → Open the first time."

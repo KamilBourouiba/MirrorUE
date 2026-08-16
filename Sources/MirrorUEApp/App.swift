@@ -24,7 +24,9 @@ struct AppArgs {
     var udid: String?
     var width: CGFloat = 340
     var height: CGFloat = 720
-    var httpPort: Int = 8080
+    var httpPort: Int = 8090
+    var web: Bool = false
+    var openWeb: Bool = false
 
     static func parse(_ argv: [String]) -> AppArgs {
         var a = AppArgs()
@@ -39,17 +41,27 @@ struct AppArgs {
                 if let v, let n = Double(v) { a.width = CGFloat(n) }; i += 2
             case "--height":
                 if let v, let n = Double(v) { a.height = CGFloat(n) }; i += 2
-            case "--http-port":
+            case "--http-port", "--web-port":
                 if let v, let n = Int(v) { a.httpPort = n }; i += 2
+            case "--web":
+                a.web = true; i += 1
+            case "--open-web":
+                a.web = true; a.openWeb = true; i += 1
             case "-h", "--help":
                 fputs("""
                 MirrorUE — Swift/Metal iPhone mirror
 
-                  MirrorUE [--udid UDID] [--width 340] [--height 720]
+                  MirrorUE [--udid UDID] [--width 340] [--height 720] [--web] [--open-web] [--web-port 8090]
 
                 Video uses the system CoreMediaIO screen device (same source as
                 QuickTime / iPhone presentation). Control uses a CoreDevice
                 tunnel — Network when available so USB stays free for capture.
+
+                Web Mirror & Remote Access Parameters:
+                  --web          Serve Web Mirror Studio at http://127.0.0.1:<port>/web
+                  --open-web     Serve Web Mirror and open default web browser
+                  --public       Generate a public HTTPS tunnel URL for remote control over the internet
+                  --web-port N   Specify custom port for HTTP API and Web Mirror (default: 8090)
 
                 Without --udid, a device picker lists USB iPhones at launch.
                 Requires bin/MirrorUEEngine (./tools/build_engine.sh).
@@ -62,6 +74,40 @@ struct AppArgs {
         }
         return a
     }
+}
+
+enum AgentIntegrationError: LocalizedError {
+    case notConnected
+    case noLiveFrame
+    case staleCapture
+    case deviceBusy
+
+    var errorDescription: String? {
+        switch self {
+        case .notConnected:
+            return "Connect and unlock the development iPhone first."
+        case .noLiveFrame:
+            return "No live iPhone frame is available yet."
+        case .staleCapture:
+            return "The live iPhone capture is stale; wait for CoreMediaIO video to recover."
+        case .deviceBusy:
+            return "Another device action batch is already in progress."
+        }
+    }
+}
+
+/// A live capture buffer is immutable for the lifetime of the retained
+/// reference, but CoreVideo does not declare that contract as `Sendable`.
+/// Keeping that audit in one tiny wrapper lets OCR/JPEG work stay off the UI
+/// actor without copying a full-resolution frame.
+private struct AgentPixelBufferSnapshot: @unchecked Sendable {
+    let value: CVPixelBuffer
+}
+
+private struct PreparedAgentObservation: Sendable {
+    let observation: AgentPhoneObservation
+    let fingerprint: AgentFrameEncoder.Fingerprint
+    let recognizedText: [AgentRecognizedText]
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
@@ -79,23 +125,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var settingsPanel: SettingsPanel?
     var performancePanel: PerformancePanel?
     var privacyPanel: PrivacyPanel?
+    var agentPanel: AgentPanel?
+    var automationSidebar: AutomationSidebar?
+    var headerBar: DeviceHubHeaderBar!
+    var telemetryPanel: DeviceTelemetryPanel!
+    var apiPanel: DeviceAPIPanel!
+    var pathBar: PathBar?
+    var workflowStrip: WorkflowLiveStrip?
+    var lastRecordedWorkflow: Workflow?
+    var aiProviderPanel: AIProviderSettingsPanel?
+    var phoneAgentService: AIPhoneAgentService?
     var connectionState: ConnectionState = .idle
     var lastBootDevice: DeviceInfo?
     var recoveryAttempt = 0
     var engineRecoveryAttempt = 0
     private var sleepObservers: [NSObjectProtocol] = []
     var control = ControlClient()
+    private let deviceActionGate = DeviceActionGate()
     var muvsReader: VideoSocketReader?
     var capture: DeviceScreenCapture?
     private let captureClock = NSLock()
     private var lastCaptureNs: UInt64 = 0
+    private let agentObservationLock = NSLock()
+    private var latestAgentObservation: (
+        fingerprint: AgentFrameEncoder.Fingerprint,
+        recognizedText: [AgentRecognizedText]
+    )?
     var session: TunnelSession?
     var codecLabel = "muvs3"
     var musicSafe = false
     private var lastStatusTick = CACurrentMediaTime()
     private var didRevealMirror = false
-    /// Top inset above the phone stage (titlebar / traffic lights).
-    private let chromeTop: CGFloat = 28
+    /// Top inset above the phone stage (titlebar / traffic lights + header bar).
+    private let chromeTop: CGFloat = 46
     /// Gap + dock + bottom margin under the stage.
     private let chromeBottom: CGFloat = 68
     private let sidePad: CGFloat = 8
@@ -115,10 +177,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var pendingOrientationResize = false
     /// Native fullscreen session (aspect lock must not fight the space size).
     private var fullScreenSession = false
+    private var sidebarWidthConstraint: NSLayoutConstraint?
+    private var workflowPlaybackHoldsLease = false
 
     private var inFullScreen: Bool {
         fullScreenSession || window?.styleMask.contains(.fullScreen) == true
     }
+
+    private var sidebarContentWidth: CGFloat { 0 }
+    private var sidebarChromeWidth: CGFloat { 0 }
+    private var minimumStageHeight: CGFloat { 160 }
 
     init(args: AppArgs) {
         self.args = args
@@ -129,6 +197,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         MirrorUESettings.applyToEnvironment()
         installMainMenu()
         _ = DeviceScreenCapture.isAvailable
+
+        LocalAPIServer.shared.allowRemote = true
+        startLocalAPI()
+
+        if args.web || args.openWeb {
+            print("==> Web Mirror Studio active at http://127.0.0.1:\(args.httpPort)/web")
+            if args.openWeb {
+                if let url = URL(string: "http://127.0.0.1:\(args.httpPort)/web") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+        }
 
         let contentW = args.width + sidePad * 2
         let contentH = args.height + chromeY
@@ -204,6 +284,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         bezel.addSubview(rim)
 
         metalView = FrameView(frame: .zero, device: device, control: control)
+        metalView.manualControlAllowed = { [weak self] in
+            self?.deviceActionGate.allowsManualActions ?? false
+        }
         metalView.wantsLayer = true
         metalView.layer?.cornerRadius = 23
         metalView.layer?.cornerCurve = .continuous
@@ -216,6 +299,90 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         dock.translatesAutoresizingMaskIntoConstraints = false
         dock.onAction = { [weak self] id in self?.handleDockAction(id) }
         root.addSubview(dock)
+
+        let headerBar = DeviceHubHeaderBar(frame: .zero)
+        headerBar.translatesAutoresizingMaskIntoConstraints = false
+        headerBar.onModeSelected = { [weak self] mode in
+            self?.handleHeaderModeSelected(mode)
+        }
+        headerBar.onQuickAction = { [weak self] action in
+            self?.handleHeaderQuickAction(action)
+        }
+        root.addSubview(headerBar)
+        self.headerBar = headerBar
+
+        let telemetryPanel = DeviceTelemetryPanel(frame: .zero)
+        telemetryPanel.telemetryProvider = { [weak self] in
+            guard let self else {
+                return DeviceTelemetryPanel.TelemetrySnapshot(
+                    fps: 0, latencyMs: 0, width: 390, height: 844,
+                    connectionLink: "USB", keyboardLayout: "Auto",
+                    apiPort: 8090, apiRunning: false, codec: "CoreMediaIO"
+                )
+            }
+            let latencySnap = self.metalView?.presentLatency.snapshot()
+            let (w, h) = self.lastVideoSize
+            return DeviceTelemetryPanel.TelemetrySnapshot(
+                fps: Double(self.metalView?.fps ?? 0),
+                latencyMs: latencySnap?.p95Ms ?? 0,
+                width: w > 0 ? w : 390,
+                height: h > 0 ? h : 844,
+                connectionLink: self.session?.device.connectionType ?? "USB usbmux",
+                keyboardLayout: MirrorUESettings.keyboardMode.rawValue,
+                apiPort: Int(LocalAPIServer.shared.port),
+                apiRunning: LocalAPIServer.shared.isRunning,
+                codec: self.codecLabel
+            )
+        }
+        self.telemetryPanel = telemetryPanel
+
+        let apiPanel = DeviceAPIPanel(frame: .zero)
+        apiPanel.setServerStatus(running: LocalAPIServer.shared.isRunning, port: UInt16(args.httpPort))
+        self.apiPanel = apiPanel
+
+        let pathBar = PathBar(frame: .zero)
+        let workflowStrip = WorkflowLiveStrip(frame: .zero)
+        let workflowView = WorkflowSidebarView(
+            frame: .zero,
+            pathBar: pathBar,
+            timeline: workflowStrip
+        )
+        let agentPanel = AgentPanel(frame: .zero, embedded: true)
+        agentPanel.setPresentationActive(false)
+        let automationSidebar = AutomationSidebar(
+            frame: .zero,
+            workflowView: workflowView,
+            agentView: agentPanel,
+            telemetryView: telemetryPanel,
+            apiView: apiPanel
+        )
+        automationSidebar.translatesAutoresizingMaskIntoConstraints = false
+        automationSidebar.onCollapsedChanged = { [weak self] collapsed in
+            self?.sidebarCollapsedChanged(collapsed)
+        }
+        automationSidebar.onTabSelected = { [weak self] tab in
+            guard let self else { return }
+            switch tab {
+            case .workflow:
+                self.headerBar?.setMode(.workflows)
+            case .aiRuns:
+                self.headerBar?.setMode(.aiAgent)
+            case .telemetry, .apiStudio:
+                self.headerBar?.setMode(.telemetry)
+            }
+        }
+        self.pathBar = pathBar
+        self.workflowStrip = workflowStrip
+        self.agentPanel = agentPanel
+        self.automationSidebar = automationSidebar
+        wireWorkflowSidebar()
+        wireAgentPanel(agentPanel)
+
+        WorkflowTiming.latencyProvider = { [weak self] in
+            let snapshot = self?.metalView.presentLatency.snapshot()
+                ?? LatencyWindow.Snapshot(p50Ms: 0, p95Ms: 0, count: 0)
+            return (snapshot.p50Ms, snapshot.p95Ms)
+        }
 
         status = StatusChip(frame: .zero)
         status.translatesAutoresizingMaskIntoConstraints = false
@@ -232,16 +399,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         linkBadge.set(symbol: "cable.connector", text: "USB · pick a phone", tip: "Connexion USB — choisir un iPhone")
         metalView.addSubview(linkBadge)
 
+        let sidebarWidth = automationSidebar.widthAnchor.constraint(
+            equalToConstant: AutomationSidebar.expandedWidth
+        )
+        sidebarWidthConstraint = sidebarWidth
+
         NSLayoutConstraint.activate([
-            stage.topAnchor.constraint(equalTo: root.topAnchor, constant: chromeTop),
+            headerBar.topAnchor.constraint(equalTo: root.topAnchor),
+            headerBar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            headerBar.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            headerBar.heightAnchor.constraint(equalToConstant: 38),
+
+            stage.topAnchor.constraint(equalTo: headerBar.bottomAnchor, constant: 6),
             stage.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: sidePad),
             stage.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -sidePad),
             stage.bottomAnchor.constraint(equalTo: dock.topAnchor, constant: -8),
 
-            dock.centerXAnchor.constraint(equalTo: root.centerXAnchor),
+            dock.leadingAnchor.constraint(equalTo: stage.leadingAnchor),
+            dock.trailingAnchor.constraint(equalTo: stage.trailingAnchor),
             dock.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -12),
             dock.heightAnchor.constraint(equalToConstant: 56),
-            dock.widthAnchor.constraint(equalTo: root.widthAnchor, constant: -12),
 
             status.leadingAnchor.constraint(equalTo: metalView.leadingAnchor, constant: 10),
             status.trailingAnchor.constraint(equalTo: metalView.trailingAnchor, constant: -10),
@@ -262,6 +439,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
         resizeWindowToVideo(animated: false)
         installSessionHealthObservers()
+        configurePhoneAgent()
         startLocalAPI()
         // Do NOT auto-request permissions or warm FastVLM here — that spammed prompts.
         // PermissionsGateView asks one-by-one; warmup starts after the gate.
@@ -307,8 +485,329 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         applyConnectionState(.pickingDevice)
     }
 
+    private func configurePhoneAgent() {
+        phoneAgentService = AIPhoneAgentService(
+            observationSource: { [weak self] includeScreenshot in
+                guard let self else { throw AgentIntegrationError.noLiveFrame }
+                return try await self.makeAgentObservation(includeScreenshot: includeScreenshot)
+            },
+            actionExecutor: { [weak self] actions in
+                guard let self else { throw AgentIntegrationError.notConnected }
+                return try await self.executeAgentActionsAndSettle(actions)
+            }
+        )
+    }
+
+    private func makeAgentObservation(
+        includeScreenshot: Bool
+    ) async throws -> AgentPhoneObservation {
+        guard captureIsAgentFresh else { throw AgentIntegrationError.staleCapture }
+        let snapshot: AgentPixelBufferSnapshot? = await MainActor.run { [weak self] in
+            guard let pixelBuffer = self?.metalView?.latestPixelBuffer() else { return nil }
+            return AgentPixelBufferSnapshot(value: pixelBuffer)
+        }
+        guard let snapshot else { throw AgentIntegrationError.noLiveFrame }
+
+        let prepared = try await Task.detached(priority: .userInitiated) {
+            let pixelBuffer = snapshot.value
+            let rows = (try? AgentScreenOCR.shared.recognize(pixelBuffer)) ?? []
+            let ocr = AgentScreenOCR.promptText(rows)
+
+            let fingerprint: AgentFrameEncoder.Fingerprint
+            let imageDataURL: String?
+            let encodedDescription: String
+            if includeScreenshot {
+                let frame = try AgentFrameEncoder.shared.encode(pixelBuffer)
+                fingerprint = frame.fingerprint
+                imageDataURL = "data:image/jpeg;base64,"
+                    + frame.jpegData.base64EncodedString()
+                encodedDescription = "\(frame.encodedSize.width)x\(frame.encodedSize.height) JPEG attached"
+            } else {
+                fingerprint = try AgentFrameEncoder.shared.fingerprint(pixelBuffer)
+                imageDataURL = nil
+                encodedDescription = "screenshot sharing disabled; use OCR coordinates"
+            }
+
+            let text = """
+            Screen source: \(fingerprint.sourceSize.width)x\(fingerprint.sourceSize.height); \(encodedDescription).
+            Coordinates below use normalized top-left origin and can be tapped directly.
+            Visible text:
+            \(ocr)
+            """
+            let frameID = String(fingerprint.quantizedSampleHash, radix: 16)
+            return PreparedAgentObservation(
+                observation: AgentPhoneObservation(
+                    text: text,
+                    imageDataURL: imageDataURL,
+                    frameID: frameID
+                ),
+                fingerprint: fingerprint,
+                recognizedText: rows
+            )
+        }.value
+        let foregroundStatus = try? await control.foregroundAppStatus()
+        var observation = prepared.observation
+        if let foregroundStatus,
+           foregroundStatus.available,
+           foregroundStatus.fresh,
+           let bundleIdentifier = foregroundStatus.bundleIdentifier?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+           !bundleIdentifier.isEmpty {
+            observation.foregroundApp = AgentForegroundApp(
+                displayName: foregroundStatus.name,
+                bundleIdentifier: bundleIdentifier,
+                stateDescription: foregroundStatus.state
+            )
+        }
+        recordAgentObservation(prepared)
+        return observation
+    }
+
+    private func executeAgentActionsAndSettle(
+        _ actions: [AgentPhoneAction]
+    ) async throws -> AgentActionExecutionResult {
+        let connected = await MainActor.run { [weak self] in self?.didRevealMirror == true }
+        guard connected else { throw AgentIntegrationError.notConnected }
+        guard captureIsAgentFresh else { throw AgentIntegrationError.staleCapture }
+        guard deviceActionGate.beginAgentBatch() else {
+            throw AgentIntegrationError.deviceBusy
+        }
+        defer { deviceActionGate.endAgentBatch() }
+        await MainActor.run { [weak self] in
+            self?.metalView?.cancelManualInput()
+        }
+
+        try await requestAgentApprovalIfNeeded(for: actions)
+        guard captureIsAgentFresh else { throw AgentIntegrationError.staleCapture }
+        guard let current = await currentAgentFingerprint() else {
+            throw AgentIntegrationError.noLiveFrame
+        }
+        if actions.contains(where: \.dependsOnObservedScreen) {
+            guard let expected = expectedAgentFingerprint() else {
+                throw AgentIntegrationError.noLiveFrame
+            }
+            guard current.isVisuallySimilar(
+                to: expected,
+                maximumHashBitChanges: 5,
+                maximumAverageLumaDelta: 6
+            ) else {
+                // The screen moved while the model was thinking or while
+                // approval was pending. Let that transition reach a useful
+                // checkpoint before re-observing. Screen-independent actions
+                // such as direct app launch intentionally skip this rejection.
+                _ = try await waitForAgentScreenToSettle(
+                    after: expected,
+                    minimumMilliseconds: 720
+                )
+                throw AgentActionExecutionError.observationChanged
+            }
+        }
+        let before = current
+        try await executeValidatedAgentActions(actions)
+        let settle = try await waitForAgentScreenToSettle(
+            after: before,
+            minimumMilliseconds: minimumAgentSettleMilliseconds(for: actions)
+        )
+        return AgentActionExecutionResult(summary: settle)
+    }
+
+    private func minimumAgentSettleMilliseconds(
+        for actions: [AgentPhoneAction]
+    ) -> UInt64 {
+        if actions.contains(where: {
+            switch $0 {
+            case .openApp, .tap, .swipe, .button: return true
+            case .type, .wait: return false
+            }
+        }) {
+            return 720
+        }
+        if actions.contains(where: {
+            if case .type = $0 { return true }
+            return false
+        }) {
+            return 420
+        }
+        return 180
+    }
+
+    private func requestAgentApprovalIfNeeded(
+        for actions: [AgentPhoneAction]
+    ) async throws {
+        let canBeConsequential = actions.contains { action in
+            switch action {
+            case .tap, .type: return true
+            default: return false
+            }
+        }
+        guard canBeConsequential else { return }
+        try Task.checkCancellation()
+
+        guard let request = AgentActionApprovalPolicy.approvalRequest(
+            for: actions,
+            recognizedText: expectedAgentRecognizedText()
+        ) else { return }
+
+        let session: AgentApprovalSession? = await MainActor.run { [weak self] in
+            guard let window = self?.window else { return nil }
+            return AgentApprovalSession(request: request, hostWindow: window)
+        }
+        guard let session else {
+            throw CancellationError()
+        }
+        let approved = await withTaskCancellationHandler {
+            await session.present()
+        } onCancel: {
+            session.cancel()
+        }
+        try Task.checkCancellation()
+        guard approved else { throw CancellationError() }
+    }
+
+    private func expectedAgentFingerprint() -> AgentFrameEncoder.Fingerprint? {
+        agentObservationLock.lock()
+        defer { agentObservationLock.unlock() }
+        return latestAgentObservation?.fingerprint
+    }
+
+    private func expectedAgentRecognizedText() -> [AgentRecognizedText] {
+        agentObservationLock.lock()
+        defer { agentObservationLock.unlock() }
+        return latestAgentObservation?.recognizedText ?? []
+    }
+
+    private func recordAgentObservation(_ prepared: PreparedAgentObservation) {
+        agentObservationLock.lock()
+        latestAgentObservation = (
+            fingerprint: prepared.fingerprint,
+            recognizedText: prepared.recognizedText
+        )
+        agentObservationLock.unlock()
+    }
+
+    @MainActor
+    private func executeValidatedAgentActions(
+        _ actions: [AgentPhoneAction]
+    ) async throws {
+        guard didRevealMirror else { throw AgentIntegrationError.notConnected }
+        let mode = metalView?.touchMode ?? .portrait
+
+        for action in actions {
+            try Task.checkCancellation()
+            switch action {
+            case .tap(let x, let y):
+                metalView?.showAgentActionOverlay(action)
+                try await WorkflowPlayer.shared.executeCancellable(
+                    .tap(x: x, y: y),
+                    control: control,
+                    mode: mode
+                )
+            case .swipe(let x, let y, let x1, let y1, let duration):
+                metalView?.showAgentActionOverlay(action)
+                try await WorkflowPlayer.shared.executeCancellable(
+                    .swipe(x0: x, y0: y, x1: x1, y1: y1, ms: duration),
+                    control: control,
+                    mode: mode
+                )
+            case .type(let text):
+                try await WorkflowPlayer.shared.runTypeCancellable(
+                    text,
+                    control: control,
+                    resetBefore: true
+                )
+            case .openApp(let name):
+                do {
+                    _ = try await control.openAppDirect(name)
+                } catch let error as ControlClientRequestError
+                    where error.allowsAppMacroFallback {
+                    try await LocalAPIMacros.openAppCancellable(
+                        name,
+                        control: control,
+                        mode: mode
+                    )
+                }
+            case .button(let name):
+                if name == "home" {
+                    try await LocalAPIMacros.goHomeCancellable(
+                        control: control,
+                        mode: mode
+                    )
+                } else {
+                    try await WorkflowPlayer.shared.executeCancellable(
+                        .button(name),
+                        control: control,
+                        mode: mode
+                    )
+                }
+            case .wait(let milliseconds):
+                try await LocalAPIMacros.sleepMsCancellable(milliseconds)
+            }
+        }
+    }
+
+    private func currentAgentFingerprint() async -> AgentFrameEncoder.Fingerprint? {
+        let snapshot: AgentPixelBufferSnapshot? = await MainActor.run { [weak self] in
+            guard let pixelBuffer = self?.metalView?.latestPixelBuffer() else { return nil }
+            return AgentPixelBufferSnapshot(value: pixelBuffer)
+        }
+        guard let snapshot else { return nil }
+        return await Task.detached(priority: .utility) {
+            try? AgentFrameEncoder.shared.fingerprint(snapshot.value)
+        }.value
+    }
+
+    private func waitForAgentScreenToSettle(
+        after initial: AgentFrameEncoder.Fingerprint?,
+        minimumMilliseconds: UInt64 = 720
+    ) async throws -> String {
+        let started = DispatchTime.now().uptimeNanoseconds
+        let minimum = started + minimumMilliseconds * 1_000_000
+        let deadline = started + max(minimumMilliseconds + 1_800, 2_400) * 1_000_000
+        var changed = initial == nil
+        var stableSamples = 0
+        var previous = initial
+
+        while DispatchTime.now().uptimeNanoseconds < deadline {
+            try Task.checkCancellation()
+            try await Task.sleep(nanoseconds: 180_000_000)
+            guard let current = await currentAgentFingerprint() else { continue }
+
+            if let initial, !current.isVisuallySimilar(to: initial) {
+                changed = true
+            }
+            if changed, let previous, current.isVisuallySimilar(to: previous) {
+                stableSamples += 1
+                if stableSamples >= 3,
+                   DispatchTime.now().uptimeNanoseconds >= minimum {
+                    let elapsed = (DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
+                    return "screen settled in \(elapsed)ms"
+                }
+            } else {
+                stableSamples = 0
+            }
+            previous = current
+
+            if !changed, DispatchTime.now().uptimeNanoseconds >= minimum {
+                return "screen unchanged after action"
+            }
+        }
+        return changed ? "screen changed; settle timeout reached" : "screen unchanged"
+    }
+
     private func startLocalAPI() {
         let api = LocalAPIServer.shared
+        api.beginControlAction = { [weak self] in
+            self?.deviceActionGate.beginManualAction() ?? false
+        }
+        api.endControlAction = { [weak self] in
+            self?.deviceActionGate.endManualAction()
+        }
+        api.beginWorkflowPlayback = { [weak self] in
+            self?.deviceActionGate.beginWorkflowPlayback() ?? false
+        }
+        api.endWorkflowPlayback = { [weak self] in
+            self?.deviceActionGate.endWorkflowPlayback()
+        }
         api.controlProvider = { [weak self] in
             guard let self, self.didRevealMirror else { return nil }
             return self.control
@@ -335,15 +834,297 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let url = URL(fileURLWithPath: NSTemporaryDirectory())
                 .appendingPathComponent("mirrorue-live-frame.\(ext)")
             let ok = CaptureStudio.shared.writeFrame(
-                self.metalView?.lastPixelBuffer,
+                self.metalView?.latestPixelBuffer(),
                 to: url,
                 maxWidth: maxW,
                 format: format
             )
             return ok ? url.path : nil
         }
+        api.rawFrameProvider = { [weak self] maxW in
+            guard let self else { return nil }
+            return CaptureStudio.shared.encodeJPEG(
+                self.metalView?.latestPixelBuffer(),
+                maxWidth: maxW,
+                quality: 0.75
+            )
+        }
+        api.llmStatusHandler = { [weak self] in
+            guard let self else {
+                return (503, ["ok": false, "error": "app unavailable"])
+            }
+            return await self.llmStatusResult()
+        }
+        api.llmChatHandler = { [weak self] payload in
+            guard let self else {
+                return (503, ["ok": false, "error": "app unavailable"])
+            }
+            return await self.llmChatResult(payload)
+        }
+        api.agentRunHandler = { [weak self] payload in
+            guard let self else {
+                return (503, ["ok": false, "error": "app unavailable"])
+            }
+            return await self.agentRunResult(payload)
+        }
+        api.agentStatusHandler = { [weak self] in
+            guard let self else {
+                return (503, ["ok": false, "error": "app unavailable"])
+            }
+            return await self.agentStatusResult()
+        }
+        api.agentLogsHandler = { [weak self] in
+            guard let self else {
+                return (503, ["ok": false, "error": "app unavailable"])
+            }
+            return await self.agentLogsResult()
+        }
+        api.agentStopHandler = { [weak self] payload in
+            guard let self else {
+                return (503, ["ok": false, "error": "app unavailable"])
+            }
+            return await self.agentStopResult(payload)
+        }
+        api.aiRunActiveProvider = { [weak self] in
+            guard let service = self?.phoneAgentService else { return false }
+            if await service.isStarting() { return true }
+            guard let snapshot = await service.snapshot() else { return false }
+            return !snapshot.status.isTerminal
+        }
         let port = UInt16(ProcessInfo.processInfo.environment["MIRRORUE_API_PORT"].flatMap(Int.init) ?? 8090)
         api.start(port: port)
+    }
+
+    private func llmStatusResult() async -> LocalAPIServer.JSONResult {
+        guard let profile = AIProviderStore.shared.selectedProfile else {
+            return (503, ["ok": false, "error": "no provider configured"])
+        }
+        let test = await AIProviderRuntimeService.shared.connectionStatus()
+        let agentPolicy = AIPhoneAgentRequestPolicy.forProfile(profile)
+        var json: [String: Any] = [
+            "ok": test.succeeded,
+            "provider": profile.preset.rawValue,
+            "name": profile.name,
+            "host": profile.baseURL,
+            "model": profile.model,
+            "models": test.models,
+            "latency_ms": test.latencyMilliseconds,
+            "screenshots": profile.allowsScreenshots,
+            "chatReasoning": profile.reasoningEffort.rawValue,
+            "agentReasoning": (
+                agentPolicy.reasoningEffortOverride ?? profile.reasoningEffort
+            ).rawValue,
+            "detail": test.message,
+        ]
+        if !test.succeeded { json["error"] = test.message }
+        return (test.succeeded ? 200 : 503, json)
+    }
+
+    private func llmChatResult(
+        _ payload: [String: Any]
+    ) async -> LocalAPIServer.JSONResult {
+        do {
+            let resolved = try await AIProviderRuntimeService.shared.resolveSelected()
+            let messages: [AgentChatMessage]
+            if let raw = payload["messages"] as? [[String: Any]], !raw.isEmpty {
+                messages = raw.compactMap { row in
+                    guard let content = row["content"] as? String else { return nil }
+                    let role: AgentChatRole
+                    switch (row["role"] as? String)?.lowercased() {
+                    case "system": role = .system
+                    case "assistant": role = .assistant
+                    case "tool": role = .tool
+                    default: role = .user
+                    }
+                    return AgentChatMessage(role: role, text: content)
+                }
+            } else {
+                let prompt = (payload["prompt"] as? String)
+                    ?? (payload["question"] as? String)
+                    ?? ""
+                messages = [AgentChatMessage(role: .user, text: prompt)]
+            }
+            guard !messages.isEmpty,
+                  messages.contains(where: { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
+                return (400, ["ok": false, "error": "prompt or messages required"])
+            }
+
+            let maxTokens = min(
+                4_096,
+                max(1, Self.jsonInt(payload["max_tokens"] ?? payload["maxTokens"]) ?? 256)
+            )
+            let temperature = min(
+                2,
+                max(0, Self.jsonDouble(payload["temperature"]) ?? 0)
+            )
+            let requestedModel = (payload["model"] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let response = try await resolved.provider.complete(
+                AgentChatRequest(
+                    messages: messages,
+                    model: requestedModel?.isEmpty == false ? requestedModel : nil,
+                    temperature: temperature,
+                    maxTokens: maxTokens
+                )
+            )
+            return (200, [
+                "ok": true,
+                "text": response.text,
+                "provider": resolved.profile.name,
+                "model": response.model,
+                "usage": [
+                    "prompt": response.usage.promptTokens,
+                    "completion": response.usage.completionTokens,
+                    "total": response.usage.totalTokens,
+                    "latency_ms": Int(response.latencyMilliseconds),
+                ],
+            ])
+        } catch {
+            return (503, ["ok": false, "error": error.localizedDescription])
+        }
+    }
+
+    private func agentRunResult(
+        _ payload: [String: Any]
+    ) async -> LocalAPIServer.JSONResult {
+        guard didRevealMirror else {
+            return (503, ["ok": false, "error": AgentIntegrationError.notConnected.localizedDescription])
+        }
+        guard let service = phoneAgentService else {
+            return (503, ["ok": false, "error": "phone agent is unavailable"])
+        }
+        let goal = (payload["goal"] as? String ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !goal.isEmpty else {
+            return (400, ["ok": false, "error": "goal required"])
+        }
+        let maxSteps = min(32, max(1, Self.jsonInt(payload["maxSteps"] ?? payload["max_steps"]) ?? 12))
+        do {
+            let id = try await service.start(goal: goal, maxSteps: maxSteps)
+            return (202, [
+                "ok": true,
+                "runId": id.uuidString.lowercased(),
+                "state": AgentRunStatus.queued.rawValue,
+                "running": true,
+                "maxSteps": maxSteps,
+            ])
+        } catch PhoneAgentCoordinatorError.alreadyRunning {
+            return (409, ["ok": false, "error": "an agent run is already active"])
+        } catch PhoneAgentCoordinatorError.invalidGoal {
+            return (400, ["ok": false, "error": "invalid goal"])
+        } catch {
+            return (503, ["ok": false, "error": error.localizedDescription])
+        }
+    }
+
+    private func agentStatusResult() async -> LocalAPIServer.JSONResult {
+        guard let service = phoneAgentService else {
+            return (503, ["ok": false, "error": "phone agent is unavailable"])
+        }
+        let provider = await service.currentProviderLabel()
+        guard let snapshot = await service.snapshot() else {
+            let starting = await service.isStarting()
+            return (200, [
+                "ok": true,
+                "state": starting ? "starting" : "idle",
+                "running": starting,
+                "provider": provider,
+            ])
+        }
+        return (200, Self.agentSnapshotJSON(snapshot, provider: provider))
+    }
+
+    private func agentLogsResult() async -> LocalAPIServer.JSONResult {
+        guard let service = phoneAgentService else {
+            return (503, ["ok": false, "error": "phone agent is unavailable"])
+        }
+        guard let snapshot = await service.snapshot() else {
+            return (200, ["ok": true, "state": "idle", "logs": []])
+        }
+        let formatter = ISO8601DateFormatter()
+        let logs: [[String: Any]] = snapshot.logs.map { row in
+            [
+                "sequence": row.sequence,
+                "time": formatter.string(from: row.timestamp),
+                "level": row.level.rawValue,
+                "state": row.status.rawValue,
+                "step": row.step,
+                "message": row.message,
+            ]
+        }
+        return (200, [
+            "ok": true,
+            "runId": snapshot.id.uuidString.lowercased(),
+            "state": snapshot.status.rawValue,
+            "logs": logs,
+        ])
+    }
+
+    private func agentStopResult(
+        _ payload: [String: Any]
+    ) async -> LocalAPIServer.JSONResult {
+        guard let service = phoneAgentService else {
+            return (503, ["ok": false, "error": "phone agent is unavailable"])
+        }
+        let requestedID: UUID?
+        if let rawID = payload["runId"] as? String {
+            guard let parsed = UUID(uuidString: rawID) else {
+                return (400, ["ok": false, "error": "runId must be a UUID"])
+            }
+            requestedID = parsed
+        } else {
+            requestedID = nil
+        }
+        do {
+            try await service.cancel(runID: requestedID)
+        } catch PhoneAgentCoordinatorError.runNotFound {
+            return (404, ["ok": false, "error": "agent run not found"])
+        } catch {
+            return (503, ["ok": false, "error": error.localizedDescription])
+        }
+        let provider = await service.currentProviderLabel()
+        if let snapshot = await service.snapshot() {
+            return (200, Self.agentSnapshotJSON(snapshot, provider: provider))
+        }
+        return (200, ["ok": true, "state": "idle", "running": false])
+    }
+
+    private static func agentSnapshotJSON(
+        _ snapshot: AgentRunSnapshot,
+        provider: String
+    ) -> [String: Any] {
+        var json: [String: Any] = [
+            "ok": true,
+            "runId": snapshot.id.uuidString.lowercased(),
+            "goal": snapshot.goal,
+            "state": snapshot.status.rawValue,
+            "running": !snapshot.status.isTerminal,
+            "step": snapshot.step,
+            "provider": provider,
+            "usage": [
+                "prompt": snapshot.metrics.promptTokens,
+                "completion": snapshot.metrics.completionTokens,
+                "llm_latency_ms": Int(snapshot.metrics.llmLatencyMilliseconds),
+                "actions": snapshot.metrics.actionsExecuted,
+            ],
+        ]
+        if let summary = snapshot.summary { json["summary"] = summary }
+        if let error = snapshot.error { json["error"] = error }
+        return json
+    }
+
+    private static func jsonInt(_ value: Any?) -> Int? {
+        if let value = value as? Int { return value }
+        if let value = value as? NSNumber { return value.intValue }
+        if let value = value as? String { return Int(value) }
+        return nil
+    }
+
+    private static func jsonDouble(_ value: Any?) -> Double? {
+        if let value = value as? Double { return value }
+        if let value = value as? NSNumber { return value.doubleValue }
+        if let value = value as? String { return Double(value) }
+        return nil
     }
 
     private func installSessionHealthObservers() {
@@ -382,6 +1163,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         appMenu.addItem(withTitle: "Privacy & Security…", action: #selector(showPrivacy), keyEquivalent: "")
         appMenu.addItem(NSMenuItem.separator())
         appMenu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
+        appMenu.addItem(withTitle: "Workflows", action: #selector(showWorkflows), keyEquivalent: "")
+        appMenu.addItem(withTitle: "AI Runs", action: #selector(showAgent), keyEquivalent: "")
+        appMenu.addItem(withTitle: "AI Provider…", action: #selector(showAIProviderSettings), keyEquivalent: "")
+        appMenu.addItem(
+            withTitle: "Toggle Automation Sidebar",
+            action: #selector(toggleAutomationSidebar),
+            keyEquivalent: ""
+        )
         appMenu.addItem(withTitle: "Performance…", action: #selector(showPerformance), keyEquivalent: "p")
         appMenu.addItem(NSMenuItem.separator())
         let shot = NSMenuItem(title: "Screenshot", action: #selector(takeScreenshot), keyEquivalent: "s")
@@ -404,6 +1193,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         windowItem.submenu = windowMenu
         main.addItem(windowItem)
         windowMenu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
+        windowMenu.addItem(withTitle: "Workflows", action: #selector(showWorkflows), keyEquivalent: "")
+        windowMenu.addItem(withTitle: "AI Runs", action: #selector(showAgent), keyEquivalent: "")
+        windowMenu.addItem(withTitle: "AI Provider…", action: #selector(showAIProviderSettings), keyEquivalent: "")
+        windowMenu.addItem(
+            withTitle: "Toggle Automation Sidebar",
+            action: #selector(toggleAutomationSidebar),
+            keyEquivalent: ""
+        )
         windowMenu.addItem(withTitle: "Performance…", action: #selector(showPerformance), keyEquivalent: "p")
 
         NSApp.mainMenu = main
@@ -452,6 +1249,128 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         settingsPanel = panel
     }
 
+    @objc func showAIProviderSettings() {
+        guard aiProviderPanel == nil, let root = window.contentView else { return }
+        let panel = AIProviderSettingsPanel(
+            frame: root.bounds,
+            profile: AIProviderStore.shared.selectedProfile
+        )
+        panel.autoresizingMask = [.width, .height]
+        panel.onCancel = { [weak self] in
+            self?.aiProviderPanel?.removeFromSuperview()
+            self?.aiProviderPanel = nil
+        }
+        panel.onSave = { [weak self] profile in
+            Task { await AIProviderRuntimeService.shared.invalidate() }
+            self?.status.stringValue = "AI provider saved · \(profile.name)"
+            self?.aiProviderPanel?.removeFromSuperview()
+            self?.aiProviderPanel = nil
+        }
+        root.addSubview(panel)
+        aiProviderPanel = panel
+    }
+
+    private func wireAgentPanel(_ panel: AgentPanel) {
+        panel.onClose = { [weak self] in
+            self?.automationSidebar?.setCollapsed(true)
+        }
+        panel.onConfigure = { [weak self] in self?.showAIProviderSettings() }
+        panel.onRun = { [weak self, weak panel] goal, maxSteps in
+            guard let self, let service = self.phoneAgentService else { return }
+            guard !WorkflowPlayer.shared.isPlaying else {
+                panel?.showMessage(
+                    "Stop workflow playback before starting an AI run.",
+                    isError: true
+                )
+                return
+            }
+            guard !WorkflowRecorder.shared.isRecording else {
+                panel?.showMessage(
+                    "Stop workflow recording before starting an AI run.",
+                    isError: true
+                )
+                return
+            }
+            panel?.showMessage("Starting…")
+            Task { @MainActor [weak self, weak panel] in
+                do {
+                    _ = try await service.start(goal: goal, maxSteps: maxSteps)
+                } catch {
+                    panel?.showMessage(error.localizedDescription, isError: true)
+                    self?.status.stringValue = "agent failed to start"
+                }
+            }
+        }
+        panel.onStop = { [weak self] in
+            guard let service = self?.phoneAgentService else { return }
+            Task { try? await service.cancel() }
+        }
+        panel.snapshotProvider = { [weak self] in
+            guard let service = self?.phoneAgentService else {
+                return AgentPanelSnapshot(
+                    state: "Unavailable",
+                    detail: "Agent service is not initialized",
+                    logs: [],
+                    running: false,
+                    provider: "—"
+                )
+            }
+            let profile = AIProviderStore.shared.selectedProfile
+            let mode = profile?.preset == .lmStudio
+                ? "LM Studio checkpoints · ≤3 actions · reasoning None"
+                : "Checkpoint plans · up to 3 safe actions"
+            let vision = profile?.allowsScreenshots == true
+                ? "Trusted app state + screenshots · higher latency"
+                : "Trusted app state + local OCR · lowest latency"
+            let provider = await service.currentProviderLabel()
+            guard let snapshot = await service.snapshot() else {
+                let starting = await service.isStarting()
+                return AgentPanelSnapshot(
+                    state: starting ? "starting" : "idle",
+                    detail: starting ? "Resolving the selected provider" : "Enter a goal to begin",
+                    logs: [],
+                    running: starting,
+                    provider: provider,
+                    mode: mode,
+                    vision: vision
+                )
+            }
+            let detail: String
+            if let error = snapshot.error, !error.isEmpty {
+                detail = error
+            } else if let summary = snapshot.summary, !summary.isEmpty {
+                detail = summary
+            } else {
+                detail = "step \(snapshot.step)"
+            }
+            return AgentPanelSnapshot(
+                state: snapshot.status.rawValue,
+                detail: detail,
+                logs: snapshot.logs.map { "[\($0.status.rawValue)] \($0.message)" },
+                actions: snapshot.actions.map {
+                    "#\($0.sequence) · \($0.phase.rawValue) · step \($0.step) · \($0.description)"
+                },
+                running: !snapshot.status.isTerminal,
+                provider: provider,
+                mode: mode,
+                vision: vision
+            )
+        }
+    }
+
+    @objc func showAgent() {
+        automationSidebar?.show(.aiRuns)
+    }
+
+    @objc func showWorkflows() {
+        automationSidebar?.show(.workflow)
+    }
+
+    @objc func toggleAutomationSidebar() {
+        guard let automationSidebar else { return }
+        automationSidebar.setCollapsed(!automationSidebar.isCollapsed)
+    }
+
     func windowWillStartLiveResize(_ notification: Notification) {
         liveUserResize = true
         metalView?.cancelActiveTouch()
@@ -460,7 +1379,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func windowDidEndLiveResize(_ notification: Notification) {
         liveUserResize = false
         guard dock != nil else { return }
-        dock.setCompact(window.frame.width < ControlCenterDock.preferredWidth)
+        dock.setCompact(stage.bounds.width < ControlCenterDock.preferredWidth)
         applyMinSize()
     }
 
@@ -475,7 +1394,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             cv.frame = NSRect(origin: .zero, size: window.contentLayoutRect.size)
             cv.needsLayout = true
         }
-        dock?.setCompact(window.frame.width < ControlCenterDock.preferredWidth)
+        dock?.setCompact(stage.bounds.width < ControlCenterDock.preferredWidth)
     }
 
     func windowWillExitFullScreen(_ notification: Notification) {
@@ -496,6 +1415,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if inFullScreen || fullScreenSession { return frameSize }
 
         let padX = sidePad * 2
+        let sidebar = sidebarChromeWidth
         let aspect = max(mirrorAspect, 0.01)
         let current = sender.contentRect(forFrameRect: sender.frame).size
         let proposed = sender.contentRect(forFrameRect: NSRect(origin: .zero, size: frameSize)).size
@@ -505,27 +1425,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let phoneW: CGFloat
         let phoneH: CGFloat
         if dW >= dH {
-            phoneW = max(160, proposed.width - padX)
+            phoneW = max(
+                max(160, minimumStageHeight * aspect),
+                proposed.width - padX - sidebar
+            )
             phoneH = phoneW / aspect
         } else {
-            phoneH = max(160, proposed.height - chromeY)
+            phoneH = max(minimumStageHeight, proposed.height - chromeY)
             phoneW = phoneH * aspect
         }
-        let sized = NSSize(width: phoneW + padX, height: phoneH + chromeY)
+        let sized = NSSize(
+            width: phoneW + padX + sidebar,
+            height: phoneH + chromeY
+        )
         return sender.frameRect(forContentRect: NSRect(origin: .zero, size: sized)).size
     }
 
     func windowDidResize(_ notification: Notification) {
         guard dock != nil, !resizing, !liveUserResize else { return }
-        dock.setCompact(window.frame.width < ControlCenterDock.preferredWidth)
+        dock.setCompact(stage.bounds.width < ControlCenterDock.preferredWidth)
     }
 
     private func applyMinSize() {
         guard window != nil else { return }
-        let minPhone: CGFloat = 180
+        let minPhoneWidth = max(180, minimumStageHeight * max(mirrorAspect, 0.01))
+        let minPhoneHeight = max(
+            minimumStageHeight,
+            minPhoneWidth / max(mirrorAspect, 0.01)
+        )
         let minContent = NSSize(
-            width: minPhone + sidePad * 2,
-            height: minPhone / max(mirrorAspect, 0.01) + chromeY
+            width: minPhoneWidth + sidePad * 2 + sidebarChromeWidth,
+            height: minPhoneHeight + chromeY
         )
         window.minSize = window.frameRect(forContentRect: NSRect(origin: .zero, size: minContent)).size
     }
@@ -533,9 +1463,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// Hug the phone bezel: window chrome matches stage + dock, no letterboxing.
     private func fittedContent(for proposed: NSSize) -> NSSize {
         let padX = sidePad * 2
-        let availW = max(160, proposed.width - padX)
-        let availH = max(160, proposed.height - chromeY)
+        let sidebar = sidebarChromeWidth
         let aspect = max(mirrorAspect, 0.01)
+        let availW = max(
+            max(160, minimumStageHeight * aspect),
+            proposed.width - padX - sidebar
+        )
+        let availH = max(minimumStageHeight, proposed.height - chromeY)
 
         let phoneW: CGFloat
         let phoneH: CGFloat
@@ -546,10 +1480,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             phoneW = availW
             phoneH = phoneW / aspect
         }
-        return NSSize(width: phoneW + padX, height: phoneH + chromeY)
+        return NSSize(
+            width: phoneW + padX + sidebar,
+            height: phoneH + chromeY
+        )
     }
 
-    private func resizeWindowToVideo(animated: Bool) {
+    private func resizeWindowToVideo(animated: Bool, anchorRight: Bool = false) {
         guard window != nil else { return }
         // Never fight the user mid-resize, mid-drag, or while fullscreen.
         if liveUserResize || inFullScreen || metalView?.hasActiveTouch == true { return }
@@ -561,12 +1498,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if isLandscape {
             let w = max(args.height, 640)
             ideal = NSSize(
-                width: w + sidePad * 2,
+                width: w + sidePad * 2 + sidebarChromeWidth,
                 height: w / max(mirrorAspect, 0.01) + chromeY
             )
         } else {
             ideal = NSSize(
-                width: args.width + sidePad * 2,
+                width: args.width + sidePad * 2 + sidebarChromeWidth,
                 height: args.height + chromeY
             )
         }
@@ -574,7 +1511,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         var frame = window.frameRect(forContentRect: NSRect(
             origin: .zero, size: target
         ))
-        frame.origin.x = window.frame.origin.x
+        frame.origin.x = anchorRight
+            ? window.frame.maxX - frame.width
+            : window.frame.origin.x
         frame.origin.y = window.frame.origin.y + window.frame.height - frame.height
         applyMinSize()
 
@@ -587,7 +1526,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         } else {
             window.setFrame(frame, display: true)
         }
-        dock?.setCompact(target.width < ControlCenterDock.preferredWidth)
+        dock?.setCompact(
+            target.width - sidebarChromeWidth - sidePad * 2
+                < ControlCenterDock.preferredWidth
+        )
+    }
+
+    private func sidebarCollapsedChanged(_ collapsed: Bool) {
+        sidebarWidthConstraint?.constant = collapsed
+            ? AutomationSidebar.collapsedWidth
+            : AutomationSidebar.expandedWidth
+        stage.needsLayout = true
+        window.contentView?.needsLayout = true
+        if inFullScreen {
+            window.contentView?.layoutSubtreeIfNeeded()
+        } else {
+            resizeWindowToVideo(animated: true, anchorRight: true)
+        }
     }
 
     private func noteVideoSize(width: Int, height: Int) {
@@ -632,6 +1587,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
+    private func handleHeaderModeSelected(_ mode: DeviceHubMode) {
+        guard let automationSidebar else { return }
+        switch mode {
+        case .stage:
+            break
+        case .workflows:
+            automationSidebar.show(.workflow)
+        case .aiAgent:
+            automationSidebar.show(.aiRuns)
+        case .telemetry:
+            automationSidebar.show(.telemetry)
+        }
+    }
+
+    private func handleHeaderQuickAction(_ action: String) {
+        switch action {
+        case "open_web", "web":
+            if let url = URL(string: "http://127.0.0.1:\(args.httpPort)/web") {
+                NSWorkspace.shared.open(url)
+            }
+        case "sidebar":
+            if let automationSidebar {
+                automationSidebar.setCollapsed(!automationSidebar.isCollapsed)
+            }
+        default:
+            handleDockAction(action)
+        }
+    }
+
     private func applyConnectionState(_ state: ConnectionState) {
         connectionState = state
         status.stringValue = state.title
@@ -642,6 +1626,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if case .failed(let message, let detail) = state {
             connecting?.showFailed(title: message, detail: detail, steps: state.steps)
         }
+        let isConnected = state.isConnected
+        let linkName = session?.device.connectionType ?? "USB"
+        let latencySnap = metalView?.presentLatency.snapshot()
+        headerBar?.updateDeviceStatus(
+            name: cachedDeviceName,
+            link: linkName,
+            fps: Int(metalView?.fps ?? 120),
+            latencyMs: Int(latencySnap?.p95Ms ?? 18),
+            connected: isConnected
+        )
     }
 
     private func showSetupChecklist() {
@@ -807,6 +1801,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self.window.makeFirstResponder(self.metalView)
             }
             recoveryAttempt = 0
+            engineRecoveryAttempt = 0
         } catch {
             // One automatic retry for flaky tunnel bring-up.
             if recoveryAttempt < 2 {
@@ -910,10 +1905,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private var captureIsFresh: Bool {
+        captureAgeNanoseconds.map { $0 < 2_000_000_000 } ?? false
+    }
+
+    /// Agent coordinates must never be chosen from the older CoreMediaIO frame
+    /// left behind while the display has fallen back to the engine stream.
+    private var captureIsAgentFresh: Bool {
+        captureAgeNanoseconds.map { $0 < 1_000_000_000 } ?? false
+    }
+
+    private var captureAgeNanoseconds: UInt64? {
         captureClock.lock()
         let last = lastCaptureNs
         captureClock.unlock()
-        return last != 0 && monotonicNow() &- last < 2_000_000_000
+        guard last != 0 else { return nil }
+        return monotonicNow() &- last
     }
 
     private func updateStatus(latency: LatencyWindow?, detail: String) {
@@ -928,10 +1934,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 format: "%.0f fps · %@ · p95 %.0fms · %@",
                 fps, self.codecLabel, lat.p95Ms, detail
             )
+            // Hide on-screen overlay badges once connected to prevent UI clutter / redundancy
+            if self.didRevealMirror {
+                self.status.isHidden = true
+                self.deviceBadge.isHidden = true
+                self.linkBadge.isHidden = true
+            }
+            let isConnected = self.connectionState.isConnected || self.didRevealMirror
+            let linkName = self.session?.device.connectionType ?? "USB"
+            self.headerBar?.updateDeviceStatus(
+                name: self.cachedDeviceName,
+                link: linkName,
+                fps: Int(fps),
+                latencyMs: Int(lat.p95Ms),
+                connected: isConnected
+            )
         }
     }
 
     private func handleDockAction(_ id: String) {
+        let isNonControlAction = [
+            "settings", "agent", "perf", "screenshot", "record",
+        ].contains(id)
+        var holdsManualLease = false
+        if !isNonControlAction {
+            guard deviceActionGate.beginManualAction() else {
+                NSSound.beep()
+                status.stringValue = "agent action in progress"
+                return
+            }
+            holdsManualLease = true
+        }
+        defer {
+            if holdsManualLease {
+                deviceActionGate.endManualAction()
+            }
+        }
+        if holdsManualLease {
+            WorkflowRecorder.shared.button(id)
+        }
         switch id {
         case "apps":
             control.appsSwitcher()
@@ -952,6 +1993,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
         case "settings":
             showSettings()
+        case "agent":
+            showAgent()
         case "perf":
             showPerformance()
         case "screenshot":
@@ -965,8 +2008,247 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
+    private func wireWorkflowSidebar() {
+        guard let pathBar, let workflowStrip else { return }
+        pathBar.reloadPaths()
+        workflowStrip.setVisible(true)
+        workflowStrip.reload(steps: [])
+        WorkflowStore.onLibraryChanged = { [weak self] in
+            DispatchQueue.main.async {
+                guard let pathBar = self?.pathBar else { return }
+                pathBar.reloadPaths(select: pathBar.pathName)
+            }
+        }
+
+        WorkflowPlayer.shared.onStarted = { [weak self] workflow in
+            guard let self else { return }
+            self.lastRecordedWorkflow = workflow
+            self.pathBar?.pathName = workflow.name
+            self.pathBar?.setPlaying(true)
+            self.pathBar?.setStatus("Starting · \(workflow.steps.count) steps")
+            self.workflowStrip?.setMode(recording: false, playing: true)
+            self.workflowStrip?.reload(steps: workflow.steps)
+            self.status.stringValue = "playing workflow · \(workflow.name)"
+        }
+        WorkflowPlayer.shared.onStepHighlight = { [weak self] _, index in
+            guard let workflow = WorkflowPlayer.shared.currentWorkflow else { return }
+            self?.workflowStrip?.highlight(index: index, steps: workflow.steps)
+        }
+        WorkflowPlayer.shared.onProgress = { [weak self] index, count, summary in
+            self?.pathBar?.setStatus("\(index)/\(count) · \(summary)")
+        }
+        WorkflowPlayer.shared.onFinished = { [weak self] completed in
+            guard let self else { return }
+            self.pathBar?.setPlaying(false)
+            self.workflowStrip?.setMode(recording: false, playing: false)
+            self.pathBar?.setStatus(completed ? "Completed" : "Stopped")
+            self.status.stringValue = completed
+                ? "workflow complete"
+                : "workflow stopped"
+            self.releaseWorkflowPlaybackLease()
+        }
+
+        pathBar.onSelect = { [weak self] name in
+            guard let self, let workflowStrip = self.workflowStrip else { return }
+            do {
+                let workflow = try WorkflowStore.load(named: name)
+                self.lastRecordedWorkflow = workflow
+                workflowStrip.setMode(recording: false, playing: false)
+                workflowStrip.reload(steps: workflow.steps)
+            } catch {
+                self.pathBar?.setStatus(error.localizedDescription, isError: true)
+            }
+        }
+
+        pathBar.onRecordToggle = { [weak self] in
+            guard let self, let pathBar = self.pathBar,
+                  let workflowStrip = self.workflowStrip else { return }
+            if WorkflowRecorder.shared.isRecording {
+                let workflow = WorkflowRecorder.shared.stop()
+                pathBar.setRecording(false, steps: workflow.steps.count)
+                workflowStrip.setMode(recording: false, playing: false)
+                workflowStrip.reload(steps: workflow.steps)
+                guard !workflow.steps.isEmpty else {
+                    pathBar.setStatus("Nothing was recorded", isError: true)
+                    self.status.stringValue = "workflow empty"
+                    return
+                }
+
+                var named = workflow
+                let entered = pathBar.pathName.trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                )
+                if entered.isEmpty {
+                    named.name = Self.defaultWorkflowName()
+                    pathBar.pathName = named.name
+                } else {
+                    named.name = entered
+                }
+                do {
+                    try WorkflowStore.save(named)
+                    self.lastRecordedWorkflow = named
+                    pathBar.reloadPaths(select: named.name)
+                    pathBar.setStatus("Saved · \(named.steps.count) steps")
+                    self.status.stringValue = "workflow saved · \(named.name)"
+                } catch {
+                    pathBar.setStatus(error.localizedDescription, isError: true)
+                }
+                return
+            }
+
+            pathBar.setStatus("Checking automation state…")
+            Task { @MainActor [weak self] in
+                guard let self, let pathBar = self.pathBar,
+                      let workflowStrip = self.workflowStrip else { return }
+                let agentStarting = await self.phoneAgentService?.isStarting() ?? false
+                let agentSnapshot = await self.phoneAgentService?.snapshot()
+                let agentRunning = agentSnapshot.map { !$0.status.isTerminal } ?? false
+                guard !agentStarting, !agentRunning else {
+                    pathBar.setStatus("Stop the active AI run first", isError: true)
+                    return
+                }
+                guard !WorkflowRecorder.shared.isRecording else { return }
+                guard self.didRevealMirror else {
+                    pathBar.setStatus("Connect and unlock the phone first", isError: true)
+                    return
+                }
+                guard !WorkflowPlayer.shared.isPlaying else {
+                    pathBar.setStatus("Stop playback before recording", isError: true)
+                    return
+                }
+                if pathBar.pathName.trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                ).isEmpty {
+                    pathBar.pathName = Self.defaultWorkflowName()
+                }
+                WorkflowRecorder.shared.start()
+                pathBar.setRecording(true)
+                pathBar.setStatus("Recording manual phone input")
+                workflowStrip.setMode(recording: true, playing: false)
+                workflowStrip.reload(steps: [])
+                self.status.stringValue = "recording workflow…"
+            }
+        }
+
+        pathBar.onPlay = { [weak self] name in
+            self?.pathBar?.setStatus("Checking automation state…")
+            Task { @MainActor [weak self] in
+                guard let self, let pathBar = self.pathBar,
+                      let workflowStrip = self.workflowStrip else { return }
+                let agentStarting = await self.phoneAgentService?.isStarting() ?? false
+                let agentSnapshot = await self.phoneAgentService?.snapshot()
+                let agentRunning = agentSnapshot.map { !$0.status.isTerminal } ?? false
+                guard !agentStarting, !agentRunning else {
+                    pathBar.setStatus("Stop the active AI run first", isError: true)
+                    return
+                }
+                guard self.didRevealMirror else {
+                    pathBar.setStatus("Connect and unlock the phone first", isError: true)
+                    return
+                }
+                guard !WorkflowRecorder.shared.isRecording else {
+                    pathBar.setStatus("Stop recording before playback", isError: true)
+                    return
+                }
+                guard !WorkflowPlayer.shared.isPlaying else { return }
+
+                let workflow: Workflow
+                do {
+                    workflow = try WorkflowStore.load(named: name)
+                } catch {
+                    pathBar.setStatus("Workflow not found: \(name)", isError: true)
+                    return
+                }
+                guard self.deviceActionGate.beginWorkflowPlayback() else {
+                    pathBar.setStatus(
+                        "Another action is controlling the phone",
+                        isError: true
+                    )
+                    return
+                }
+                self.workflowPlaybackHoldsLease = true
+                self.lastRecordedWorkflow = workflow
+                pathBar.setPlaying(true)
+                pathBar.setStatus("Starting · \(workflow.steps.count) steps")
+                workflowStrip.setMode(recording: false, playing: true)
+                workflowStrip.reload(steps: workflow.steps)
+                self.status.stringValue = "playing workflow · \(name)"
+
+                WorkflowPlayer.shared.play(
+                    workflow,
+                    control: self.control,
+                    touchMode: self.metalView.touchMode
+                )
+            }
+        }
+
+        pathBar.onStopPlay = { [weak self] in
+            WorkflowPlayer.shared.cancel()
+            self?.pathBar?.setStatus("Stopping…")
+        }
+        pathBar.onExport = { [weak self] name in
+            self?.exportWorkflow(named: name)
+        }
+
+        WorkflowRecorder.shared.onChanged = { [weak self] in
+            let steps = WorkflowRecorder.shared.steps
+            let recording = WorkflowRecorder.shared.isRecording
+            self?.pathBar?.setRecording(recording, steps: steps.count)
+            self?.workflowStrip?.setMode(recording: recording, playing: false)
+            self?.workflowStrip?.reload(
+                steps: steps,
+                highlight: recording && !steps.isEmpty ? steps.count - 1 : nil
+            )
+            if !recording {
+                self?.pathBar?.reloadPaths()
+            }
+        }
+        WorkflowRecorder.shared.onStepAdded = { [weak self] _, index in
+            self?.workflowStrip?.highlight(
+                index: index,
+                steps: WorkflowRecorder.shared.steps
+            )
+        }
+    }
+
+    private func releaseWorkflowPlaybackLease() {
+        guard workflowPlaybackHoldsLease else { return }
+        workflowPlaybackHoldsLease = false
+        deviceActionGate.endWorkflowPlayback()
+    }
+
+    private func exportWorkflow(named name: String) {
+        guard let pathBar else { return }
+        do {
+            _ = try WorkflowStore.load(named: name)
+        } catch {
+            pathBar.setStatus("Workflow not found: \(name)", isError: true)
+            return
+        }
+        let panel = NSSavePanel()
+        panel.title = "Export Workflow"
+        panel.nameFieldStringValue = "\(WorkflowStore.safeName(name)).json"
+        panel.allowedContentTypes = [.json]
+        panel.canCreateDirectories = true
+        guard panel.runModal() == .OK, let destination = panel.url else { return }
+        do {
+            let output = try WorkflowStore.export(named: name, to: destination)
+            pathBar.setStatus("Exported · \(output.lastPathComponent)")
+            status.stringValue = "workflow exported"
+            NSWorkspace.shared.activateFileViewerSelecting([output])
+        } catch {
+            pathBar.setStatus(error.localizedDescription, isError: true)
+        }
+    }
+
+    private static func defaultWorkflowName() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH.mm.ss"
+        return "Workflow \(formatter.string(from: Date()))"
+    }
+
     @objc func takeScreenshot() {
-        let url = CaptureStudio.shared.saveScreenshot(metalView?.lastPixelBuffer)
+        let url = CaptureStudio.shared.saveScreenshot(metalView?.latestPixelBuffer())
         if let url {
             status.stringValue = "screenshot · \(url.lastPathComponent)"
             NSWorkspace.shared.activateFileViewerSelecting([url])
@@ -1001,6 +2283,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc func pasteMacClipboard() {
+        guard deviceActionGate.beginManualAction() else {
+            NSSound.beep()
+            status.stringValue = "agent action in progress"
+            return
+        }
+        defer { deviceActionGate.endManualAction() }
         let pb = NSPasteboard.general
         guard let text = pb.string(forType: .string), !text.isEmpty else {
             status.stringValue = "clipboard empty"
@@ -1012,6 +2300,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             control.key(down: false, usage: chord.usage, character: "", mods: chord.mods)
         }
         control.keyboardReset()
+        WorkflowRecorder.shared.typed(text)
         status.stringValue = "pasted \(min(text.count, 40)) chars"
     }
 
@@ -1094,6 +2383,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
     func applicationWillTerminate(_ notification: Notification) {
+        WorkflowPlayer.shared.cancel()
+        releaseWorkflowPlaybackLease()
         LocalAPIServer.shared.stop()
         for o in sleepObservers { NSWorkspace.shared.notificationCenter.removeObserver(o) }
         sleepObservers.removeAll()
@@ -1275,6 +2566,12 @@ enum TouchMap {
         }
     }
 
+    /// Normalized UV (0...1) in current orientation -> raw digitizer coordinates (0...65535)
+    static func toDigitizer(nx: Double, ny: Double, mode: Mode) -> (Int, Int) {
+        let (hx, hy) = digitizerUV(nx: CGFloat(nx), ny: CGFloat(ny), mode: mode)
+        return (quantize(hx), quantize(hy))
+    }
+
     /// Same inclusive edge mapping as pymobiledevice3’s VNC pointer path.
     static func quantize(_ t: CGFloat) -> Int {
         let c = min(1, max(0, t))
@@ -1286,6 +2583,7 @@ enum TouchMap {
 
 final class FrameView: MTKView, MTKViewDelegate {
     private let control: ControlClient
+    var manualControlAllowed: (() -> Bool)?
     private var texture: MTLTexture?
     private var pipeline: MTLRenderPipelineState!
     private var commandQueue: MTLCommandQueue!
@@ -1299,6 +2597,8 @@ final class FrameView: MTKView, MTKViewDelegate {
     private var lastDragSent = CACurrentMediaTime()
     private var lastDragX = -1
     private var lastDragY = -1
+    private var scrollTouchActive = false
+    private var scrollReleaseWork: DispatchWorkItem?
     /// Uptime ns when the current finger went down — used to enforce a firm min hold.
     private var touchPressedAt: UInt64 = 0
     private var touchGeneration: UInt64 = 0
@@ -1324,11 +2624,26 @@ final class FrameView: MTKView, MTKViewDelegate {
     private var drawScheduled = false
     private let touchIndicator = TouchIndicatorOverlay(frame: .zero)
     /// Latest CoreMediaIO frame for screenshot / recording.
-    private(set) var lastPixelBuffer: CVPixelBuffer?
+    private var lastPixelBuffer: CVPixelBuffer?
+
+    // ── Streaming encoder (120fps @ 800Mbps) ────────────────────────────────────
+    // Two concurrent encoder slots: at 120fps we have 8.3ms per frame.
+    // JPEG at 900px Q0.88 encodes in ~3ms on Metal → both slots stay under budget.
+    // A second slot means one frame can be encoding while the next is dispatched,
+    // eliminating the artificial drop at high quality without queue buildup.
+    private static let streamEncodeQueue = DispatchQueue(
+        label: "mirrorue.stream-encode",
+        qos: .userInteractive,
+        attributes: .concurrent
+    )
+    private var streamEncodingCount: Int32 = 0   // number of in-flight encodes (max 2)
+
 
     private static var captureSlotCount: Int {
-        let raw = ProcessInfo.processInfo.environment["MIRRORUE_CAPTURE_SLOTS"] ?? "32"
-        return max(4, Int(raw) ?? 32)
+        // Six full-resolution IOSurfaces cover the triple-buffered drawable
+        // pipeline with margin while using ~80 MB instead of ~400 MB.
+        let raw = ProcessInfo.processInfo.environment["MIRRORUE_CAPTURE_SLOTS"] ?? "6"
+        return max(4, Int(raw) ?? 6)
     }
 
     init(frame: CGRect, device: MTLDevice, control: ControlClient) {
@@ -1375,7 +2690,24 @@ final class FrameView: MTKView, MTKViewDelegate {
         control.keyboardReset()
     }
 
+    /// Ends local input before an exclusive agent HID batch begins.
+    func cancelManualInput() {
+        cancelActiveTouch()
+        flushKeyboard()
+    }
+
+    private var canSendManualControl: Bool {
+        manualControlAllowed?() ?? true
+    }
+
     override func mouseDown(with event: NSEvent) {
+        guard canSendManualControl else {
+            NSSound.beep()
+            return
+        }
+        if scrollTouchActive {
+            finishScrollTouch()
+        }
         if window?.inLiveResize == true { return }
         window?.makeFirstResponder(self)
         // Only clear when we still track local keys — a blanket reset on every
@@ -1395,6 +2727,9 @@ final class FrameView: MTKView, MTKViewDelegate {
         lastDragSent = CACurrentMediaTime()
         control.touch(type: "contact", x: x, y: y)
         updateTouchIndicator(event, pressing: true)
+        if let uv = contentUV(event) {
+            WorkflowRecorder.shared.touchDown(nx: uv.0, ny: uv.1)
+        }
     }
 
     private func updateTouchIndicator(_ event: NSEvent, pressing: Bool) {
@@ -1515,12 +2850,14 @@ final class FrameView: MTKView, MTKViewDelegate {
             captureRing = CaptureFrameRing(device: device, slots: Self.captureSlotCount)
         }
         guard let slot = captureRing?.push(pixelBuffer) else { return }
-        lastPixelBuffer = pixelBuffer
         if CaptureStudio.shared.isRecording {
             CaptureStudio.shared.appendFrame(pixelBuffer)
         }
 
         uploadLock.lock()
+        // Publish the retained reference under the same lock used by readers;
+        // unsynchronised strong-reference reads/writes can corrupt ARC.
+        lastPixelBuffer = pixelBuffer
         liveCapture = slot
         zeroCopySlots = true
         let needContinuous = !continuousCapture
@@ -1535,6 +2872,36 @@ final class FrameView: MTKView, MTKViewDelegate {
                 self.preferredFramesPerSecond = DeviceScreenCapture.captureFPS
             }
         }
+
+        // Push encoded frames to all streaming clients immediately.
+        let api = LocalAPIServer.shared
+        if api.hasH264StreamingClients {
+            // Hardware H.264 encoding via M1 Pro Media Engine (<0.5ms)
+            H264StreamEncoder.shared.encode(pixelBuffer)
+        }
+
+        if api.hasJPEGStreamingClients {
+            if OSAtomicAdd32(1, &streamEncodingCount) <= 2 {
+                let capturedBuffer = pixelBuffer
+                Self.streamEncodeQueue.async { [weak self] in
+                    if let jpeg = CaptureStudio.shared.encodeJPEG(capturedBuffer, maxWidth: 900, quality: 0.88, forStreaming: true) {
+                        api.pushFrame(jpeg)
+                    }
+                    _ = self.map { OSAtomicAdd32(-1, &$0.streamEncodingCount) }
+                }
+            } else {
+                OSAtomicAdd32(-1, &streamEncodingCount)
+            }
+        }
+    }
+
+    /// Returns a strong, immutable snapshot of the latest capture frame.
+
+    /// Callers may retain/process it after this method releases the lock.
+    func latestPixelBuffer() -> CVPixelBuffer? {
+        uploadLock.lock()
+        defer { uploadLock.unlock() }
+        return lastPixelBuffer
     }
 
     private func tickFrame() {
@@ -1686,9 +3053,40 @@ final class FrameView: MTKView, MTKViewDelegate {
         return (Double(nx), Double(ny))
     }
 
+    func showAgentActionOverlay(_ action: AgentPhoneAction) {
+        switch action {
+        case .tap(let x, let y):
+            touchIndicator.release(at: contentPoint(x: x, y: y))
+        case .swipe(let x, let y, let x1, let y1, let duration):
+            touchIndicator.showVector(
+                from: contentPoint(x: x, y: y),
+                to: contentPoint(x: x1, y: y1),
+                durationMilliseconds: duration
+            )
+        case .type, .openApp, .button, .wait:
+            break
+        }
+    }
+
+    private func contentPoint(x: Double, y: Double) -> CGPoint {
+        let view = bounds.size
+        let video = videoSize.width > 1 ? videoSize : view
+        let content = TouchMap.contentRect(view: view, video: video)
+        let nx = min(1, max(0, CGFloat(x)))
+        let ny = min(1, max(0, CGFloat(y)))
+        return CGPoint(
+            x: content.minX + nx * content.width,
+            y: content.minY + (1 - ny) * content.height
+        )
+    }
+
     /// Drop an in-progress finger without waiting for mouseUp (resize / layout).
     func cancelActiveTouch() {
         guard activeTouch else { return }
+        if scrollTouchActive {
+            finishScrollTouch()
+            return
+        }
         activeTouch = false
         touchGeneration &+= 1
         control.touch(type: "release", x: max(lastDragX, 0), y: max(lastDragY, 0))
@@ -1699,6 +3097,10 @@ final class FrameView: MTKView, MTKViewDelegate {
 
     override func mouseDragged(with event: NSEvent) {
         guard activeTouch else { return }
+        guard canSendManualControl else {
+            cancelActiveTouch()
+            return
+        }
         if window?.inLiveResize == true {
             cancelActiveTouch()
             return
@@ -1719,6 +3121,10 @@ final class FrameView: MTKView, MTKViewDelegate {
 
     override func mouseUp(with event: NSEvent) {
         guard activeTouch else { return }
+        if scrollTouchActive {
+            finishScrollTouch()
+            return
+        }
         activeTouch = false
         updateTouchIndicator(event, pressing: false)
         let pressedAt = touchPressedAt
@@ -1733,25 +3139,85 @@ final class FrameView: MTKView, MTKViewDelegate {
         lastDragY = y
         // Enforce a firm min hold on the HID queue so light trackpad clicks register.
         control.releaseTouch(x: x, y: y, minHoldUs: Self.minTouchHoldUs, pressedAt: pressedAt)
+        if let uv = contentUV(event) {
+            WorkflowRecorder.shared.touchUp(nx: uv.0, ny: uv.1)
+        }
     }
 
     override func scrollWheel(with event: NSEvent) {
+        guard canSendManualControl else {
+            cancelActiveTouch()
+            return
+        }
         guard var coords = norm(event) else { return }
+        guard !activeTouch || scrollTouchActive else { return }
         let dy = Int(event.scrollingDeltaY * 40)
         let dx = Int(event.scrollingDeltaX * 40)
-        if !activeTouch {
+        if !scrollTouchActive {
             activeTouch = true
+            scrollTouchActive = true
+            touchGeneration &+= 1
+            lastDragX = coords.0
+            lastDragY = coords.1
             control.touch(type: "contact", x: coords.0, y: coords.1)
+            if let uv = contentUV(event) {
+                WorkflowRecorder.shared.touchDown(nx: uv.0, ny: uv.1)
+            }
         }
-        // Nudge in digitizer space (already orientation-correct).
-        coords.0 = max(0, min(65535, coords.0 - dx))
-        coords.1 = max(0, min(65535, coords.1 - dy))
+        // Accumulate the trackpad deltas in digitizer space. Re-basing every
+        // event at the pointer location made long scrolls barely move.
+        coords.0 = max(0, min(65535, lastDragX - dx))
+        coords.1 = max(0, min(65535, lastDragY - dy))
         lastDragX = coords.0
         lastDragY = coords.1
         control.touch(type: "contact", x: coords.0, y: coords.1)
         if event.phase == .ended || event.phase == .cancelled || event.momentumPhase == .ended {
-            activeTouch = false
-            control.touch(type: "release", x: coords.0, y: coords.1)
+            finishScrollTouch()
+        } else {
+            // Discrete mouse wheels often report phase=.none and never send an
+            // explicit end. Debounce a release so the virtual finger cannot
+            // remain stuck on the phone.
+            scheduleScrollRelease()
+        }
+    }
+
+    private func scheduleScrollRelease() {
+        scrollReleaseWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.finishScrollTouch()
+        }
+        scrollReleaseWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14, execute: work)
+    }
+
+    private func finishScrollTouch() {
+        guard scrollTouchActive else { return }
+        scrollReleaseWork?.cancel()
+        scrollReleaseWork = nil
+        scrollTouchActive = false
+        activeTouch = false
+        touchGeneration &+= 1
+        let x = max(lastDragX, 0)
+        let y = max(lastDragY, 0)
+        control.touch(type: "release", x: x, y: y)
+        if let uv = framebufferUV(hidX: x, hidY: y) {
+            WorkflowRecorder.shared.touchUp(nx: uv.0, ny: uv.1)
+        }
+    }
+
+    private func framebufferUV(hidX: Int, hidY: Int) -> (Double, Double)? {
+        guard (0...65_535).contains(hidX), (0...65_535).contains(hidY) else {
+            return nil
+        }
+        let hx = Double(hidX) / 65_535
+        let hy = Double(hidY) / 65_535
+        switch touchMode {
+        case .portrait, .buffer:
+            return (hx, hy)
+        case .landscape(.right):
+            return (hy, 1 - hx)
+        case .landscape(.left):
+            return (1 - hy, hx)
         }
     }
 
@@ -1776,6 +3242,10 @@ final class FrameView: MTKView, MTKViewDelegate {
             }
             return
         }
+        guard canSendManualControl else {
+            NSSound.beep()
+            return
+        }
 
         var mods: UInt8 = 0
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
@@ -1788,9 +3258,18 @@ final class FrameView: MTKView, MTKViewDelegate {
 
         // Physical / host: mirror the key position (Mac layout == iPhone layout).
         if layout == .physical {
-                if let usage = MacHID.usage(forKeyCode: code) {
+            if let usage = MacHID.usage(forKeyCode: code) {
                 keysDown[code] = (usage, "", mods)
                 control.key(down: true, usage: usage, character: "", mods: mods)
+                let glyph = event.charactersIgnoringModifiers ?? ""
+                if let character = glyph.first,
+                   character.unicodeScalars.allSatisfy({
+                       !CharacterSet.controlCharacters.contains($0)
+                   }) {
+                    WorkflowRecorder.shared.typed(String(character))
+                } else {
+                    WorkflowRecorder.shared.specialKey(usage: usage, mods: mods)
+                }
             }
             return
         }
@@ -1810,6 +3289,14 @@ final class FrameView: MTKView, MTKViewDelegate {
                 if let chord = KeyboardTranslator.resolve(glyph, hostMods: hostMods) {
                     keysDown[code] = (chord.usage, "", chord.mods)
                     control.key(down: true, usage: chord.usage, character: "", mods: chord.mods)
+                    if structural {
+                        WorkflowRecorder.shared.specialKey(
+                            usage: chord.usage,
+                            mods: chord.mods
+                        )
+                    } else {
+                        WorkflowRecorder.shared.typed(glyph)
+                    }
                     return
                 }
                 if KeyboardTranslator.pasteUnmapped, !structural {
@@ -1818,6 +3305,7 @@ final class FrameView: MTKView, MTKViewDelegate {
                         control.key(down: false, usage: chord.usage, character: "", mods: chord.mods)
                     }
                     control.keyboardReset()
+                    WorkflowRecorder.shared.typed(glyph)
                     return
                 }
                 return
@@ -1827,6 +3315,7 @@ final class FrameView: MTKView, MTKViewDelegate {
         if let usage = MacHID.specialUsage(forKeyCode: code) {
             keysDown[code] = (usage, "", mods)
             control.key(down: true, usage: usage, character: "", mods: mods)
+            WorkflowRecorder.shared.specialKey(usage: usage, mods: mods)
         }
     }
 }

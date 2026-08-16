@@ -6,9 +6,10 @@ import Metal
 ///
 /// Each slot holds a strong reference to the CVPixelBuffer (so its IOSurface
 /// stays alive) and the CVMetalTexture built over it. Nothing is copied — the
-/// GPU samples the same bytes the system produced — but we keep many frames
-/// resident so a brief stall never blanks the window. Depth is intentional:
-/// 32 slots of 1206×2622 BGRA is on the order of 400 MB of live surfaces.
+/// GPU samples the same bytes the system produced. A small ring covers the
+/// drawable pipeline without retaining hundreds of megabytes of stale frames;
+/// `MIRRORUE_CAPTURE_SLOTS` remains available for machines that need more
+/// buffering.
 public final class CaptureFrameRing: @unchecked Sendable {
     public struct Slot {
         public let texture: MTLTexture
@@ -25,7 +26,7 @@ public final class CaptureFrameRing: @unchecked Sendable {
     private let lock = NSLock()
     private var cache: CVMetalTextureCache?
 
-    public init(device: MTLDevice, slots: Int = 32) {
+    public init(device: MTLDevice, slots: Int = 6) {
         self.slots = max(4, slots)
         self.ring = Array(repeating: nil, count: self.slots)
         CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &cache)

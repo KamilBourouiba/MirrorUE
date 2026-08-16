@@ -47,7 +47,7 @@ public final class TunnelSession: @unchecked Sendable {
         guard let engine = Self.resolveEngine() else {
             throw TunnelError.missingEngine
         }
-        _ = shell("lsof -tiTCP:\(httpPort) -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null")
+        // Only kill orphan engine daemons on httpPort+1, never kill current app PID on httpPort
         _ = shell("lsof -tiTCP:\(httpPort + 1) -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null")
 
         let transport = device.connectionType == "USB" ? "usb" : "wifi"
@@ -58,13 +58,13 @@ public final class TunnelSession: @unchecked Sendable {
             p.arguments = [engine.path,
                            "--udid", device.udid,
                            "--transport", transport,
-                           "--http-port", "\(httpPort)"]
+                           "--http-port", "\(httpPort + 1)"]
         } else {
             p.executableURL = engine
             p.arguments = [
                 "--udid", device.udid,
                 "--transport", transport,
-                "--http-port", "\(httpPort)",
+                "--http-port", "\(httpPort + 1)",
             ]
         }
         var env = ProcessInfo.processInfo.environment
@@ -114,6 +114,7 @@ public final class TunnelSession: @unchecked Sendable {
     }
 
     public func stop() {
+        onProcessExit = nil
         logPipe?.fileHandleForReading.readabilityHandler = nil
         if let process, process.isRunning {
             process.terminationHandler = nil
