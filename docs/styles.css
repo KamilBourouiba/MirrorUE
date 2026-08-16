@@ -424,6 +424,8 @@ a:hover {
 .mirror-stage {
   position: relative;
   width: min(100%, 560px);
+  min-height: 460px;
+  contain: layout style;
   display: grid;
   place-items: center;
   gap: 0.75rem;
