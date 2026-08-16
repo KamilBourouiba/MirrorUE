@@ -64,27 +64,43 @@ NEGATIVE_KEYWORDS = [
     "rear camera", "glass replacement"
 ]
 
-def is_relevant_heuristic(title, text):
+TECH_SUBREDDITS = {
+    "mac", "apple", "macapps", "iosbeta", "jailbreak", "sidestore",
+    "iosgaming", "iosprogramming", "macos", "macbook", "iphone", "ios",
+    "technology", "software", "opensource", "hackintosh"
+}
+
+def is_relevant_heuristic(title, text, subreddit=""):
     content = (title + " " + text).lower()
+    sub_lower = (subreddit or "").lower()
     
     # 1. Reject obvious non-mirroring noise
     if any(neg in content for neg in NEGATIVE_KEYWORDS):
         return False
         
-    # 2. Must be an Apple / iPhone / iPad device
-    has_device = any(k in content for k in ["iphone", "ios", "ipad", "apple"])
+    # 2. Reject non-tech subreddits unless title explicitly contains iphone mirror
+    if sub_lower and sub_lower not in TECH_SUBREDDITS:
+        if "iphone" not in content or "mirror" not in content:
+            return False
+        
+    # 3. Must be an Apple / iPhone / iPad device
+    has_iphone = any(k in content for k in ["iphone", "ios", "ipad"])
     
-    # 3. Must be actively seeking screen mirroring, Mac control, EU workaround, or low-latency tool
-    high_intent_terms = [
+    # 4. Must mention Mac / macOS / Computer
+    has_mac = any(k in content for k in ["mac", "macos", "macbook", "quicktime", "laptop", "computer"])
+    
+    # 5. Must be seeking screen mirroring, control, or scrcpy
+    has_mirror_action = any(k in content for k in [
         "mirror", "mirroring", "control iphone", "type on iphone",
-        "scrcpy", "quicktime lag", "120fps", "120 fps", "120hz",
-        "screen share to mac", "screen to mac", "screen on mac",
-        "keyboard on iphone", "mouse on iphone", "dma", "not available in your region",
-        "alternative to iphone mirroring"
-    ]
-    has_intent = any(k in content for k in high_intent_terms)
+        "scrcpy", "quicktime", "120fps", "120 fps", "120hz",
+        "screen to mac", "screen on mac", "keyboard on iphone", "mouse on iphone"
+    ])
     
-    return has_device and has_intent
+    # In Apple/Mac subreddits, if title explicitly has "iphone mirroring", it's 100% a match
+    if sub_lower in TECH_SUBREDDITS and "mirroring" in content and has_iphone:
+        return True
+        
+    return has_iphone and has_mac and has_mirror_action
 
 def detect_specific_intent(title, text):
     content = (title + " " + text).lower()
@@ -253,7 +269,7 @@ def scrape_reddit():
                         raw_content = content_el.text if content_el is not None else ""
                         selftext = clean_html(raw_content)
                         
-                        if not is_relevant_heuristic(title, selftext):
+                        if not is_relevant_heuristic(title, selftext, subreddit):
                             continue
                         
                         updated_el = entry.find("atom:published", ns) or entry.find("atom:updated", ns)
@@ -316,7 +332,7 @@ def scrape_reddit():
                         raw_content = content_el.text if content_el is not None else ""
                         selftext = clean_html(raw_content)
                         
-                        if not is_relevant_heuristic(title, selftext):
+                        if not is_relevant_heuristic(title, selftext, sub):
                             continue
                         
                         updated_el = entry.find("atom:published", ns) or entry.find("atom:updated", ns)
