@@ -2425,3 +2425,311 @@ button.btn {
   border-bottom: none;
 }
 
+/* ==========================================================================
+   Universal Component & Mobile Responsive Enhancements
+   ========================================================================== */
+
+/* Button Utilities */
+.btn-primary {
+  background: var(--accent) !important;
+  color: #fff !important;
+  box-shadow: 0 10px 28px rgba(91, 108, 255, 0.28);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.06);
+  text-decoration: none;
+}
+
+.btn-secondary {
+  color: var(--text) !important;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 16px rgba(91, 108, 255, 0.08);
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent-soft);
+  color: var(--accent) !important;
+  text-decoration: none;
+}
+
+.btn-sm {
+  min-height: 36px !important;
+  padding: 0.4rem 0.9rem !important;
+  font-size: 0.8rem !important;
+}
+
+.btn-lg {
+  min-height: 52px !important;
+  padding: 0.85rem 1.75rem !important;
+  font-size: 1rem !important;
+}
+
+/* Card & Grid Utilities */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin: 2rem 0;
+}
+
+.card {
+  border-radius: var(--radius-sm);
+  padding: 1.35rem;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(91, 108, 255, 0.15);
+}
+
+.card h3 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.card p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* Subpage Article & Legal Doc Layout */
+.legal-page {
+  max-width: var(--max);
+  margin: 1.5rem auto 3rem;
+  padding: 0 max(var(--pad), env(safe-area-inset-right)) 0 max(var(--pad), env(safe-area-inset-left));
+}
+
+.legal-doc {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  border-radius: var(--radius);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.legal-doc h1 {
+  font-family: var(--font);
+  font-size: clamp(1.6rem, 5vw, 2.35rem);
+  line-height: 1.2;
+  margin: 0.5rem 0 0.75rem;
+  letter-spacing: -0.02em;
+}
+
+.legal-doc h2 {
+  font-family: var(--font);
+  font-size: clamp(1.2rem, 3.5vw, 1.5rem);
+  margin: 2rem 0 0.75rem;
+  letter-spacing: -0.01em;
+}
+
+.legal-doc h3 {
+  font-family: var(--font);
+  font-size: 1.1rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.legal-doc p,
+.legal-doc li {
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.legal-doc ol,
+.legal-doc ul {
+  padding-left: 1.25rem;
+  margin: 1rem 0;
+}
+
+.legal-doc pre {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: rgba(28, 31, 46, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: var(--mono);
+  font-size: 0.84rem;
+  line-height: 1.6;
+  margin: 1.5rem 0;
+}
+
+.legal-doc pre code {
+  color: #a5f3fc;
+  font-family: inherit;
+}
+
+/* Responsive Table Wrapper */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 1.5rem 0;
+  border-radius: 14px;
+  border: 1px solid var(--frost-border);
+}
+
+.table-scroll table {
+  width: 100%;
+  min-width: 540px;
+  border-collapse: collapse;
+}
+
+/* Responsive Footer */
+.footer-inner,
+.foot > div {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.footer-col h4,
+.foot strong {
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.75rem;
+}
+
+.footer-col ul,
+.foot ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.footer-col a,
+.foot a {
+  color: var(--muted);
+  font-size: 0.84rem;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.footer-col a:hover,
+.foot a:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* ==========================================================================
+   Mobile Adjustments (< 768px and < 540px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .nav-burger {
+    display: grid !important;
+  }
+
+  .nav-links {
+    position: fixed;
+    top: var(--nav-h);
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0.75rem var(--pad) 1.5rem;
+    background: rgba(238, 242, 255, 0.97);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-8px);
+    transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+    z-index: 99;
+  }
+
+  .nav-toggle:checked ~ .nav-links {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: translateY(0) !important;
+  }
+
+  .nav-links a {
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--text);
+  }
+
+  .nav-links a:last-child {
+    border-bottom: none;
+    margin-top: 0.5rem;
+    text-align: center;
+  }
+
+  .footer-inner,
+  .foot > div {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.75rem;
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .legal-doc {
+    padding: 1.25rem 1rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .legal-page {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .table-scroll table {
+    font-size: 0.84rem;
+  }
+
+  .table-scroll th,
+  .table-scroll td {
+    padding: 0.65rem 0.75rem !important;
+  }
+}
+
+@media (max-width: 540px) {
+  .footer-inner,
+  .foot > div {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .hero h1 {
+    font-size: 1.65rem;
+    line-height: 1.2;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .nav-cta-wrap {
+    display: none;
+  }
+}
+
+
