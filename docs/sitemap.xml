@@ -9,44 +9,68 @@
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://mirrorue.xyz/og-image.png</image:loc>
-      <image:title>MirrorUE — Free 120 FPS iPhone Mirror for macOS</image:title>
+      <image:title>MirrorUE — Mirror &amp; Control iPhone on Mac at up to 120 FPS</image:title>
       <image:caption>Mirror your iPhone on Mac with mouse and keyboard control</image:caption>
     </image:image>
   </url>
   <url>
-    <loc>https://mirrorue.xyz/MirrorUE.dmg</loc>
+    <loc>https://mirrorue.xyz/iphone-mirroring-eu.html</loc>
     <lastmod>2026-08-16</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://mirrorue.xyz/llms.txt</loc>
+    <loc>https://mirrorue.xyz/control-iphone-from-mac.html</loc>
     <lastmod>2026-08-16</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://mirrorue.xyz/llms-full.txt</loc>
+    <loc>https://mirrorue.xyz/120fps-iphone-mirroring.html</loc>
     <lastmod>2026-08-16</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.90</priority>
+  </url>
+  <url>
+    <loc>https://mirrorue.xyz/mirrorue-vs-apple-iphone-mirroring.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+  <url>
+    <loc>https://mirrorue.xyz/mirrorue-vs-quicktime.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+  <url>
+    <loc>https://mirrorue.xyz/benchmarks.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://mirrorue.xyz/about.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
   </url>
   <url>
     <loc>https://mirrorue.xyz/privacy.html</loc>
     <lastmod>2026-08-16</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.3</priority>
   </url>
   <url>
     <loc>https://mirrorue.xyz/terms.html</loc>
     <lastmod>2026-08-16</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.3</priority>
   </url>
   <url>
     <loc>https://mirrorue.xyz/legal.html</loc>
     <lastmod>2026-08-16</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.3</priority>
   </url>
 </urlset>

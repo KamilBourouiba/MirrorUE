@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18393322142"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'AW-18393322142');
+  </script>
+
+  <meta charset="utf-8" />
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
+  <link rel="canonical" href="https://mirrorue.xyz/control-iphone-from-mac.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+  <title>Control iPhone from Mac with Keyboard &amp; Mouse (Click, Drag, Type) | MirrorUE</title>
+  <meta name="description" content="Control your iPhone directly from your Mac with full mouse clicks, multi-touch trackpad gestures, and physical Mac keyboard typing. Free open-source macOS app." />
+  <meta name="author" content="Kamil Bourouiba" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+  <!-- Open Graph -->
+  <meta property="og:site_name" content="MirrorUE" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://mirrorue.xyz/control-iphone-from-mac.html" />
+  <meta property="og:title" content="Control iPhone from Mac with Keyboard &amp; Mouse | MirrorUE" />
+  <meta property="og:description" content="Type on iPhone with your Mac's physical keyboard, click and drag with mouse/trackpad. Free 120 FPS USB mirror for macOS." />
+  <meta property="og:image" content="https://mirrorue.xyz/og-image.png" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Control iPhone from Mac with Keyboard &amp; Mouse | MirrorUE" />
+  <meta name="twitter:description" content="Control your iPhone from Mac with mouse clicks, trackpad gestures, and physical keyboard typing. Free .dmg download." />
+  <meta name="twitter:image" content="https://mirrorue.xyz/twitter-image.png" />
+
+  <meta name="theme-color" content="#0a0c12" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=mobile16" />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://mirrorue.xyz/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Control iPhone from Mac",
+            "item": "https://mirrorue.xyz/control-iphone-from-mac.html"
+          }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "How to Control iPhone from Mac with Keyboard and Mouse",
+        "description": "Complete guide on using MirrorUE to click, drag, scroll, and type on your iPhone using your Mac's physical keyboard and trackpad over USB.",
+        "author": {
+          "@type": "Person",
+          "name": "Kamil Bourouiba"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "MirrorUE",
+          "url": "https://mirrorue.xyz/"
+        },
+        "mainEntityOfPage": "https://mirrorue.xyz/control-iphone-from-mac.html",
+        "datePublished": "2026-08-01",
+        "dateModified": "2026-08-16"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+  </div>
+
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="logo" href="index.html">MirrorUE<span class="logo-dot">_</span></a>
+      <nav class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="iphone-mirroring-eu.html">EU Guide</a>
+        <a href="120fps-iphone-mirroring.html">120 FPS</a>
+        <a href="benchmarks.html">Benchmarks</a>
+        <a href="about.html">About</a>
+      </nav>
+      <div class="nav-cta-wrap">
+        <a class="btn btn-primary btn-sm" href="MirrorUE.dmg" id="nav-download-ctrl">Download .dmg</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="legal-page" style="max-width: 900px; margin: 2rem auto; padding: 0 1.5rem;">
+    <article class="legal-doc frost" style="padding: 2.5rem;">
+      <p class="kicker">// INPUT &amp; AUTOMATION GUIDE</p>
+      <h1>Control iPhone from Mac with Full Keyboard &amp; Mouse Support</h1>
+      <p class="legal-meta">By Kamil Bourouiba · Updated August 2026 · 4 min read</p>
+
+      <p class="lead" style="font-size: 1.15rem; line-height: 1.7; color: #f1f5f9;">
+        Mirroring your iPhone screen to Mac is only half the battle. To be truly productive, you need two-way interaction: clicking icons, dragging through feeds, and typing long messages with your Mac's physical keyboard.
+      </p>
+
+      <h2>How Mouse &amp; Touch Translation Works in MirrorUE</h2>
+      <p>
+        Unlike video-only tools like QuickTime, <strong>MirrorUE</strong> establishes a bidirectional CoreDevice UniversalHID channel alongside the USB video stream. Every pointer movement and click is converted in real time into normalized capacitive touch coordinates:
+      </p>
+
+      <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin: 2rem 0;">
+        <div class="card frost">
+          <h3>🖱️ Click &amp; Drag Gestures</h3>
+          <p>Left-click taps elements instantly. Click and hold to drag, scroll vertical lists, or swipe between home screen pages.</p>
+        </div>
+        <div class="card frost">
+          <h3>⌨️ Physical Keyboard Typing</h3>
+          <p>Types directly into active iOS text fields. Automatic layout translation handles AZERTY, QWERTY, accents, and special symbols.</p>
+        </div>
+        <div class="card frost">
+          <h3>📱 Home &amp; Lock Shortcuts</h3>
+          <p>Quick buttons and keyboard shortcuts for Home bar swipe-up, App Switcher, Control Center, and screen lock.</p>
+        </div>
+      </div>
+
+      <h2>Typing with AZERTY, QWERTY &amp; International Layouts</h2>
+      <p>
+        When you press a key on your Mac keyboard, MirrorUE reads the native macOS virtual keycode and characters, maps it through an internal HID keytable, and sends standard USB HID keyboard reports to the connected iOS device.
+      </p>
+      <p>
+        This allows instant typing in WhatsApp, Telegram, iMessage, Notes, Slack, or web browsers without touching your phone.
+      </p>
+
+      <h2>Developer &amp; QA Automation Workflows</h2>
+      <p>
+        For mobile app developers and QA engineers, MirrorUE provides a local HTTP automation API (<code>http://127.0.0.1:8080</code>) allowing headless test runners, CI scripts, or LLM agents to inject clicks and type text programmatically:
+      </p>
+
+      <pre style="background: rgba(0,0,0,0.5); padding: 1.25rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; overflow-x: auto; color: #a5f3fc;"><code># Send a tap event at (x: 200, y: 450)
+curl -X POST http://127.0.0.1:8080/api/touch \
+  -H "Content-Type: application/json" \
+  -d '{"x": 200, "y": 450, "action": "tap"}'
+
+# Type text into the active field
+curl -X POST http://127.0.0.1:8080/api/type \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Automated QA test login"}'</code></pre>
+
+      <div style="text-align: center; margin: 3rem 0;">
+        <a class="btn btn-primary" href="MirrorUE.dmg" style="padding: 1rem 2.5rem; font-size: 1.1rem;">
+          Download MirrorUE (Free .dmg)
+        </a>
+        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 0.75rem;">
+          Compatible with macOS 14 &amp; 15 · iOS 16, 17, 18+ · Apple Silicon &amp; Intel
+        </p>
+      </div>
+
+      <div style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 3rem; padding-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <a href="iphone-mirroring-eu.html" style="color: var(--primary); text-decoration: none;">← iPhone Mirroring in the EU</a>
+        <a href="120fps-iphone-mirroring.html" style="color: var(--primary); text-decoration: none;">120 FPS ProMotion Deep Dive →</a>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="logo">MirrorUE<span class="logo-dot">_</span></span>
+        <p>Ultra-low-latency 120 FPS iPhone mirror for macOS.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Pages</h4>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="iphone-mirroring-eu.html">iPhone Mirroring EU</a></li>
+          <li><a href="control-iphone-from-mac.html">Control iPhone from Mac</a></li>
+          <li><a href="120fps-iphone-mirroring.html">120 FPS ProMotion</a></li>
+          <li><a href="benchmarks.html">Benchmarks</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Comparisons</h4>
+        <ul>
+          <li><a href="mirrorue-vs-apple-iphone-mirroring.html">vs Apple Mirroring</a></li>
+          <li><a href="mirrorue-vs-quicktime.html">vs QuickTime Player</a></li>
+          <li><a href="about.html">About &amp; Architecture</a></li>
+          <li><a href="legal.html">Legal Notice</a></li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+  <script src="conversion.js"></script>
+</body>
+</html>

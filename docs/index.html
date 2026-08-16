@@ -21,29 +21,28 @@
   <link rel="alternate" type="text/markdown" href="llms-full.txt" title="Full LLM Documentation" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>MirrorUE — Free 120 FPS iPhone Mirror for Mac | Mouse &amp; Keyboard Control</title>
-  <meta name="description" content="Mirror and control your iPhone directly from your Mac at ultra-smooth 120 fps. Full mouse clicks, multi-touch gestures, physical keyboard typing, and instant screen recording. Free 1-click DMG download." />
-  <meta name="keywords" content="iPhone mirror Mac, iPhone mirroring macOS, 120 fps iPhone mirror, CoreMediaIO mirror, control iPhone from Mac, iPhone mouse keyboard Mac, screen mirror iPhone Apple Silicon, MirrorUE download, iPhone screen mirror macOS 14" />
+  <title>MirrorUE – Mirror &amp; Control iPhone on Mac at up to 120 FPS</title>
+  <meta name="description" content="Mirror and control a trusted iPhone from your Mac. Up to 120 FPS, mouse and trackpad gestures, keyboard input, screenshots and recording. Free and open source." />
   <meta name="author" content="Kamil Bourouiba" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 
   <!-- Open Graph / Facebook / LinkedIn -->
-  <meta property="og:site_name" content="MirrorUE" />
+  <meta property="og:site_name" content="MirrorUE — iPhone Mirroring &amp; Control for Mac" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://mirrorue.xyz/" />
-  <meta property="og:title" content="MirrorUE — Free 120 FPS iPhone Mirror for Mac" />
-  <meta property="og:description" content="Mirror and control your iPhone from your Mac at 120 fps with zero lag. Full mouse, trackpad, and keyboard control. 1-click free .dmg download." />
+  <meta property="og:title" content="MirrorUE – Mirror &amp; Control iPhone on Mac at up to 120 FPS" />
+  <meta property="og:description" content="Mirror and control a trusted iPhone from your Mac. Up to 120 FPS, mouse gestures, keyboard input, low-latency Metal rendering. Free .dmg download." />
   <meta property="og:image" content="https://mirrorue.xyz/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="MirrorUE — 120 FPS iPhone Mirroring for macOS" />
+  <meta property="og:image:alt" content="MirrorUE — 120 FPS iPhone Mirroring &amp; Control for macOS" />
   <meta property="og:locale" content="en_US" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="https://mirrorue.xyz/" />
-  <meta name="twitter:title" content="MirrorUE — Free 120 FPS iPhone Mirror for Mac" />
-  <meta name="twitter:description" content="Mirror and control your iPhone on macOS at 120 fps with mouse and keyboard. Free .dmg download." />
+  <meta name="twitter:title" content="MirrorUE – Mirror &amp; Control iPhone on Mac at up to 120 FPS" />
+  <meta name="twitter:description" content="Mirror and control a trusted iPhone from your Mac. Up to 120 FPS, mouse gestures, keyboard input. Free and open source." />
   <meta name="twitter:image" content="https://mirrorue.xyz/twitter-image.png" />
   <meta name="twitter:image:alt" content="MirrorUE iPhone Mirror for macOS" />
 
@@ -51,7 +50,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=mobile15" />
+  <link rel="stylesheet" href="styles.css?v=mobile16" />
 
   <!-- Structured Data / JSON-LD Schema.org -->
   <script type="application/ld+json">
@@ -59,12 +58,23 @@
     "@context": "https://schema.org",
     "@graph": [
       {
+        "@type": "Organization",
+        "@id": "https://mirrorue.xyz/#organization",
+        "name": "MirrorUE",
+        "alternateName": "MirrorUE — iPhone Mirroring & Control for Mac",
+        "url": "https://mirrorue.xyz/",
+        "logo": "https://mirrorue.xyz/logo.png",
+        "sameAs": [
+          "https://github.com/KamilBourouiba/MirrorUE"
+        ]
+      },
+      {
         "@type": "SoftwareApplication",
         "name": "MirrorUE",
         "url": "https://mirrorue.xyz/",
         "downloadUrl": "https://mirrorue.xyz/MirrorUE.dmg",
         "operatingSystem": "macOS 14.0 or later",
-        "applicationCategory": "UtilitiesApplication",
+        "applicationCategory": "DeveloperApplication",
         "softwareVersion": "1.2.0",
         "description": "Native macOS iPhone mirroring tool with 120 FPS Metal rendering, UniversalHID touch and physical keyboard control.",
         "offers": {
@@ -72,21 +82,22 @@
           "price": "0",
           "priceCurrency": "USD"
         },
+        "publisher": {
+          "@id": "https://mirrorue.xyz/#organization"
+        },
         "author": {
           "@type": "Person",
           "name": "Kamil Bourouiba",
           "url": "https://github.com/KamilBourouiba"
-        },
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "4.9",
-          "ratingCount": "128"
         }
       },
       {
         "@type": "WebSite",
         "name": "MirrorUE",
         "url": "https://mirrorue.xyz/",
+        "publisher": {
+          "@id": "https://mirrorue.xyz/#organization"
+        },
         "description": "Ultra-low-latency 120 FPS iPhone mirror and control for macOS."
       },
       {
@@ -519,8 +530,40 @@
   </main>
 
   <footer class="foot">
-    <p>MIT © Kamil Bourouiba · <a href="https://github.com/KamilBourouiba/MirrorUE">GitHub</a> · <a href="MirrorUE.dmg" download="MirrorUE.dmg">Direct DMG</a> · <a href="llms.txt">llms.txt (AI)</a> · <a href="#waitlist">Pro waitlist</a></p>
-    <p class="foot-legal"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="legal.html">Legal notice</a></p>
+    <div style="max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2rem; text-align: left; padding: 2rem 1.5rem; font-size: 0.9rem; line-height: 1.8;">
+      <div>
+        <strong style="color: #fff; font-family: 'Space Grotesk', sans-serif;">MirrorUE</strong>
+        <p style="color: var(--muted); margin: 0.25rem 0 0.5rem 0; font-size: 0.85rem;">Ultra-low-latency 120 FPS iPhone mirror for macOS.</p>
+        <p style="font-size: 0.8rem; color: var(--muted);">MIT © Kamil Bourouiba · <a href="about.html">About &amp; Story</a></p>
+      </div>
+      <div>
+        <strong style="color: #fff; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Solutions</strong>
+        <ul style="list-style: none; padding: 0; margin: 0.5rem 0 0 0; color: var(--muted);">
+          <li><a href="iphone-mirroring-eu.html">iPhone Mirroring EU Guide</a></li>
+          <li><a href="control-iphone-from-mac.html">Control iPhone from Mac</a></li>
+          <li><a href="120fps-iphone-mirroring.html">120 FPS ProMotion Mirror</a></li>
+          <li><a href="benchmarks.html">Performance Benchmarks</a></li>
+        </ul>
+      </div>
+      <div>
+        <strong style="color: #fff; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Comparisons</strong>
+        <ul style="list-style: none; padding: 0; margin: 0.5rem 0 0 0; color: var(--muted);">
+          <li><a href="mirrorue-vs-apple-iphone-mirroring.html">vs Apple iPhone Mirroring</a></li>
+          <li><a href="mirrorue-vs-quicktime.html">vs QuickTime Player</a></li>
+          <li><a href="https://github.com/KamilBourouiba/MirrorUE" target="_blank" rel="noopener">GitHub Repository ↗</a></li>
+          <li><a href="MirrorUE.dmg" download="MirrorUE.dmg">Direct DMG Download</a></li>
+        </ul>
+      </div>
+      <div>
+        <strong style="color: #fff; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Legal</strong>
+        <ul style="list-style: none; padding: 0; margin: 0.5rem 0 0 0; color: var(--muted);">
+          <li><a href="privacy.html">Privacy Policy</a></li>
+          <li><a href="terms.html">Terms of Service</a></li>
+          <li><a href="legal.html">Legal Notice</a></li>
+          <li><a href="llms.txt">llms.txt (AI)</a></li>
+        </ul>
+      </div>
+    </div>
   </footer>
 
   <aside class="sticky-cta" id="sticky-cta" aria-label="Quick actions" hidden>
