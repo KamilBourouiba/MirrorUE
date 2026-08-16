@@ -196,11 +196,16 @@
     cursor.hidden = true;
   }
 
-  function phoneScale() {
+  var cachedPhoneScale = 1;
+  function updatePhoneScale() {
     var shell = document.querySelector(".phone-shell");
     if (!shell) return 1;
-    var w = shell.getBoundingClientRect().width;
-    return w > 0 ? w / 220 : 1;
+    var w = shell.offsetWidth || 220;
+    cachedPhoneScale = w > 0 ? w / 220 : 1;
+    return cachedPhoneScale;
+  }
+  function phoneScale() {
+    return cachedPhoneScale || 1;
   }
 
   function elCenter(el) {
@@ -461,12 +466,14 @@
 
   function bootDemo() {
     if (autoRunning) return;
+    updatePhoneScale();
     lastShellWidth = shellWidth();
     startAutoDemo();
   }
 
   function onViewportChange() {
     isTouchUI = applyTouchClass();
+    updatePhoneScale();
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
       var w = shellWidth();

@@ -35,8 +35,10 @@
     }
   }
 
-  var observer = new MutationObserver(updateSticky);
-  observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  if (typeof refreshSticky === "function") {
+    var observer = new MutationObserver(refreshSticky);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  }
 
   if (location.hash === "#waitlist" && waitlist) {
     requestAnimationFrame(function () {
