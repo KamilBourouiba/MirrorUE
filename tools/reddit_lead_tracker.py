@@ -96,6 +96,14 @@ def clean_html(raw_html):
     clean = re.sub(r'\s+', ' ', clean).strip()
     return clean
 
+RELEVANT_KEYWORDS = ["iphone", "ios", "mirror", "mirroring", "mac", "macos", "scrcpy", "quicktime", "screen", "keyboard", "control"]
+
+def is_relevant(title, text):
+    content = (title + " " + text).lower()
+    has_device = any(k in content for k in ["iphone", "ios", "apple"])
+    has_intent = any(k in content for k in ["mirror", "mirroring", "screen", "cast", "control", "keyboard", "scrcpy", "quicktime", "lag", "display", "stream"])
+    return has_device and has_intent
+
 def scrape_reddit():
     db = load_db()
     headers = {
@@ -136,10 +144,12 @@ def scrape_reddit():
                         raw_content = content_el.text if content_el is not None else ""
                         selftext = clean_html(raw_content)
                         
+                        if not is_relevant(title, selftext):
+                            continue
+                        
                         updated_el = entry.find("atom:published", ns) or entry.find("atom:updated", ns)
                         time_str = updated_el.text if updated_el is not None else ""
                         try:
-                            # Parse ISO timestamp
                             dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
                             created_utc = int(dt.timestamp())
                         except Exception:
@@ -163,10 +173,9 @@ def scrape_reddit():
                                 "found_at": datetime.utcnow().isoformat()
                             }
                             found_count += 1
-            time.sleep(1.0)
+            time.sleep(2.0)
         except Exception as e:
-            print(f"[Scraper] Error querying '{query}': {e}", file=sys.stderr)
-            time.sleep(1.5)
+            time.sleep(3.0)
 
     # 2. Targeted Subreddit Searches
     for sub in TARGET_SUBREDDITS:
@@ -196,6 +205,9 @@ def scrape_reddit():
                         raw_content = content_el.text if content_el is not None else ""
                         selftext = clean_html(raw_content)
                         
+                        if not is_relevant(title, selftext):
+                            continue
+                        
                         updated_el = entry.find("atom:published", ns) or entry.find("atom:updated", ns)
                         time_str = updated_el.text if updated_el is not None else ""
                         try:
@@ -221,10 +233,13 @@ def scrape_reddit():
                             "found_at": datetime.utcnow().isoformat()
                         }
                         found_count += 1
-            time.sleep(1.0)
+            time.sleep(2.0)
         except Exception as e:
-            print(f"[Scraper] Subreddit '{sub}' error: {e}", file=sys.stderr)
-            time.sleep(1.5)
+            time.sleep(3.0)
+            
+    db["last_scraped_at"] = datetime.utcnow().isoformat()
+    save_db(db)
+    return found_count
             
     db["last_scraped_at"] = datetime.utcnow().isoformat()
     save_db(db)
