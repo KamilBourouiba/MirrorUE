@@ -1,0 +1,34 @@
+{
+  "provider": "auto",
+  "memegen": {
+    "width": 1080,
+    "height": 1920,
+    "format": "jpg"
+  },
+  "throttle": {
+    "min_delay_sec": 2.0,
+    "max_retries": 8,
+    "backoff_base_sec": 2.5,
+    "backoff_max_sec": 120,
+    "circuit_threshold": 4,
+    "circuit_pause_sec": 45
+  },
+  "imgflip": {
+    "username": "",
+    "password": ""
+  },
+  "imgflip_username": "",
+  "imgflip_password": "",
+  "reel": {
+    "duration_sec": 6,
+    "border_px": 48
+  },
+  "buffer": {
+    "api_key": "",
+    "organization_id": "",
+    "channel_id": "",
+    "service": "",
+    "instagram_type": "post",
+    "instagram_share_to_feed": true
+  }
+}

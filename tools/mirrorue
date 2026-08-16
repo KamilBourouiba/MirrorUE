@@ -10,6 +10,10 @@ Examples:
   ./tools/mirrorue type 'hello'
   ./tools/mirrorue tap 0.5 0.8
   ./tools/mirrorue do home wait:0.8 open:Snapchat
+  ./tools/mirrorue workflow record start
+  ./tools/mirrorue workflow record stop --name open-settings
+  ./tools/mirrorue workflow list
+  ./tools/mirrorue workflow play open-settings
   ./tools/mirrorue frame /tmp/phone.jpg
 """
 from __future__ import annotations
@@ -23,6 +27,7 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -226,6 +231,84 @@ def cmd_llm_status(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_agent(ns: argparse.Namespace) -> int:
+    goal = " ".join(ns.goal).strip()
+    if not goal:
+        raise SystemExit("goal required")
+    wait_ready(ns.wait_timeout)
+    started = api(
+        "POST",
+        "/v1/agent/run",
+        {"goal": goal, "maxSteps": int(ns.max_steps)},
+        timeout=10,
+    )
+    if ns.no_wait:
+        out(started)
+        return 0
+
+    run_id = started.get("runId") if isinstance(started, dict) else None
+    if not isinstance(run_id, str) or not run_id:
+        raise SystemExit("agent run was accepted without a runId")
+    try:
+        uuid.UUID(run_id)
+    except ValueError:
+        raise SystemExit(f"agent returned an invalid runId: {run_id!r}") from None
+
+    deadline = time.time() + float(ns.timeout)
+    last: dict[str, Any] = started if isinstance(started, dict) else {}
+    try:
+        while time.time() < deadline:
+            last = api("GET", "/v1/agent/status", timeout=5)
+            observed_id = last.get("runId") if isinstance(last, dict) else None
+            if observed_id != run_id:
+                raise SystemExit(
+                    f"agent status switched from run {run_id} to "
+                    f"{observed_id or 'no run'}; refusing to follow another run"
+                )
+            if not last.get("running") and last.get("state") not in {"queued", "starting"}:
+                out(last)
+                return 0 if last.get("ok", True) and last.get("state") == "completed" else 1
+            time.sleep(0.35)
+    except KeyboardInterrupt:
+        api("POST", "/v1/agent/stop", {"runId": run_id}, timeout=5)
+        raise SystemExit("agent stopped") from None
+
+    last_state = last.get("state", "unknown")
+    try:
+        stopped = api(
+            "POST",
+            "/v1/agent/stop",
+            {"runId": run_id},
+            timeout=5,
+        )
+        stop_state = stopped.get("state", "unknown") if isinstance(stopped, dict) else "unknown"
+    except SystemExit as stop_error:
+        raise SystemExit(
+            f"agent did not finish within {float(ns.timeout):.0f}s "
+            f"(last state: {last_state}); cancellation for run {run_id} failed: {stop_error}"
+        ) from None
+    raise SystemExit(
+        f"agent did not finish within {float(ns.timeout):.0f}s "
+        f"(last state: {last_state}); cancellation requested for run {run_id} "
+        f"(stop state: {stop_state})"
+    )
+
+
+def cmd_agent_status(_: argparse.Namespace) -> int:
+    out(api("GET", "/v1/agent/status", timeout=5))
+    return 0
+
+
+def cmd_agent_logs(_: argparse.Namespace) -> int:
+    out(api("GET", "/v1/agent/logs", timeout=5))
+    return 0
+
+
+def cmd_agent_stop(_: argparse.Namespace) -> int:
+    out(api("POST", "/v1/agent/stop", {}, timeout=5))
+    return 0
+
+
 def cmd_docs(_: argparse.Namespace) -> int:
     data = api("GET", "/v1/docs", timeout=5)
     md = data.get("markdown")
@@ -282,6 +365,68 @@ def parse_do_token(tok: str) -> dict[str, Any]:
 def cmd_do(ns: argparse.Namespace) -> int:
     steps = [parse_do_token(t) for t in ns.steps]
     out(api("POST", "/v1/do", {"steps": steps}, timeout=180))
+    return 0
+
+
+def cmd_workflow_list(_: argparse.Namespace) -> int:
+    out(api("GET", "/v1/workflows", timeout=10))
+    return 0
+
+
+def cmd_workflow_status(_: argparse.Namespace) -> int:
+    out(api("GET", "/v1/workflows/status", timeout=10))
+    return 0
+
+
+def cmd_workflow_record_start(_: argparse.Namespace) -> int:
+    out(api("POST", "/v1/workflows/record/start", {}, timeout=10))
+    return 0
+
+
+def cmd_workflow_record_stop(ns: argparse.Namespace) -> int:
+    body: dict[str, Any] = {}
+    if ns.name:
+        body["name"] = ns.name
+    out(api("POST", "/v1/workflows/record/stop", body, timeout=30))
+    return 0
+
+
+def cmd_workflow_save(ns: argparse.Namespace) -> int:
+    out(api("POST", "/v1/workflows/save", {"name": ns.name}, timeout=15))
+    return 0
+
+
+def cmd_workflow_play(ns: argparse.Namespace) -> int:
+    try:
+        out(
+            api(
+                "POST",
+                "/v1/workflows/play",
+                {"name": ns.name},
+                timeout=float(ns.timeout),
+            )
+        )
+    except KeyboardInterrupt:
+        api("POST", "/v1/workflows/stop", {}, timeout=10)
+        raise SystemExit("workflow stopped") from None
+    return 0
+
+
+def cmd_workflow_stop(_: argparse.Namespace) -> int:
+    out(api("POST", "/v1/workflows/stop", {}, timeout=10))
+    return 0
+
+
+def cmd_workflow_export(ns: argparse.Namespace) -> int:
+    destination = str(Path(ns.destination).expanduser().resolve())
+    out(
+        api(
+            "POST",
+            "/v1/workflows/export",
+            {"name": ns.name, "path": destination},
+            timeout=30,
+        )
+    )
     return 0
 
 
@@ -355,6 +500,27 @@ def build_parser() -> argparse.ArgumentParser:
     fr.add_argument("--b64", action="store_true", help="Request base64 encoding (faster for agents)")
     fr.set_defaults(func=cmd_frame)
 
+    ls = sub.add_parser("llm-status", help="Check the configured model provider")
+    ls.set_defaults(func=cmd_llm_status)
+
+    lc = sub.add_parser("llm-chat", help="Send a text-only provider test")
+    lc.add_argument("prompt", nargs="+")
+    lc.add_argument("--model", default=None)
+    lc.add_argument("--max-tokens", type=int, default=128)
+    lc.add_argument("--timeout", type=float, default=120)
+    lc.set_defaults(func=cmd_llm_chat)
+
+    ag = sub.add_parser("agent", help="Run an AI goal against the connected iPhone")
+    ag.add_argument("goal", nargs="+")
+    ag.add_argument("--max-steps", type=int, default=12)
+    ag.add_argument("--timeout", type=float, default=180)
+    ag.add_argument("--wait-timeout", type=float, default=45)
+    ag.add_argument("--no-wait", action="store_true", help="Return after the run is accepted")
+    ag.set_defaults(func=cmd_agent)
+    sub.add_parser("agent-status", help="Show current AI run").set_defaults(func=cmd_agent_status)
+    sub.add_parser("agent-logs", help="Show current AI trace").set_defaults(func=cmd_agent_logs)
+    sub.add_parser("agent-stop", help="Cancel current AI run").set_defaults(func=cmd_agent_stop)
+
     sub.add_parser("docs-api", help="Print full API documentation").set_defaults(func=cmd_docs)
 
     do = sub.add_parser("do", help="Run short recipe tokens")
@@ -364,6 +530,50 @@ def build_parser() -> argparse.ArgumentParser:
         help="Tokens: home wait:0.8 open:Snapchat type:hi tap:0.5,0.8",
     )
     do.set_defaults(func=cmd_do)
+
+    workflow = sub.add_parser(
+        "workflow",
+        aliases=["path"],
+        help="Record, save, replay and export deterministic workflows",
+    )
+    workflow_sub = workflow.add_subparsers(dest="workflow_cmd", required=True)
+    workflow_sub.add_parser(
+        "list",
+        help="List saved workflows",
+    ).set_defaults(func=cmd_workflow_list)
+    workflow_sub.add_parser(
+        "status",
+        help="Show recording/playback state",
+    ).set_defaults(func=cmd_workflow_status)
+
+    record = workflow_sub.add_parser("record", help="Record manual phone input")
+    record_sub = record.add_subparsers(dest="record_cmd", required=True)
+    record_sub.add_parser(
+        "start",
+        help="Start recording",
+    ).set_defaults(func=cmd_workflow_record_start)
+    record_stop = record_sub.add_parser("stop", help="Stop recording")
+    record_stop.add_argument("--name", "-n", help="Save immediately under this name")
+    record_stop.set_defaults(func=cmd_workflow_record_stop)
+
+    workflow_save = workflow_sub.add_parser("save", help="Save current recorded steps")
+    workflow_save.add_argument("name")
+    workflow_save.set_defaults(func=cmd_workflow_save)
+
+    workflow_play = workflow_sub.add_parser("play", help="Replay a saved workflow")
+    workflow_play.add_argument("name")
+    workflow_play.add_argument("--timeout", type=float, default=600)
+    workflow_play.set_defaults(func=cmd_workflow_play)
+
+    workflow_sub.add_parser(
+        "stop",
+        help="Stop workflow playback",
+    ).set_defaults(func=cmd_workflow_stop)
+
+    workflow_export = workflow_sub.add_parser("export", help="Export workflow JSON")
+    workflow_export.add_argument("name")
+    workflow_export.add_argument("destination")
+    workflow_export.set_defaults(func=cmd_workflow_export)
 
     return p
 
