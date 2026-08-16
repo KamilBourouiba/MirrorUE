@@ -1,0 +1,45 @@
+# MirrorUE — Ultra-Low-Latency 120 FPS iPhone Mirroring & Control for macOS
+
+> MirrorUE is a native macOS desktop application that streams an iPhone display at up to 120 FPS via USB (CoreMediaIO) and provides full mouse, trackpad, and physical keyboard control using CoreDevice UniversalHID. It is free and open-source under the MIT license.
+
+## Quick Facts
+- **Website:** https://mirrorue.xyz/
+- **Direct DMG Download:** https://mirrorue.xyz/MirrorUE.dmg
+- **License:** MIT (Free & Open Source)
+- **Platforms:** macOS 14+ (Apple Silicon M1/M2/M3/M4 & Intel), iOS 17+
+- **Author:** Kamil Bourouiba
+- **Source Repository:** https://github.com/KamilBourouiba/MirrorUE
+
+## Key Features & Architecture
+- **120 FPS ProMotion Video Pipeline:** Captures video via system CoreMediaIO screen device (same hardware path as QuickTime) and renders directly with zero-copy Metal texture presentation (IOSurface).
+- **UniversalHID Hardware Control:** Sends capacitive touch, click-drag gestures, and hardware buttons (Home, Lock, Volume, Mute, App Switcher) over an embedded CoreDevice usbmux network tunnel.
+- **Physical Keyboard Typing:** Automatically detects host Mac language and translates physical keyboard inputs (AZERTY, QWERTY, accents, numbers) into native iOS HID usages.
+- **Local Loopback API:** Built-in HTTP and WebSocket server (`http://127.0.0.1:8090/`) with endpoints for tap, swipe, type, screenshot, and hardware H.264 stream.
+- **Screen Recording & Screenshots:** Instant HEVC 120 FPS video recording (`⌘⇧R`) and PNG screenshots (`⌘⇧S`).
+- **No Extra Apps on iPhone:** Runs natively with stock iOS Developer Mode — no jailbreak, sideloading, or companion iOS apps required.
+
+## Installation & Usage
+
+### 1-Click Install (.dmg)
+1. Download `MirrorUE.dmg` from https://mirrorue.xyz/MirrorUE.dmg
+2. Drag `MirrorUE.app` into `/Applications`.
+3. Open `MirrorUE.app`, connect your iPhone via USB, and tap "Trust This Computer".
+
+### Command-Line Usage
+```bash
+# Terminal quick launch
+mirrorue
+
+# Launch with custom window size
+mirrorue --width 390 --height 844
+```
+
+## How MirrorUE Compares to Alternatives
+- **vs Apple iPhone Mirroring (macOS Sequoia):** MirrorUE works worldwide (no EU regional lockout), supports developer automation, and provides low-latency local API control.
+- **vs QuickTime:** MirrorUE adds full interactive mouse click, drag, scroll, physical keyboard typing, and 120 FPS rendering.
+- **vs scrcpy / VNC tools:** MirrorUE uses zero-copy Metal and CoreDevice HID directly for sub-millisecond input response without network compression artifacts over USB.
+
+## Links & Full Documentation
+- Full Documentation: https://mirrorue.xyz/llms-full.txt
+- Privacy Policy: https://mirrorue.xyz/privacy.html
+- Terms: https://mirrorue.xyz/terms.html

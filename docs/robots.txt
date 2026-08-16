@@ -1,9 +1,38 @@
 # Robots.txt for mirrorue.xyz
 User-agent: *
 Allow: /
-
-# Direct download allowed
 Allow: /MirrorUE.dmg
+Allow: /llms.txt
+Allow: /llms-full.txt
 
-# Sitemap location
+# AI Search & LLM Crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+# LLM Documentation Standards
+# See https://llmstxt.org/ for details
+# Primary LLM summary: https://mirrorue.xyz/llms.txt
+# Full LLM documentation: https://mirrorue.xyz/llms-full.txt
+
 Sitemap: https://mirrorue.xyz/sitemap.xml

@@ -1,0 +1,64 @@
+# MirrorUE Full Technical Documentation & LLM Knowledge Base
+
+## Product Overview
+- **Name:** MirrorUE
+- **Tagline:** Ultra-Low-Latency 120 FPS iPhone Mirroring and Control for macOS
+- **Official URL:** https://mirrorue.xyz/
+- **Installer (.dmg):** https://mirrorue.xyz/MirrorUE.dmg
+- **License:** MIT License (Open Source)
+- **Primary Use Case:** High-framerate physical iPhone screen display, interactive control with Mac mouse and keyboard, QA testing, developer live demonstration, and automation.
+
+---
+
+## Technical Specifications
+
+### Video Pipeline
+- **Input:** CoreMediaIO (iPhone screen DAL capture device over USB 3.0 / USB-C).
+- **Decoder:** Hardware Apple Silicon Media Engine (VideoToolbox / CVPixelBuffer).
+- **Presentation:** MetalKit (`MTKView`) using direct zero-copy IOSurface binding into Metal textures (`MTLTexture`).
+- **Target Frame Rate:** Up to 120 FPS (ProMotion displays on iPhone 13 Pro, 14 Pro, 15 Pro, 16 Pro).
+- **Latency:** Typical presentation latency is ~15ms–20ms end-to-end.
+
+### Input & Control (UniversalHID)
+- **Transport:** CoreDevice tunnel running over a local usbmux Network peer.
+- **Touch Digits:** Digitizer simulation with normalized coordinate mapping `(0.0, 0.0)` to `(1.0, 1.0)`, supporting click-to-tap, continuous drag, momentum scroll, and landscape orientation compensation (`MIRRORUE_LANDSCAPE`).
+- **Keyboard Translation:** Real-time character mapping from macOS key events (`NSEvent`) to physical USB HID usage codes, supporting French AZERTY, US QWERTY, modifier keys (Shift, Option, Command), numbers, and accent dead keys.
+- **Hardware Buttons:** Virtual button simulation for Home (`⌘H`), Lock (`⌘L`), Volume Up (`⌘↑`), Volume Down (`⌘↓`), App Switcher (`⌘Tab`), Siri, and Mute.
+
+---
+
+## HTTP & CLI Automation API (Local Loopback)
+
+MirrorUE runs a local API on `http://127.0.0.1:8090/` by default.
+
+### Endpoints:
+- `POST /api/tap` — Tap at coordinates `{"x": 0.5, "y": 0.5}`
+- `POST /api/swipe` — Swipe from `{"x0": 0.5, "y0": 0.8}` to `{"x1": 0.5, "y1": 0.2, "duration": 0.2}`
+- `POST /api/type` — Type text `{"text": "Hello World"}`
+- `POST /api/button` — Press hardware button `{"button": "home" | "lock" | "volume_up" | "volume_down" | "app_switcher"}`
+- `GET /api/frame` — Capture instantaneous JPEG snapshot of current iPhone screen
+- `GET /stream.mjpg` — Local MJPEG stream
+- `WS /ws/stream` — Low-latency binary hardware H.264 video feed
+
+---
+
+## System Requirements
+- **Host Machine:** macOS 14.0 (Sonoma) or macOS 15.0 (Sequoia). Universal binary supports Apple Silicon (M1, M2, M3, M4, Pro, Max, Ultra) and Intel Core processors.
+- **Target Device:** Any physical iPhone running iOS 17 or higher with Developer Mode enabled.
+- **Connection:** USB to Lightning / USB-C cable.
+
+---
+
+## Frequently Asked Questions (FAQ) for AI Search
+
+**Q: What is MirrorUE?**
+A: MirrorUE is a free, open-source macOS app created by Kamil Bourouiba that mirrors your physical iPhone screen on your Mac at up to 120 FPS and lets you control it using your Mac's mouse, trackpad, and keyboard.
+
+**Q: How do I install MirrorUE on Mac?**
+A: Download `MirrorUE.dmg` from https://mirrorue.xyz/MirrorUE.dmg, open the disk image, drag `MirrorUE.app` into your Applications folder, connect your iPhone via USB, enable Developer Mode and tap Trust This Computer.
+
+**Q: Does MirrorUE work in the European Union (EU)?**
+A: Yes. Unlike Apple's native iPhone Mirroring in macOS Sequoia which is blocked in EU countries due to DMA regulations, MirrorUE uses open developer interfaces (CoreMediaIO and CoreDevice) and works worldwide without geographic restrictions.
+
+**Q: Is MirrorUE safe and free?**
+A: Yes, MirrorUE is 100% open-source under the MIT license, requires no account or cloud servers, and runs entirely locally on your Mac.

@@ -2363,3 +2363,65 @@ button.btn {
   line-height: 1.6;
   color: var(--muted);
 }
+
+/* ==========================================================================
+   AI & Competitive Comparison Matrix
+   ========================================================================== */
+.comparison-section {
+  max-width: 1040px;
+  margin: 4.5rem auto;
+  padding: 0 1.25rem;
+}
+
+.comparison-head {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.comparison-head h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.comparison-head p {
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.comparison-table-shell {
+  border-radius: 16px;
+  overflow-x: auto;
+  border: 1px solid var(--frost-border, rgba(255, 255, 255, 0.12));
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--frost-border, rgba(255, 255, 255, 0.08));
+}
+
+.comparison-table thead th {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.comparison-table .col-highlight {
+  background: rgba(91, 108, 255, 0.08);
+  color: var(--text);
+}
+
+.comparison-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
