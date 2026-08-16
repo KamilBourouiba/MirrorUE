@@ -40,6 +40,7 @@ fi
 echo "==> Assembling $APP"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
+mkdir -p "$APP/Contents/Resources"
 
 cat > "$APP/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -48,6 +49,7 @@ cat > "$APP/Contents/Info.plist" <<EOF
 <dict>
   <key>CFBundleDevelopmentRegion</key><string>en</string>
   <key>CFBundleExecutable</key><string>MirrorUE</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleIdentifier</key><string>app.mirrorue.MirrorUE</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>CFBundleName</key><string>MirrorUE</string>
@@ -58,7 +60,7 @@ cat > "$APP/Contents/Info.plist" <<EOF
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSCameraUsageDescription</key>
-  <string>MirrorUE needs camera/screen permission to show your iPhone display via CoreMediaIO.</string>
+  <string>MirrorUE needs camera permission to capture your iPhone screen at 120 FPS via CoreMediaIO.</string>
   <key>NSPrincipalClass</key><string>NSApplication</string>
 </dict>
 </plist>
@@ -72,9 +74,14 @@ fi
 cp -f "$ROOT/bin/MirrorUEEngine" "$APP/Contents/MacOS/MirrorUEEngine"
 chmod +x "$APP/Contents/MacOS/MirrorUE" "$APP/Contents/MacOS/MirrorUEEngine"
 
-# Ad-hoc sign so Gatekeeper is less angry on local builds (Developer ID later).
+if [[ -f "$ROOT/dist/AppIcon.icns" ]]; then
+  cp -f "$ROOT/dist/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+fi
+
+# Clean and Sign bundle with entitlements
+xattr -cr "$APP" 2>/dev/null || true
 if command -v codesign >/dev/null 2>&1; then
-  codesign --force --deep --sign - "$APP" 2>/dev/null || true
+  codesign --force --deep --sign - --entitlements "$ROOT/MirrorUE.entitlements" "$APP" 2>/dev/null || codesign --force --deep --sign - "$APP" 2>/dev/null || true
 fi
 
 echo "==> Creating $DMG"
@@ -84,6 +91,15 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE"
 cp -R "$APP" "$STAGE/"
 ln -sf /Applications "$STAGE/Applications"
+
+# Set volume icon on DMG if available
+if [[ -f "$ROOT/dist/AppIcon.icns" ]]; then
+  cp -f "$ROOT/dist/AppIcon.icns" "$STAGE/.VolumeIcon.icns"
+  if command -v SetFile >/dev/null 2>&1; then
+    SetFile -a C "$STAGE" 2>/dev/null || true
+  fi
+fi
+
 hdiutil create -volname "MirrorUE" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
 rm -rf "$STAGE"
 
