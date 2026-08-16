@@ -37,12 +37,22 @@ else
   test -x "$ROOT/bin/MirrorUE" && test -x "$ROOT/bin/MirrorUEEngine"
 fi
 
-echo "==> Assembling $APP"
-rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS"
-mkdir -p "$APP/Contents/Resources"
+# Detect Apple Code Signing Identity
+SIGN_IDENTITY=$(security find-identity -v -p codesigning | grep -E "Developer ID Application|Apple Development" | head -n 1 | awk -F'"' '{print $2}' || true)
+if [[ -z "$SIGN_IDENTITY" ]]; then
+  SIGN_IDENTITY="-"
+  echo "==> Using ad-hoc code signature"
+else
+  echo "==> Using Apple Developer Identity: $SIGN_IDENTITY"
+fi
 
-cat > "$APP/Contents/Info.plist" <<EOF
+# Clean Stage in /tmp to prevent Finder/fileprovider xattr corruption
+STAGE_DIR="/tmp/mirrorue_pkg_stage"
+rm -rf "$STAGE_DIR"
+mkdir -p "$STAGE_DIR/MirrorUE.app/Contents/MacOS"
+mkdir -p "$STAGE_DIR/MirrorUE.app/Contents/Resources"
+
+cat > "$STAGE_DIR/MirrorUE.app/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -67,48 +77,52 @@ cat > "$APP/Contents/Info.plist" <<EOF
 EOF
 
 if [[ -f "$ROOT/bin/MirrorUE" ]]; then
-  cp -f "$ROOT/bin/MirrorUE" "$APP/Contents/MacOS/MirrorUE"
+  cp -f "$ROOT/bin/MirrorUE" "$STAGE_DIR/MirrorUE.app/Contents/MacOS/MirrorUE"
 elif [[ -f "$ROOT/bin/MirrorUEApp" ]]; then
-  cp -f "$ROOT/bin/MirrorUEApp" "$APP/Contents/MacOS/MirrorUE"
+  cp -f "$ROOT/bin/MirrorUEApp" "$STAGE_DIR/MirrorUE.app/Contents/MacOS/MirrorUE"
 fi
-cp -f "$ROOT/bin/MirrorUEEngine" "$APP/Contents/MacOS/MirrorUEEngine"
-chmod +x "$APP/Contents/MacOS/MirrorUE" "$APP/Contents/MacOS/MirrorUEEngine"
+cp -f "$ROOT/bin/MirrorUEEngine" "$STAGE_DIR/MirrorUE.app/Contents/MacOS/MirrorUEEngine"
+chmod +x "$STAGE_DIR/MirrorUE.app/Contents/MacOS/MirrorUE" "$STAGE_DIR/MirrorUE.app/Contents/MacOS/MirrorUEEngine"
 
 if [[ -f "$ROOT/dist/AppIcon.icns" ]]; then
-  cp -f "$ROOT/dist/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+  cp -f "$ROOT/dist/AppIcon.icns" "$STAGE_DIR/MirrorUE.app/Contents/Resources/AppIcon.icns"
 fi
 
-# Clean and Sign bundle with entitlements
-xattr -cr "$APP" 2>/dev/null || true
-if command -v codesign >/dev/null 2>&1; then
-  codesign --force --deep --sign - --entitlements "$ROOT/MirrorUE.entitlements" "$APP" 2>/dev/null || codesign --force --deep --sign - "$APP" 2>/dev/null || true
-fi
+# Sign binaries with Hardened Runtime & Apple Identity
+codesign --force --sign "$SIGN_IDENTITY" --options runtime "$STAGE_DIR/MirrorUE.app/Contents/MacOS/MirrorUEEngine" 2>/dev/null || codesign --force --sign - "$STAGE_DIR/MirrorUE.app/Contents/MacOS/MirrorUEEngine" 2>/dev/null || true
+codesign --force --sign "$SIGN_IDENTITY" --options runtime "$STAGE_DIR/MirrorUE.app/Contents/MacOS/MirrorUE" 2>/dev/null || codesign --force --sign - "$STAGE_DIR/MirrorUE.app/Contents/MacOS/MirrorUE" 2>/dev/null || true
+codesign --force --sign "$SIGN_IDENTITY" --options runtime --entitlements "$ROOT/MirrorUE.entitlements" "$STAGE_DIR/MirrorUE.app" 2>/dev/null || codesign --force --sign - --entitlements "$ROOT/MirrorUE.entitlements" "$STAGE_DIR/MirrorUE.app" 2>/dev/null || true
+
+rm -rf "$APP"
+mkdir -p "$DIST"
+cp -R "$STAGE_DIR/MirrorUE.app" "$APP"
 
 echo "==> Creating $DMG"
 rm -f "$DMG"
-STAGE="$DIST/dmg-root"
-rm -rf "$STAGE"
-mkdir -p "$STAGE"
-cp -R "$APP" "$STAGE/"
-ln -sf /Applications "$STAGE/Applications"
+DMG_STAGE="$DIST/dmg-root"
+rm -rf "$DMG_STAGE"
+mkdir -p "$DMG_STAGE"
+cp -R "$APP" "$DMG_STAGE/"
+ln -sf /Applications "$DMG_STAGE/Applications"
 
 # Set volume icon on DMG if available
 if [[ -f "$ROOT/dist/AppIcon.icns" ]]; then
-  cp -f "$ROOT/dist/AppIcon.icns" "$STAGE/.VolumeIcon.icns"
+  cp -f "$ROOT/dist/AppIcon.icns" "$DMG_STAGE/.VolumeIcon.icns"
   if command -v SetFile >/dev/null 2>&1; then
-    SetFile -a C "$STAGE" 2>/dev/null || true
+    SetFile -a C "$DMG_STAGE" 2>/dev/null || true
   fi
 fi
 
-hdiutil create -volname "MirrorUE" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
-rm -rf "$STAGE"
+hdiutil create -volname "MirrorUE" -srcfolder "$DMG_STAGE" -ov -format UDZO "$DMG"
+rm -rf "$DMG_STAGE" "$STAGE_DIR"
 
 mkdir -p "$ROOT/docs"
 cp -f "$DMG" "$ROOT/docs/MirrorUE.dmg"
 
 ls -lh "$APP/Contents/MacOS/" "$DMG" "$ROOT/docs/MirrorUE.dmg"
 echo ""
-echo "Open:  open \"$APP\""
-echo "DMG:   $DMG"
-echo "Web:   $ROOT/docs/MirrorUE.dmg (Direct Download)"
-echo "Tip:   unsigned builds may need right-click → Open the first time."
+echo "Signed with: $SIGN_IDENTITY"
+echo "Open:        open \"$APP\""
+echo "DMG:         $DMG"
+echo "Web:         $ROOT/docs/MirrorUE.dmg (Direct Download)"
+
