@@ -25,16 +25,24 @@ DB_FILE = os.path.join(WORKSPACE_ROOT, "reddit_leads.json")
 LMSTUDIO_URL = "http://localhost:1234/v1"
 
 DEFAULT_QUERIES = [
-    "iphone mirror mac",
-    "mirror iphone to mac",
+    # 1. EU / Regional Block Alternative
     "iphone mirroring europe",
     "iphone mirroring eu",
+    "iphone mirroring not available in your region",
     "iphone mirroring alternative",
+    # 2. Mouse, Trackpad & Physical Keyboard Control
     "control iphone from mac",
     "type on iphone mac keyboard",
+    "control iphone with keyboard mac",
+    "click on iphone from mac",
+    # 3. Low-Latency, 120 FPS & Lag Fixes
     "quicktime iphone mirror lag",
+    "iphone screen mirror 120fps",
+    "stream iphone to mac without lag",
+    # 4. Open-Source / Scrcpy Alternatives
     "scrcpy ios",
-    "stream iphone to mac 120hz"
+    "scrcpy iphone mac",
+    "open source iphone mirror mac"
 ]
 
 TARGET_SUBREDDITS = [
@@ -48,6 +56,47 @@ TARGET_SUBREDDITS = [
     "iOSProgramming",
     "MacOS"
 ]
+
+NEGATIVE_KEYWORDS = [
+    "carplay", "selfie", "broken screen", "cracked", "repair", "screen protector",
+    "earphone", "iem", "headphone", "battery drain", "overnight", "battery life",
+    "case", "charger", "android auto", "apple watch", "trade-in", "camera lens",
+    "rear camera", "glass replacement"
+]
+
+def is_relevant_heuristic(title, text):
+    content = (title + " " + text).lower()
+    
+    # 1. Reject obvious non-mirroring noise
+    if any(neg in content for neg in NEGATIVE_KEYWORDS):
+        return False
+        
+    # 2. Must be an Apple / iPhone / iPad device
+    has_device = any(k in content for k in ["iphone", "ios", "ipad", "apple"])
+    
+    # 3. Must be actively seeking screen mirroring, Mac control, EU workaround, or low-latency tool
+    high_intent_terms = [
+        "mirror", "mirroring", "control iphone", "type on iphone",
+        "scrcpy", "quicktime lag", "120fps", "120 fps", "120hz",
+        "screen share to mac", "screen to mac", "screen on mac",
+        "keyboard on iphone", "mouse on iphone", "dma", "not available in your region",
+        "alternative to iphone mirroring"
+    ]
+    has_intent = any(k in content for k in high_intent_terms)
+    
+    return has_device and has_intent
+
+def detect_specific_intent(title, text):
+    content = (title + " " + text).lower()
+    if any(k in content for k in ["eu", "europe", "france", "germany", "spain", "italy", "dma", "region", "country", "not available"]):
+        return "🇪🇺 EU Block Alternative"
+    if any(k in content for k in ["keyboard", "type", "typing", "mouse", "trackpad", "click", "drag", "touch"]):
+        return "⌨️ Keyboard & Mouse Control"
+    if any(k in content for k in ["120", "fps", "hz", "promotion", "lag", "delay", "latency", "quicktime", "game", "gaming"]):
+        return "⚡ 120 FPS / Zero-Lag Stream"
+    if any(k in content for k in ["scrcpy", "open source", "mit", "api", "automation", "usb", "coremediaio"]):
+        return "🛠️ Open-Source / Scrcpy Tool"
+    return "📱 iPhone Mirror for Mac"
 
 def load_db():
     if os.path.exists(DB_FILE):
@@ -215,6 +264,7 @@ def scrape_reddit():
                         except Exception:
                             created_utc = int(time.time())
                         
+                        intent = detect_specific_intent(title, selftext)
                         db["leads"][post_id] = {
                             "id": post_id,
                             "title": title,
@@ -227,8 +277,8 @@ def scrape_reddit():
                             "created_utc": created_utc,
                             "matched_query": query,
                             "status": "new",
-                            "ai_score": 85,
-                            "ai_intent": "iPhone Mirroring / Mac Control",
+                            "ai_score": 90,
+                            "ai_intent": intent,
                             "ai_summary": title[:90],
                             "replied_at": None,
                             "notes": "",
@@ -277,6 +327,7 @@ def scrape_reddit():
                         except Exception:
                             created_utc = int(time.time())
                         
+                        intent = detect_specific_intent(title, selftext)
                         db["leads"][post_id] = {
                             "id": post_id,
                             "title": title,
@@ -289,8 +340,8 @@ def scrape_reddit():
                             "created_utc": created_utc,
                             "matched_query": f"r/{sub} search",
                             "status": "new",
-                            "ai_score": 85,
-                            "ai_intent": "iPhone Mirroring / Mac Control",
+                            "ai_score": 90,
+                            "ai_intent": intent,
                             "ai_summary": title[:90],
                             "replied_at": None,
                             "notes": "",
