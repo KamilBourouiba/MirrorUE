@@ -51,4 +51,17 @@
       if (toggle) toggle.checked = false;
     });
   });
+
+  // Track Google Ads Conversion on DMG Download
+  document.querySelectorAll('a[href*="MirrorUE.dmg"]').forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (typeof window.gtag === "function") {
+        window.gtag("event", "conversion", {
+          send_to: "AW-18393322142",
+          event_category: "download",
+          event_label: "MirrorUE.dmg"
+        });
+      }
+    });
+  });
 })();
