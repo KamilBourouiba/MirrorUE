@@ -1,45 +1,22 @@
-# MirrorUE — Ultra-Low-Latency 120 FPS iPhone Mirroring & Control for macOS
+# MirrorUE
 
-> MirrorUE is a native macOS desktop application that streams an iPhone display at up to 120 FPS via USB (CoreMediaIO) and provides full mouse, trackpad, and physical keyboard control using CoreDevice UniversalHID. It is free and open-source under the MIT license.
+> MirrorUE is a native macOS application that streams an iPhone display at up to 120 FPS via USB CoreMediaIO and provides full mouse, trackpad, and physical keyboard control using CoreDevice UniversalHID. Free and open source under the MIT license.
 
-## Quick Facts
-- **Website:** https://mirrorue.xyz/
-- **Direct DMG Download:** https://mirrorue.xyz/MirrorUE.dmg
-- **License:** MIT (Free & Open Source)
-- **Platforms:** macOS 14+ (Apple Silicon M1/M2/M3/M4 & Intel), iOS 16+ (iOS 16, 17, 18)
-- **Author:** Kamil Bourouiba
-- **Source Repository:** https://github.com/KamilBourouiba/MirrorUE
+## Documentation & Knowledge Base
 
-## Key Features & Architecture
-- **120 FPS ProMotion Video Pipeline:** Captures video via system CoreMediaIO screen device (same hardware path as QuickTime) and renders directly with zero-copy Metal texture presentation (IOSurface).
-- **UniversalHID Hardware Control:** Sends capacitive touch, click-drag gestures, and hardware buttons (Home, Lock, Volume, Mute, App Switcher) over an embedded CoreDevice usbmux network tunnel.
-- **Physical Keyboard Typing:** Automatically detects host Mac language and translates physical keyboard inputs (AZERTY, QWERTY, accents, numbers) into native iOS HID usages.
-- **Local Loopback API:** Built-in HTTP and WebSocket server (`http://127.0.0.1:8090/`) with endpoints for tap, swipe, type, screenshot, and hardware H.264 stream.
-- **Screen Recording & Screenshots:** Instant HEVC 120 FPS video recording (`⌘⇧R`) and PNG screenshots (`⌘⇧S`).
-- **No Extra Apps on iPhone:** Runs natively with stock iOS Developer Mode — no jailbreak, sideloading, or companion iOS apps required.
-
-## Installation & Usage
-
-### 1-Click Install (.dmg)
-1. Download `MirrorUE.dmg` from https://mirrorue.xyz/MirrorUE.dmg
-2. Drag `MirrorUE.app` into `/Applications`.
-3. Open `MirrorUE.app`, connect your iPhone via USB, and tap "Trust This Computer".
-
-### Command-Line Usage
-```bash
-# Terminal quick launch
-mirrorue
-
-# Launch with custom window size
-mirrorue --width 390 --height 844
-```
-
-## How MirrorUE Compares to Alternatives
-- **vs Apple iPhone Mirroring (macOS Sequoia):** MirrorUE works worldwide (no EU regional lockout), supports developer automation, and provides low-latency local API control.
-- **vs QuickTime:** MirrorUE adds full interactive mouse click, drag, scroll, physical keyboard typing, and 120 FPS rendering.
-- **vs scrcpy / VNC tools:** MirrorUE uses zero-copy Metal and CoreDevice HID directly for sub-millisecond input response without network compression artifacts over USB.
-
-## Links & Full Documentation
-- Full Documentation: https://mirrorue.xyz/llms-full.txt
-- Privacy Policy: https://mirrorue.xyz/privacy.html
-- Terms: https://mirrorue.xyz/terms.html
+- [Real-Device iPhone QA Automation](https://mirrorue.xyz/iphone-qa-automation/): How to automate and replay test journeys on physical iPhones using MirrorUE.
+- [EU Region iPhone Mirroring Guide](https://mirrorue.xyz/iphone-mirroring-eu/): Guide for European Union users bypassing DMA restrictions with local USB mirroring.
+- [Control iPhone from Mac](https://mirrorue.xyz/control-iphone-from-mac/): Mouse, trackpad multi-touch gestures, and keyboard layout translation.
+- [120 FPS ProMotion Pipeline](https://mirrorue.xyz/120fps-iphone-mirroring/): CoreMediaIO and zero-copy Metal texture architecture.
+- [Hardware & OS Compatibility Matrix](https://mirrorue.xyz/compatibility/): Supported iPhones (11–16 Pro), iPads, macOS 14/15, and cable specifications.
+- [Local HTTP REST API Reference](https://mirrorue.xyz/api-docs/): Complete documentation for port 8090 automation endpoints (/v1/tap, /v1/type, /v1/screenshot).
+- [Performance Benchmarks](https://mirrorue.xyz/benchmarks/): Latency, frame-rate stability, and resource usage measurements on Apple Silicon.
+- [MirrorUE vs Apple iPhone Mirroring](https://mirrorue.xyz/mirrorue-vs-apple-iphone-mirroring/): Objective architectural and feature comparison.
+- [MirrorUE vs QuickTime](https://mirrorue.xyz/mirrorue-vs-quicktime/): Comparison of latency, framerate, and bidirectional control.
+- [About MirrorUE](https://mirrorue.xyz/about/): Project story, creator biography, architecture, and MIT license.
+- [Full LLM Knowledge Base](https://mirrorue.xyz/llms-full.txt): Comprehensive plain-text technical documentation for AI agents.
+- [MirrorUE .dmg Download](https://mirrorue.xyz/MirrorUE.dmg): Direct download of pre-built universal macOS binary.
+- [GitHub Source Code](https://github.com/KamilBourouiba/MirrorUE): MIT-licensed open-source Swift codebase.
+- [Privacy Policy](https://mirrorue.xyz/privacy/): Data handling, zero-telemetry policy, and tracking disclosures.
+- [Terms of Service](https://mirrorue.xyz/terms/): Terms of service and acceptable use guidelines.
+- [Legal Notice](https://mirrorue.xyz/legal/): Publisher mentions légales and contact details.

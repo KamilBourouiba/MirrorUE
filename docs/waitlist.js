@@ -336,8 +336,18 @@
     }
   }
 
+  function loadWeb3FormsScript() {
+    if (document.getElementById("web3forms-client-script")) return;
+    const s = document.createElement("script");
+    s.id = "web3forms-client-script";
+    s.src = "https://web3forms.com/client/script.js";
+    s.async = true;
+    document.body.appendChild(s);
+  }
+
   function openDialog(plan) {
     if (!dialog) return;
+    loadWeb3FormsScript();
     dialog.hidden = false;
     dialog.setAttribute("aria-hidden", "false");
     document.body.classList.add("waitlist-open");

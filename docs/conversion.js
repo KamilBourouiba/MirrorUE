@@ -4,35 +4,36 @@
   var sticky = document.getElementById("sticky-cta");
   var hero = document.querySelector(".hero");
   var waitlist = document.getElementById("waitlist");
-  var foot = document.querySelector(".foot");
-  var mobileMq = window.matchMedia("(max-width: 734px)");
+  var foot = document.querySelector(".footer") || document.querySelector(".foot");
 
-  function updateSticky() {
-    if (!sticky || !hero) return;
-    if (document.body.classList.contains("waitlist-open")) {
-      sticky.hidden = true;
-      return;
+  if (sticky && hero && "IntersectionObserver" in window) {
+    var heroVisible = true;
+    var footVisible = false;
+
+    function refreshSticky() {
+      if (document.body.classList.contains("waitlist-open")) {
+        sticky.hidden = true;
+        return;
+      }
+      var show = !heroVisible && !footVisible;
+      sticky.hidden = !show;
+      sticky.setAttribute("aria-hidden", show ? "false" : "true");
     }
 
-    var footTop = foot ? foot.getBoundingClientRect().top : Infinity;
+    var heroObserver = new IntersectionObserver(function (entries) {
+      heroVisible = entries[0].isIntersecting;
+      refreshSticky();
+    }, { threshold: 0.1 });
+    heroObserver.observe(hero);
 
-    if (mobileMq.matches) {
-      var showMobile = footTop > window.innerHeight * 0.35;
-      sticky.hidden = !showMobile;
-      sticky.setAttribute("aria-hidden", showMobile ? "false" : "true");
-      return;
+    if (foot) {
+      var footObserver = new IntersectionObserver(function (entries) {
+        footVisible = entries[0].isIntersecting;
+        refreshSticky();
+      }, { threshold: 0.1 });
+      footObserver.observe(foot);
     }
-
-    var heroBottom = hero.getBoundingClientRect().bottom;
-    var show = heroBottom < 0 && footTop > window.innerHeight * 0.5;
-    sticky.hidden = !show;
-    sticky.setAttribute("aria-hidden", show ? "false" : "true");
   }
-
-  window.addEventListener("scroll", updateSticky, { passive: true });
-  window.addEventListener("resize", updateSticky);
-  mobileMq.addEventListener("change", updateSticky);
-  updateSticky();
 
   var observer = new MutationObserver(updateSticky);
   observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
