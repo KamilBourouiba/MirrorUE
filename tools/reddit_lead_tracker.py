@@ -11,7 +11,7 @@ import json
 import time
 import urllib.request
 import urllib.parse
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import threading
 from datetime import datetime
 import xml.etree.ElementTree as ET
@@ -23,6 +23,17 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 WORKSPACE_ROOT = os.path.dirname(SCRIPT_DIR) if os.path.basename(SCRIPT_DIR) == "tools" else SCRIPT_DIR
 DB_FILE = os.path.join(WORKSPACE_ROOT, "reddit_leads.json")
 LMSTUDIO_URL = "http://localhost:1234/v1"
+
+# Real-time Scraper State
+SCRAPE_STATE = {
+    "running": False,
+    "current_query": "",
+    "current_index": 0,
+    "total_queries": 0,
+    "found_in_run": 0,
+    "last_error": None
+}
+SCRAPE_LOCK = threading.Lock()
 
 DEFAULT_QUERIES = [
     # 1. EU / Regional Block Alternative
@@ -230,7 +241,17 @@ Do NOT sound like a pushy marketer or bot. Sound like an indie developer helping
     # Fallback template
     return f"Hey /u/{author}! If you're looking for a smooth solution, I built MirrorUE (https://mirrorue.xyz) — it's a free, open-source macOS app that mirrors your iPhone at 120 FPS with full mouse gestures and physical Mac keyboard support over USB."
 
-def scrape_reddit():
+def scrape_reddit_worker():
+    global SCRAPE_STATE
+    with SCRAPE_LOCK:
+        if SCRAPE_STATE["running"]:
+            return
+        SCRAPE_STATE["running"] = True
+        SCRAPE_STATE["found_in_run"] = 0
+        SCRAPE_STATE["current_index"] = 0
+        all_tasks = [(q, None) for q in DEFAULT_QUERIES] + [("iphone mirror", s) for s in TARGET_SUBREDDITS]
+        SCRAPE_STATE["total_queries"] = len(all_tasks)
+
     db = load_db()
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
@@ -239,134 +260,96 @@ def scrape_reddit():
     found_count = 0
     ns = {"atom": "http://www.w3.org/2005/Atom"}
     
-    for query in DEFAULT_QUERIES:
-        url = f"https://www.reddit.com/search.rss?q={urllib.parse.quote(query)}&sort=new&t=month"
-        try:
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=12) as response:
-                if response.status == 200:
-                    xml_data = response.read()
-                    root = ET.fromstring(xml_data)
-                    for entry in root.findall("atom:entry", ns):
-                        post_id_el = entry.find("atom:id", ns)
-                        post_id = post_id_el.text if post_id_el is not None else None
-                        if not post_id or post_id in db["leads"]:
-                            continue
-                        
-                        title_el = entry.find("atom:title", ns)
-                        title = title_el.text if title_el is not None else ""
-                        
-                        link_el = entry.find("atom:link", ns)
-                        permalink = link_el.attrib.get("href", "") if link_el is not None else ""
-                        
-                        author_el = entry.find("atom:author/atom:name", ns)
-                        author = author_el.text.replace("/u/", "") if author_el is not None and author_el.text else "anonymous"
-                        
-                        category_el = entry.find("atom:category", ns)
-                        subreddit = category_el.attrib.get("label", "").replace("r/", "") if category_el is not None else "mac"
-                        
-                        content_el = entry.find("atom:content", ns)
-                        raw_content = content_el.text if content_el is not None else ""
-                        selftext = clean_html(raw_content)
-                        
-                        if not is_relevant_heuristic(title, selftext, subreddit):
-                            continue
-                        
-                        updated_el = entry.find("atom:published", ns) or entry.find("atom:updated", ns)
-                        time_str = updated_el.text if updated_el is not None else ""
-                        try:
-                            dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
-                            created_utc = int(dt.timestamp())
-                        except Exception:
-                            created_utc = int(time.time())
-                        
-                        intent = detect_specific_intent(title, selftext)
-                        db["leads"][post_id] = {
-                            "id": post_id,
-                            "title": title,
-                            "selftext": (selftext[:280] + "...") if len(selftext) > 280 else selftext,
-                            "subreddit": subreddit,
-                            "author": author,
-                            "permalink": permalink,
-                            "score": 1,
-                            "num_comments": 0,
-                            "created_utc": created_utc,
-                            "matched_query": query,
-                            "status": "new",
-                            "ai_score": 90,
-                            "ai_intent": intent,
-                            "ai_summary": title[:90],
-                            "replied_at": None,
-                            "notes": "",
-                            "found_at": datetime.utcnow().isoformat()
-                        }
-                        found_count += 1
-            time.sleep(2.0)
-        except Exception:
-            time.sleep(3.0)
+    try:
+        for idx, (query, sub) in enumerate(all_tasks):
+            with SCRAPE_LOCK:
+                SCRAPE_STATE["current_index"] = idx + 1
+                SCRAPE_STATE["current_query"] = f"r/{sub}: {query}" if sub else query
+            
+            if sub:
+                url = f"https://www.reddit.com/r/{sub}/search.rss?q={urllib.parse.quote(query)}&restrict_sr=1&sort=new"
+                print(f"[Scanner] [{idx+1}/{len(all_tasks)}] Scanning r/{sub} for '{query}'...")
+            else:
+                url = f"https://www.reddit.com/search.rss?q={urllib.parse.quote(query)}&sort=new&t=month"
+                print(f"[Scanner] [{idx+1}/{len(all_tasks)}] Searching Reddit for '{query}'...")
 
-    for sub in TARGET_SUBREDDITS:
-        url = f"https://www.reddit.com/r/{sub}/search.rss?q=iphone+mirror&restrict_sr=1&sort=new"
-        try:
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=12) as response:
-                if response.status == 200:
-                    xml_data = response.read()
-                    root = ET.fromstring(xml_data)
-                    for entry in root.findall("atom:entry", ns):
-                        post_id_el = entry.find("atom:id", ns)
-                        post_id = post_id_el.text if post_id_el is not None else None
-                        if not post_id or post_id in db["leads"]:
-                            continue
-                        
-                        title_el = entry.find("atom:title", ns)
-                        title = title_el.text if title_el is not None else ""
-                        
-                        link_el = entry.find("atom:link", ns)
-                        permalink = link_el.attrib.get("href", "") if link_el is not None else ""
-                        
-                        author_el = entry.find("atom:author/atom:name", ns)
-                        author = author_el.text.replace("/u/", "") if author_el is not None and author_el.text else "anonymous"
-                        
-                        content_el = entry.find("atom:content", ns)
-                        raw_content = content_el.text if content_el is not None else ""
-                        selftext = clean_html(raw_content)
-                        
-                        if not is_relevant_heuristic(title, selftext, sub):
-                            continue
-                        
-                        updated_el = entry.find("atom:published", ns) or entry.find("atom:updated", ns)
-                        time_str = updated_el.text if updated_el is not None else ""
-                        try:
-                            dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
-                            created_utc = int(dt.timestamp())
-                        except Exception:
-                            created_utc = int(time.time())
-                        
-                        intent = detect_specific_intent(title, selftext)
-                        db["leads"][post_id] = {
-                            "id": post_id,
-                            "title": title,
-                            "selftext": (selftext[:280] + "...") if len(selftext) > 280 else selftext,
-                            "subreddit": sub,
-                            "author": author,
-                            "permalink": permalink,
-                            "score": 1,
-                            "num_comments": 0,
-                            "created_utc": created_utc,
-                            "matched_query": f"r/{sub} search",
-                            "status": "new",
-                            "ai_score": 90,
-                            "ai_intent": intent,
-                            "ai_summary": title[:90],
-                            "replied_at": None,
-                            "notes": "",
-                            "found_at": datetime.utcnow().isoformat()
-                        }
-                        found_count += 1
-            time.sleep(2.0)
-        except Exception:
-            time.sleep(3.0)
+            try:
+                req = urllib.request.Request(url, headers=headers)
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    if response.status == 200:
+                        xml_data = response.read()
+                        root = ET.fromstring(xml_data)
+                        for entry in root.findall("atom:entry", ns):
+                            post_id_el = entry.find("atom:id", ns)
+                            post_id = post_id_el.text if post_id_el is not None else None
+                            if not post_id or post_id in db["leads"]:
+                                continue
+                            
+                            title_el = entry.find("atom:title", ns)
+                            title = title_el.text if title_el is not None else ""
+                            
+                            link_el = entry.find("atom:link", ns)
+                            permalink = link_el.attrib.get("href", "") if link_el is not None else ""
+                            
+                            author_el = entry.find("atom:author/atom:name", ns)
+                            author = author_el.text.replace("/u/", "") if author_el is not None and author_el.text else "anonymous"
+                            
+                            category_el = entry.find("atom:category", ns)
+                            post_sub = sub or (category_el.attrib.get("label", "").replace("r/", "") if category_el is not None else "mac")
+                            
+                            content_el = entry.find("atom:content", ns)
+                            raw_content = content_el.text if content_el is not None else ""
+                            selftext = clean_html(raw_content)
+                            
+                            if not is_relevant_heuristic(title, selftext, post_sub):
+                                continue
+                            
+                            updated_el = entry.find("atom:published", ns) or entry.find("atom:updated", ns)
+                            time_str = updated_el.text if updated_el is not None else ""
+                            try:
+                                dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+                                created_utc = int(dt.timestamp())
+                            except Exception:
+                                created_utc = int(time.time())
+                            
+                            intent = detect_specific_intent(title, selftext)
+                            db["leads"][post_id] = {
+                                "id": post_id,
+                                "title": title,
+                                "selftext": (selftext[:280] + "...") if len(selftext) > 280 else selftext,
+                                "subreddit": post_sub,
+                                "author": author,
+                                "permalink": permalink,
+                                "score": 1,
+                                "num_comments": 0,
+                                "created_utc": created_utc,
+                                "matched_query": query,
+                                "status": "new",
+                                "ai_score": 90,
+                                "ai_intent": intent,
+                                "ai_summary": title[:90],
+                                "replied_at": None,
+                                "notes": "",
+                                "found_at": datetime.utcnow().isoformat()
+                            }
+                            found_count += 1
+                            with SCRAPE_LOCK:
+                                SCRAPE_STATE["found_in_run"] = found_count
+                time.sleep(1.5)
+            except Exception as e:
+                time.sleep(2.0)
+    finally:
+        db["last_scraped_at"] = datetime.utcnow().isoformat()
+        save_db(db)
+        with SCRAPE_LOCK:
+            SCRAPE_STATE["running"] = False
+        print(f"[Scanner] Finished scan cycle! Found {found_count} leads.")
+    return found_count
+
+def scrape_reddit():
+    t = threading.Thread(target=scrape_reddit_worker, daemon=True)
+    t.start()
+    return True
             
     db["last_scraped_at"] = datetime.utcnow().isoformat()
     save_db(db)
@@ -612,6 +595,14 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       </div>
     </header>
 
+    <div id="scrape-progress-banner" style="background: rgba(91, 108, 255, 0.15); border: 1px solid var(--primary); padding: 0.85rem 1.25rem; border-radius: 10px; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;" hidden>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="display: inline-block; width: 14px; height: 14px; border: 2px solid #5b6cff; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
+        <span id="scrape-progress-text" style="font-size: 0.9rem; font-family: 'JetBrains Mono', monospace;">Scanning Reddit for high-intent leads...</span>
+      </div>
+      <span id="scrape-progress-count" class="badge" style="background: var(--primary); color: #fff;">0 found</span>
+    </div>
+
     <div class="stats-bar">
       <div class="stat-card">
         <span class="label">Total Leads</span>
@@ -646,6 +637,10 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     <div id="lead-list" class="lead-list"></div>
   </div>
 
+  <style>
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+
   <!-- AI Reply Modal -->
   <div id="ai-modal" class="modal" hidden>
     <div class="modal-box">
@@ -671,6 +666,7 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     let currentFilter = 'new';
     let activeLeadId = null;
     let currentGeneratedReply = '';
+    let isPollingScrape = false;
 
     async function checkAiStatus() {
       try {
@@ -775,19 +771,57 @@ HTML_DASHBOARD = """<!DOCTYPE html>
 
     async function triggerScrape() {
       const btn = document.getElementById('btn-scrape');
+      const banner = document.getElementById('scrape-progress-banner');
+      const progressText = document.getElementById('scrape-progress-text');
+      const progressCount = document.getElementById('scrape-progress-count');
+      
       btn.innerText = 'Scanning Reddit...';
       btn.disabled = true;
+      banner.hidden = false;
+      progressText.innerText = 'Starting live scan across Reddit...';
+      progressCount.innerText = '0 found';
+
       try {
-        const res = await fetch('/api/scrape', { method: 'POST' });
-        const data = await res.json();
-        alert(`Scan completed! Found ${data.found} new leads.`);
-        await loadData();
+        await fetch('/api/scrape', { method: 'POST' });
+        pollScrapeProgress();
       } catch (err) {
-        alert('Error during scrape: ' + err);
-      } finally {
+        alert('Error starting scrape: ' + err);
         btn.innerText = '⚡ Scan Reddit Now';
         btn.disabled = false;
+        banner.hidden = true;
       }
+    }
+
+    function pollScrapeProgress() {
+      const btn = document.getElementById('btn-scrape');
+      const banner = document.getElementById('scrape-progress-banner');
+      const progressText = document.getElementById('scrape-progress-text');
+      const progressCount = document.getElementById('scrape-progress-count');
+
+      const interval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/scrape/status');
+          const data = await res.json();
+          
+          if (data.running) {
+            progressText.innerText = `[${data.current_index}/${data.total_queries}] Scanning ${data.current_query}...`;
+            progressCount.innerText = `${data.found_in_run} leads found`;
+          } else {
+            clearInterval(interval);
+            progressText.innerText = `✓ Scan complete! Found ${data.found_in_run} leads.`;
+            progressCount.innerText = `${data.found_in_run} total`;
+            btn.innerText = '⚡ Scan Reddit Now';
+            btn.disabled = false;
+            setTimeout(() => { banner.hidden = true; }, 4000);
+            await loadData();
+          }
+        } catch (e) {
+          clearInterval(interval);
+          btn.innerText = '⚡ Scan Reddit Now';
+          btn.disabled = false;
+          banner.hidden = true;
+        }
+      }, 600);
     }
 
     async function updateStatus(id, status) {
@@ -877,6 +911,13 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps(db).encode("utf-8"))
+        elif self.path == "/api/scrape/status":
+            with SCRAPE_LOCK:
+                state_copy = dict(SCRAPE_STATE)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(state_copy).encode("utf-8"))
         elif self.path == "/api/ai/status":
             status = check_lmstudio_status()
             self.send_response(200)
@@ -889,11 +930,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self.path == "/api/scrape":
-            found = scrape_reddit()
+            started = scrape_reddit()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
-            self.wfile.write(json.dumps({"success": True, "found": found}).encode("utf-8"))
+            self.wfile.write(json.dumps({"success": True, "started": started}).encode("utf-8"))
         elif self.path == "/api/leads/update":
             content_len = int(self.headers.get('Content-Length', 0))
             body = json.loads(self.rfile.read(content_len).decode('utf-8'))
