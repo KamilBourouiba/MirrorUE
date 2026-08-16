@@ -85,8 +85,8 @@ def call_lmstudio_chat(prompt, system_prompt="You are a helpful AI assistant."):
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.5,
-        "max_tokens": 500
+        "temperature": 0.4,
+        "max_tokens": 1500
     }
     
     req = urllib.request.Request(
@@ -94,12 +94,15 @@ def call_lmstudio_chat(prompt, system_prompt="You are a helpful AI assistant."):
         data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json"}
     )
-    with urllib.request.urlopen(req, timeout=45) as res:
+    with urllib.request.urlopen(req, timeout=50) as res:
         data = json.loads(res.read().decode("utf-8"))
         msg = data["choices"][0]["message"]
         content = msg.get("content", "").strip()
         if not content and "reasoning_content" in msg:
             content = msg.get("reasoning_content", "").strip()
+        # Remove any lingering thinking artifacts if present
+        if "</think>" in content:
+            content = content.split("</think>")[-1].strip()
         return content
 
 def clean_html(raw_html):
