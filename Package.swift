@@ -42,7 +42,14 @@ let package = Package(
                 .linkedFramework("QuartzCore"),
                 .linkedFramework("CoreVideo"),
                 .linkedFramework("AVFoundation"),
+                .linkedFramework("VideoToolbox"),
+                .linkedFramework("CoreMedia"),
             ]
+        ),
+        .testTarget(
+            name: "MirrorUEAppTests",
+            dependencies: ["MirrorUEApp"],
+            path: "Tests/MirrorUEAppTests"
         ),
     ]
 )

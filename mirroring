@@ -8,8 +8,15 @@ if [[ ! -x "$ROOT/bin/MirrorUEEngine" ]]; then
   "$ROOT/tools/build_engine.sh"
 fi
 
-# Dev: keep bin/MirrorUE in sync with the last `swift build` (./mirroring was running stale binaries).
-if BUILT_DIR="$(swift build --show-bin-path 2>/dev/null)" && [[ -x "$BUILT_DIR/MirrorUE" ]]; then
+# Dev: build and copy the current source every time so `./mirroring` can never
+# silently launch an older binary from bin/. The explicit `swift build` remains
+# incremental, so running it just before this script is effectively a no-op.
+if command -v swift >/dev/null 2>&1; then
+  swift build --product MirrorUE
+  BUILT_DIR="$(swift build --show-bin-path)"
+fi
+
+if [[ -n "${BUILT_DIR:-}" && -x "$BUILT_DIR/MirrorUE" ]]; then
   if [[ ! -x "$ROOT/bin/MirrorUE" || "$BUILT_DIR/MirrorUE" -nt "$ROOT/bin/MirrorUE" ]]; then
     mkdir -p "$ROOT/bin"
     cp -f "$BUILT_DIR/MirrorUE" "$ROOT/bin/MirrorUE"
