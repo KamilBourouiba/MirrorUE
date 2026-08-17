@@ -1,18 +1,21 @@
-# MirrorUE
+# MirrorUE — 120 FPS iPhone Mirroring & Control for macOS
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-black.svg)](#requirements)
-[![iOS](https://img.shields.io/badge/iOS-16%2B-lightgrey.svg)](#requirements)
+[![Platform](https://img.shields.io/badge/platform-macOS%2014--26-black.svg)](#requirements)
+[![iOS](https://img.shields.io/badge/iOS-16--26-lightgrey.svg)](#requirements)
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)](Package.swift)
 
-**Site:** [mirrorue.xyz](https://mirrorue.xyz/)
+**Official Website:** [mirrorue.xyz](https://mirrorue.xyz/) | **Download .dmg:** [mirrorue.xyz/MirrorUE.dmg](https://mirrorue.xyz/MirrorUE.dmg)
 
-Native **macOS** mirror for a development iPhone you own, trust, and authorize.
+Native **macOS** desktop application to stream and control physical iPhones with **120 FPS ProMotion Metal rendering**, capacitive mouse/trackpad gestures, physical keyboard input translation (AZERTY / QWERTY), and local HTTP automation API.
 
-Swift / AppKit / Metal UI. Video uses the system **CoreMediaIO** screen device —
-the same USB path as QuickTime and Finder presentation. Touch, hardware
-buttons, and keyboard go through an embedded **CoreDevice** tunnel on a usbmux
-**Network** peer so the cable stays free for capture.
+- 📖 **Guides & Documentation:**
+  - 🖥️ [How to Mirror an iPhone to Mac (2026 Guide)](https://mirrorue.xyz/mirror-iphone-to-mac/)
+  - 🇪🇺 [European Union (EU) iPhone Mirroring Guide](https://mirrorue.xyz/iphone-mirroring-eu/)
+  - ⚡ [120 FPS Metal Pipeline & Benchmarks (Raw Datasets)](https://mirrorue.xyz/benchmarks/)
+  - 📱 [Device & OS Compatibility Matrix (macOS Tahoe 26 & iOS 26)](https://mirrorue.xyz/compatibility/)
+  - 🤖 [Local REST API Reference (Port 8090)](https://mirrorue.xyz/api-docs/)
+  - 🧪 [Real-Device QA & CI/CD Automation](https://mirrorue.xyz/iphone-qa-automation/)
 
 ```text
 USB cable  → CoreMediaIO (iPhone screen DAL) → Metal (IOSurface, zero-copy)
@@ -20,23 +23,19 @@ Wi‑Fi / Net → CoreDevice tunnel → UniversalHID (touch · buttons · keyboa
               (+ engine HEVC fallback until capture is live)
 ```
 
-> **Not a general consumer screen mirror.** MirrorUE is for phones you pair for
-> development (Developer Mode, Trust This Computer). DRM apps may blank while
-> mirrored.
-
 ---
 
 ## Features
 
 | Area | What you get |
 |------|----------------|
-| **Video** | USB CoreMediaIO → Metal, IOSurface zero-copy, target **120 fps** (ProMotion) |
-| **Touch** | Click / drag / scroll on the mirrored image; landscape digitizer remap |
+| **Video** | USB CoreMediaIO → Metal, IOSurface zero-copy, target **120 fps** ([Benchmarks](https://mirrorue.xyz/benchmarks/)) |
+| **Touch** | Click / drag / scroll on the mirrored image; landscape digitizer remap ([Control Guide](https://mirrorue.xyz/control-iphone-from-mac/)) |
 | **Keyboard** | Auto layout mapping (`fr` / `us` / physical) from Mac language + input source |
-| **Dock** | Home, Lock, App Switcher, Control Center, Siri, mute, volume, music-safe, instant |
-| **Capture** | Screenshot & HEVC screen recording with show-touches |
-| **API** | Loopback HTTP + CLI for tap, type, home, open app, frame grab |
-| **Workflows** | Record, save, replay and export validated manual phone workflows |
+| **Dock** | Home, Lock, App Switcher, Control Center, Siri, mute, volume, music-safe |
+| **Capture** | Instant screenshot & HEVC screen recording |
+| **API** | Local HTTP REST server on port **8090** ([API Docs](https://mirrorue.xyz/api-docs/)) |
+| **QA Automation** | Record, save, replay and export validated manual phone workflows ([QA Guide](https://mirrorue.xyz/iphone-qa-automation/)) |
 | **AI agent** | LM Studio / OpenAI-compatible provider profiles, local OCR, bounded validated actions |
 | **Window** | Aspect-locked phone plus a collapsible Workflow / AI Runs sidebar |
 
