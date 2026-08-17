@@ -4,7 +4,7 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://mirrorue.xyz/</loc>
-    <lastmod>2026-08-16</lastmod>
+    <lastmod>2026-08-17</lastmod>
     <image:image>
       <image:loc>https://mirrorue.xyz/og-image.png</image:loc>
       <image:title>MirrorUE — Mirror &amp; Control iPhone on Mac at up to 120 FPS</image:title>
@@ -12,55 +12,83 @@
     </image:image>
   </url>
   <url>
-    <loc>https://mirrorue.xyz/iphone-qa-automation.html</loc>
-    <lastmod>2026-08-16</lastmod>
+    <loc>https://mirrorue.xyz/mirror-iphone-to-mac.html</loc>
+    <lastmod>2026-08-17</lastmod>
+  </url>
+  <url>
+    <loc>https://mirrorue.xyz/iphone-mirroring-macos-tahoe-ios-26.html</loc>
+    <lastmod>2026-08-17</lastmod>
   </url>
   <url>
     <loc>https://mirrorue.xyz/iphone-mirroring-eu.html</loc>
-    <lastmod>2026-08-16</lastmod>
+    <lastmod>2026-08-17</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mirrorue.xyz/iphone-mirroring-eu.html" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://mirrorue.xyz/fr/recopie-iphone-mac/" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://mirrorue.xyz/de/iphone-mirroring-eu/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mirrorue.xyz/iphone-mirroring-eu.html" />
+  </url>
+  <url>
+    <loc>https://mirrorue.xyz/fr/recopie-iphone-mac/</loc>
+    <lastmod>2026-08-17</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mirrorue.xyz/iphone-mirroring-eu.html" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://mirrorue.xyz/fr/recopie-iphone-mac/" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://mirrorue.xyz/de/iphone-mirroring-eu/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mirrorue.xyz/iphone-mirroring-eu.html" />
+  </url>
+  <url>
+    <loc>https://mirrorue.xyz/de/iphone-mirroring-eu/</loc>
+    <lastmod>2026-08-17</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mirrorue.xyz/iphone-mirroring-eu.html" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://mirrorue.xyz/fr/recopie-iphone-mac/" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://mirrorue.xyz/de/iphone-mirroring-eu/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mirrorue.xyz/iphone-mirroring-eu.html" />
   </url>
   <url>
     <loc>https://mirrorue.xyz/control-iphone-from-mac.html</loc>
-    <lastmod>2026-08-16</lastmod>
+    <lastmod>2026-08-17</lastmod>
   </url>
   <url>
     <loc>https://mirrorue.xyz/120fps-iphone-mirroring.html</loc>
-    <lastmod>2026-08-16</lastmod>
+    <lastmod>2026-08-17</lastmod>
+  </url>
+  <url>
+    <loc>https://mirrorue.xyz/iphone-qa-automation.html</loc>
+    <lastmod>2026-08-17</lastmod>
   </url>
   <url>
     <loc>https://mirrorue.xyz/compatibility.html</loc>
-    <lastmod>2026-08-16</lastmod>
+    <lastmod>2026-08-17</lastmod>
   </url>
   <url>
     <loc>https://mirrorue.xyz/api-docs.html</loc>
-    <lastmod>2026-08-16</lastmod>
-  </url>
-  <url>
-    <loc>https://mirrorue.xyz/mirrorue-vs-apple-iphone-mirroring.html</loc>
-    <lastmod>2026-08-16</lastmod>
-  </url>
-  <url>
-    <loc>https://mirrorue.xyz/mirrorue-vs-quicktime.html</loc>
-    <lastmod>2026-08-16</lastmod>
+    <lastmod>2026-08-17</lastmod>
   </url>
   <url>
     <loc>https://mirrorue.xyz/benchmarks.html</loc>
-    <lastmod>2026-08-16</lastmod>
+    <lastmod>2026-08-17</lastmod>
+  </url>
+  <url>
+    <loc>https://mirrorue.xyz/mirrorue-vs-apple-iphone-mirroring.html</loc>
+    <lastmod>2026-08-17</lastmod>
+  </url>
+  <url>
+    <loc>https://mirrorue.xyz/mirrorue-vs-quicktime.html</loc>
+    <lastmod>2026-08-17</lastmod>
   </url>
   <url>
     <loc>https://mirrorue.xyz/about.html</loc>
-    <lastmod>2026-08-16</lastmod>
+    <lastmod>2026-08-17</lastmod>
   </url>
   <url>
     <loc>https://mirrorue.xyz/privacy.html</loc>
-    <lastmod>2026-08-16</lastmod>
+    <lastmod>2026-08-17</lastmod>
   </url>
   <url>
     <loc>https://mirrorue.xyz/terms.html</loc>
-    <lastmod>2026-08-16</lastmod>
+    <lastmod>2026-08-17</lastmod>
   </url>
   <url>
     <loc>https://mirrorue.xyz/legal.html</loc>
-    <lastmod>2026-08-16</lastmod>
+    <lastmod>2026-08-17</lastmod>
   </url>
 </urlset>

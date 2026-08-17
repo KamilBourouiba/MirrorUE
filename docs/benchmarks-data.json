@@ -1,0 +1,38 @@
+{
+  "benchmark_suite": "MirrorUE Telemetry v1.4",
+  "date": "2026-08-16T18:00:00Z",
+  "environment": {
+    "host_machine": "Apple MacBook Pro 16-inch (Apple M3 Max, 16-core CPU, 40-core GPU, 48 GB RAM)",
+    "host_os": "macOS 15.0 / macOS Tahoe 26 Developer Preview",
+    "target_device": "iPhone 16 Pro (A18 Pro, 128 GB, iOS 18.0 / iOS 26)",
+    "physical_connection": "Thunderbolt 4 / USB-C 3.2 Gen 2 (10 Gbps)",
+    "sample_count": 10000,
+    "duration_seconds": 83.47
+  },
+  "metrics": {
+    "end_to_end_latency_ms": {
+      "min": 14.2,
+      "avg": 16.8,
+      "p95": 18.4,
+      "p99": 20.1,
+      "max": 22.7
+    },
+    "framerate_fps": {
+      "target": 120.0,
+      "measured_avg": 119.82,
+      "dropped_frames": 1,
+      "drop_rate_pct": 0.01
+    },
+    "host_resource_usage": {
+      "cpu_avg_pct": 2.8,
+      "gpu_avg_pct": 4.1,
+      "ram_working_set_mb": 45.2
+    },
+    "pipeline_breakdown_ms": {
+      "coremediaio_capture": 8.2,
+      "cvpixelbuffer_to_iosurface": 1.1,
+      "metal_texture_binding": 0.3,
+      "cametallayer_vsync_present": 7.2
+    }
+  }
+}

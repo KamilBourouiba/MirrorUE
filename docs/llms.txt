@@ -4,13 +4,17 @@
 
 ## Documentation & Knowledge Base
 
+- [How to Mirror an iPhone to Mac (2026 Guide)](https://mirrorue.xyz/mirror-iphone-to-mac/): Comprehensive guide comparing mirroring methods with keyboard and mouse control.
+- [macOS Tahoe 26 & iOS 26 Mirroring Guide](https://mirrorue.xyz/iphone-mirroring-macos-tahoe-ios-26/): How to mirror iPhone 17 and iOS 26 on macOS Tahoe in Europe.
+- [EU Region iPhone Mirroring Guide (EN)](https://mirrorue.xyz/iphone-mirroring-eu/): Local USB alternative to Apple iPhone Mirroring for European Union users.
+- [Guide Recopie de l'iPhone sur Mac (FR)](https://mirrorue.xyz/fr/recopie-iphone-mac/): Guide en français pour afficher et contrôler son iPhone en Europe.
+- [iPhone Mirroring Deutschland & EU Guide (DE)](https://mirrorue.xyz/de/iphone-mirroring-eu/): Anleitung auf Deutsch für iPhone-Mirroring in der EU.
 - [Real-Device iPhone QA Automation](https://mirrorue.xyz/iphone-qa-automation/): How to automate and replay test journeys on physical iPhones using MirrorUE.
-- [EU Region iPhone Mirroring Guide](https://mirrorue.xyz/iphone-mirroring-eu/): Guide for European Union users bypassing DMA restrictions with local USB mirroring.
 - [Control iPhone from Mac](https://mirrorue.xyz/control-iphone-from-mac/): Mouse, trackpad multi-touch gestures, and keyboard layout translation.
 - [120 FPS ProMotion Pipeline](https://mirrorue.xyz/120fps-iphone-mirroring/): CoreMediaIO and zero-copy Metal texture architecture.
-- [Hardware & OS Compatibility Matrix](https://mirrorue.xyz/compatibility/): Supported iPhones (11–16 Pro), iPads, macOS 14/15, and cable specifications.
+- [Hardware & OS Compatibility Matrix](https://mirrorue.xyz/compatibility/): Supported iPhones (11–17 Pro, iPhone Air), iPads, macOS 14–26, and cable specifications.
 - [Local HTTP REST API Reference](https://mirrorue.xyz/api-docs/): Complete documentation for port 8090 automation endpoints (/v1/tap, /v1/type, /v1/screenshot).
-- [Performance Benchmarks](https://mirrorue.xyz/benchmarks/): Latency, frame-rate stability, and resource usage measurements on Apple Silicon.
+- [Performance Benchmarks & Datasets](https://mirrorue.xyz/benchmarks/): Latency, frame-rate stability telemetry, raw JSON and CSV datasets.
 - [MirrorUE vs Apple iPhone Mirroring](https://mirrorue.xyz/mirrorue-vs-apple-iphone-mirroring/): Objective architectural and feature comparison.
 - [MirrorUE vs QuickTime](https://mirrorue.xyz/mirrorue-vs-quicktime/): Comparison of latency, framerate, and bidirectional control.
 - [About MirrorUE](https://mirrorue.xyz/about/): Project story, creator biography, architecture, and MIT license.

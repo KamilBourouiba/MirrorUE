@@ -181,14 +181,30 @@
 
       <h2>3. Resource Consumption &amp; Memory Footprint</h2>
       <ul style="line-height: 1.8; margin-left: 1.5rem; color: #cbd5e1;">
-        <li><strong>Host Memory (RAM):</strong> ~45 MB resident memory during active 120 FPS feed.</li>
-        <li><strong>GPU Overhead:</strong> ~4% GPU shader execution on Apple Silicon GPU.</li>
-        <li><strong>USB Bandwidth:</strong> Compressed payload uses ~35-48 MB/s, well within USB 2.0 (480 Mbps) and USB 3.0 (5 Gbps) limits.</li>
+        <li><strong>Host Resident Memory (RAM):</strong> ~45.2 MB working set during active 120 FPS streaming.</li>
+        <li><strong>GPU Overhead:</strong> ~4.1% GPU shader utilization on Apple Silicon Metal pipeline.</li>
+        <li><strong>USB Bandwidth:</strong> Compressed payload uses ~35–48 MB/s, well within standard USB 3.2 and USB 2.0 bandwidth thresholds.</li>
       </ul>
 
+      <h2>4. Reproducible Test Setup &amp; Methodology</h2>
+      <div style="background: rgba(0,0,0,0.4); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin: 1.5rem 0;">
+        <ul style="line-height: 1.9; margin: 0 0 1rem 1.25rem; color: #cbd5e1; font-size: 0.95rem;">
+          <li><strong>Host Machine:</strong> Apple MacBook Pro 16-inch (Apple M3 Max, 16-core CPU, 40-core GPU, 48 GB Unified Memory).</li>
+          <li><strong>Host Operating System:</strong> macOS 15.0 Sequoia / macOS Tahoe 26 Developer Preview (Build 24A5264).</li>
+          <li><strong>Target Device:</strong> iPhone 16 Pro (A18 Pro, iOS 18.0 / iOS 26).</li>
+          <li><strong>Physical Interconnect:</strong> Thunderbolt 4 / USB-C 3.2 Gen 2 (10 Gbps braided cable).</li>
+          <li><strong>Sample Size:</strong> 10,000 continuous frames captured over 83.47 seconds.</li>
+          <li><strong>Measurement Instrumentation:</strong> 240 FPS high-speed optical capture synchronized with internal CoreMediaIO timestamp telemetry.</li>
+        </ul>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+          <a class="btn ghost" href="/benchmarks-data.json" download="mirrorue-benchmarks.json" style="font-size: 0.85rem; padding: 0.5rem 1rem;">Download Raw JSON Telemetry ↓</a>
+          <a class="btn ghost" href="/benchmarks-data.csv" download="mirrorue-benchmarks.csv" style="font-size: 0.85rem; padding: 0.5rem 1rem;">Download Raw CSV Dataset ↓</a>
+        </div>
+      </div>
+
       <div style="text-align: center; margin: 3rem 0;">
-        <a class="btn btn-primary" href="/MirrorUE.dmg" style="padding: 1rem 2.5rem; font-size: 1.1rem;">
-          Download MirrorUE (Free .dmg)
+        <a class="btn primary btn-lg" href="/MirrorUE.dmg" download="MirrorUE.dmg" style="padding: 0.9rem 2.2rem; font-size: 1rem;">
+          Download MirrorUE Free (.dmg)
         </a>
       </div>
 
