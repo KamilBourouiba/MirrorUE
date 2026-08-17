@@ -123,10 +123,10 @@
 
       <h2>The Problem with 60 Hz Mirroring Caps</h2>
       <p>
-        If you own an iPhone with a ProMotion display (iPhone 13 Pro through iPhone 16 Pro Max), your device renders animations and games at 120 Hz. When viewed through a 60 FPS mirror, 50% of the frames are discarded, creating noticeable micro-stutter during rapid scrolling, UI animations, and mobile gaming.
+        If you own an iPhone with a ProMotion display (iPhone 13 Pro through iPhone 17 Pro Max &amp; iPhone Air), your device renders animations and games at 120 Hz. When viewed through a 60 FPS mirror, 50% of the frames are discarded, creating noticeable micro-stutter during rapid scrolling, UI animations, and mobile gaming.
       </p>
 
-      <h2>How MirrorUE Delivers True 120 FPS</h2>
+      <h2>How the 120 FPS Metal Pipeline Works</h2>
       <p>
         MirrorUE utilizes macOS's low-level <strong>CoreMediaIO</strong> device stream paired directly with Apple Silicon's Unified Memory architecture:
       </p>
@@ -134,23 +134,23 @@
       <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin: 2rem 0;">
         <div class="card frost">
           <h3>⚡ Hardware Video Capture</h3>
-          <p>Captures uncompressed frames over USB 2.0 / USB 3.0 at native device refresh rate directly from CoreMediaIO.</p>
+          <p>Captures uncompressed frames over USB 2.0 / USB 3.2 at native device refresh rate directly from CoreMediaIO.</p>
         </div>
         <div class="card frost">
           <h3>🎮 Zero-Copy Metal Render</h3>
-          <p>Passes CVPixelBuffer memory directly to Metal shaders without intermediate CPU copies or double-buffering lag.</p>
+          <p>Passes CVPixelBuffer memory directly to IOSurface and CAMetalLayer without intermediate CPU copies or double-buffering lag.</p>
         </div>
         <div class="card frost">
           <h3>📉 Latency &lt; 20 ms</h3>
-          <p>End-to-end input-to-display latency averages just 16.8 ms on Apple Silicon M-series Macs.</p>
+          <p>End-to-end input-to-display latency averages just 16.8 ms on Apple Silicon M-series Macs (M1–M5).</p>
         </div>
       </div>
 
-      <h2>Compatible 120 Hz Devices</h2>
+      <h2>Compatible 120 Hz Devices (iOS 16 – iOS 26)</h2>
       <ul style="line-height: 1.8; margin-left: 1.5rem; color: #cbd5e1;">
-        <li><strong>iPhone:</strong> iPhone 13 Pro / Pro Max, iPhone 14 Pro / Pro Max, iPhone 15 Pro / Pro Max, iPhone 16 Pro / Pro Max.</li>
-        <li><strong>iPad:</strong> iPad Pro 11-inch &amp; 12.9-inch / 13-inch (M1, M2, M4 ProMotion models).</li>
-        <li><strong>Mac Displays:</strong> MacBook Pro (14" / 16" ProMotion), Apple Studio Display, or any 120Hz/144Hz external monitor.</li>
+        <li><strong>iPhone:</strong> iPhone 17 Pro / Pro Max / iPhone Air, iPhone 16 Pro / Pro Max, iPhone 15 Pro / Pro Max, iPhone 14 Pro / Pro Max, iPhone 13 Pro / Pro Max.</li>
+        <li><strong>iPad:</strong> iPad Pro 11-inch &amp; 12.9-inch / 13-inch (M1, M2, M4, M5 ProMotion models).</li>
+        <li><strong>Mac Displays:</strong> MacBook Pro (14" / 16" ProMotion), Apple Studio Display, or any 120Hz/144Hz external monitor on macOS Tahoe 26, Sequoia 15, or Sonoma 14.</li>
       </ul>
 
       <div style="text-align: center; margin: 3rem 0;">
