@@ -1,58 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) — loaded on idle for optimal FCP/LCP -->
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'AW-18393322142');
-
-    function loadGtagScript() {
-      if (document.getElementById('gtag-script')) return;
-      var s = document.createElement('script');
-      s.id = 'gtag-script';
-      s.async = true;
-      s.src = 'https://www.googletagmanager.com/gtag/js?id=AW-18393322142';
-      document.head.appendChild(s);
-    }
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(loadGtagScript, { timeout: 2500 });
-    } else {
-      window.addEventListener('load', function() { setTimeout(loadGtagScript, 1000); });
-    }
-  </script>
-
-  <!-- Event snippet for Download conversion -->
-  <script>
-  function gtag_report_conversion(url) {
-    var callback = function () {
-      if (typeof(url) != 'undefined') {
-        window.location = url;
-      }
-    };
-    if (typeof gtag === 'function') {
-      gtag('event', 'conversion', {
-          'send_to': 'AW-18393322142/Ac_OCIq45eMcEJ6lz8JE',
-          'event_callback': callback
-      });
-    }
-    return false;
-  }
-  </script>
-
   <meta charset="utf-8" />
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="manifest" href="/site.webmanifest" />
-  <link rel="canonical" href="https://mirrorue.xyz/120fps-iphone-mirroring.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
   <title>120 FPS iPhone Screen Mirroring on macOS (ProMotion Metal Render) | MirrorUE</title>
   <meta name="description" content="Stream and mirror your iPhone screen at up to 120 frames per second on macOS. Zero-copy Metal rendering, ProMotion support, and low-latency USB capture." />
   <meta name="author" content="Kamil Bourouiba" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <link rel="canonical" href="https://mirrorue.xyz/120fps-iphone-mirroring.html" />
+  
+
+  
+  
+  
+  
 
   <!-- Open Graph -->
   <meta property="og:site_name" content="MirrorUE" />
@@ -119,6 +86,46 @@
     ]
   }
   </script>
+  <!-- Event snippet for Download conversion -->
+  <script>
+  function gtag_report_conversion(url) {
+    var callback = function () {
+      if (typeof(url) != 'undefined') {
+        window.location = url;
+      }
+    };
+    if (typeof gtag === 'function') {
+      gtag('event', 'conversion', {
+          'send_to': 'AW-18393322142/Ac_OCIq45eMcEJ6lz8JE',
+          'event_callback': callback
+      });
+    }
+    return false;
+  }
+  </script>
+
+  <!-- Google tag (gtag.js) — loaded on idle for optimal FCP/LCP -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'AW-18393322142');
+
+    function loadGtagScript() {
+      if (document.getElementById('gtag-script')) return;
+      var s = document.createElement('script');
+      s.id = 'gtag-script';
+      s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=AW-18393322142';
+      document.head.appendChild(s);
+    }
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(loadGtagScript, { timeout: 2500 });
+    } else {
+      window.addEventListener('load', function() { setTimeout(loadGtagScript, 1000); });
+    }
+  </script>
+
   <!-- Event snippet for Download conversion -->
   <script>
   function gtag_report_conversion(url) {
