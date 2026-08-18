@@ -68,16 +68,8 @@
   <meta name="twitter:description" content="Mirror and control your iPhone on Mac with zero latency, 120 FPS Metal rendering, and keyboard typing." />
   <meta name="twitter:image" content="https://mirrorue.xyz/twitter-image.png" />
 
-  
-  
-  
-  
-  
-  <noscript></noscript>
-  
-
-    <meta name="theme-color" content="#0a0c12" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <meta name="theme-color" content="#0a0c12" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" media="print" onload="this.media='all'" />
@@ -126,7 +118,23 @@
     ]
   }
   </script>
-  
+  <!-- Event snippet for Download conversion -->
+  <script>
+  function gtag_report_conversion(url) {
+    var callback = function () {
+      if (typeof(url) != 'undefined') {
+        window.location = url;
+      }
+    };
+    if (typeof gtag === 'function') {
+      gtag('event', 'conversion', {
+          'send_to': 'AW-18393322142/Ac_OCIq45eMcEJ6lz8JE',
+          'event_callback': callback
+      });
+    }
+    return false;
+  }
+  </script>
 </head>
 <body>
   <div class="bg" aria-hidden="true">

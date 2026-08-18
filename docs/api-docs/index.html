@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Google tag (gtag.js) — loaded on idle for optimal FCP/LCP -->
+    <!-- Google tag (gtag.js) — loaded on idle for optimal FCP/LCP -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
@@ -40,14 +40,102 @@
     return false;
   }
   </script>
-  
+
+  <meta charset="utf-8" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <link rel="canonical" href="https://mirrorue.xyz/api-docs.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+  <title>MirrorUE REST API Documentation | iPhone Automation API</title>
+  <meta name="description" content="Complete documentation for the MirrorUE local HTTP REST API on port 8090. Programmatic touch injection, keyboard typing, screenshot capture, and device status." />
+  <meta name="author" content="Kamil Bourouiba" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+  <!-- Open Graph -->
+  <meta property="og:site_name" content="MirrorUE" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://mirrorue.xyz/api-docs.html" />
+  <meta property="og:title" content="MirrorUE REST API Documentation — iPhone Automation API" />
+  <meta property="og:description" content="Full HTTP REST API reference on port 8090 for automated physical iPhone testing and CI/CD scripting." />
+  <meta property="og:image" content="https://mirrorue.xyz/og-image.png" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="MirrorUE REST API Documentation" />
+  <meta name="twitter:description" content="Automate physical iPhones with MirrorUE's local HTTP API on port 8090." />
+  <meta name="twitter:image" content="https://mirrorue.xyz/twitter-image.png" />
+
   <meta name="theme-color" content="#0a0c12" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" media="print" onload="this.media='all'" />
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" /></noscript>
   <link rel="stylesheet" href="/styles.min.css?v=perf3" />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://mirrorue.xyz/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "API Reference",
+            "item": "https://mirrorue.xyz/api-docs.html"
+          }
+        ]
+      },
+      {
+        "@type": "TechArticle",
+        "headline": "MirrorUE REST API Documentation — iPhone Automation API",
+        "description": "Developer guide and API endpoint reference for controlling physical iPhones programmatically using MirrorUE on macOS.",
+        "author": {
+          "@type": "Person",
+          "name": "Kamil Bourouiba"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "MirrorUE",
+          "url": "https://mirrorue.xyz/"
+        },
+        "mainEntityOfPage": "https://mirrorue.xyz/api-docs.html",
+        "datePublished": "2026-08-01",
+        "dateModified": "2026-08-16"
+      }
+    ]
+  }
+  </script>
+  <!-- Event snippet for Download conversion -->
+  <script>
+  function gtag_report_conversion(url) {
+    var callback = function () {
+      if (typeof(url) != 'undefined') {
+        window.location = url;
+      }
+    };
+    if (typeof gtag === 'function') {
+      gtag('event', 'conversion', {
+          'send_to': 'AW-18393322142/Ac_OCIq45eMcEJ6lz8JE',
+          'event_callback': callback
+      });
+    }
+    return false;
+  }
+  </script>
 </head>
 <body>
   <div class="bg" aria-hidden="true">
@@ -158,7 +246,7 @@ print("QA test step executed successfully!")</code></pre>
         <p>Ultra-low-latency 120 FPS iPhone mirror for macOS.</p>
       </div>
       <div class="footer-col">
-        <h4>Solutions</h4>
+        <p class="footer-heading" style="color: #0f172a; font-family: var(--font); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.75rem 0;">Solutions</p>
         <ul>
           <li><a href="index.html">Home</a></li>
           <li><a href="iphone-qa-automation.html">iPhone QA Automation</a></li>
@@ -168,7 +256,7 @@ print("QA test step executed successfully!")</code></pre>
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Resources</h4>
+        <p class="footer-heading" style="color: #0f172a; font-family: var(--font); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.75rem 0;">Resources</p>
         <ul>
           <li><a href="benchmarks.html">Benchmarks</a></li>
           <li><a href="api-docs.html">HTTP REST API</a></li>
@@ -178,6 +266,6 @@ print("QA test step executed successfully!")</code></pre>
       </div>
     </div>
   </footer>
-  <script src="/conversion.js"></script>
+  <script defer src="/conversion.js"></script>
 </body>
 </html>
