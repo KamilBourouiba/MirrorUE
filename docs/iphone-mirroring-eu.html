@@ -1,124 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18393322142"></script>
+  <!-- Google tag (gtag.js) — loaded on idle for optimal FCP/LCP -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', 'AW-18393322142');
+
+    function loadGtagScript() {
+      if (document.getElementById('gtag-script')) return;
+      var s = document.createElement('script');
+      s.id = 'gtag-script';
+      s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=AW-18393322142';
+      document.head.appendChild(s);
+    }
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(loadGtagScript, { timeout: 2500 });
+    } else {
+      window.addEventListener('load', function() { setTimeout(loadGtagScript, 1000); });
+    }
   </script>
 
-  <meta charset="utf-8" />
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="manifest" href="/site.webmanifest" />
-  <link rel="canonical" href="https://mirrorue.xyz/iphone-mirroring-eu.html" />
-  <link rel="alternate" hreflang="en" href="https://mirrorue.xyz/iphone-mirroring-eu.html" />
-  <link rel="alternate" hreflang="fr" href="https://mirrorue.xyz/fr/recopie-iphone-mac/" />
-  <link rel="alternate" hreflang="de" href="https://mirrorue.xyz/de/iphone-mirroring-eu/" />
-  <link rel="alternate" hreflang="x-default" href="https://mirrorue.xyz/iphone-mirroring-eu.html" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-
-  <title>iPhone Mirroring Not Available in the EU? Mirror &amp; Control from Mac | MirrorUE</title>
-  <meta name="description" content="Stuck with 'iPhone Mirroring is not available in your country or region' in Europe? Discover how MirrorUE enables 120 FPS USB iPhone mirroring and keyboard control in the EU." />
-  <meta name="author" content="Kamil Bourouiba" />
-  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-
-  <!-- Open Graph -->
-  <meta property="og:site_name" content="MirrorUE" />
-  <meta property="og:type" content="article" />
-  <meta property="og:url" content="https://mirrorue.xyz/iphone-mirroring-eu.html" />
-  <meta property="og:title" content="iPhone Mirroring Not Available in the EU? Mirror &amp; Control from Mac" />
-  <meta property="og:description" content="How to mirror and control your iPhone from Mac in Europe without Apple ID region locks. Free 120 FPS open-source tool." />
-  <meta property="og:image" content="https://mirrorue.xyz/og-image.png" />
-  <meta property="og:locale" content="en_US" />
-
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="iPhone Mirroring Not Available in the EU? Mirror &amp; Control from Mac" />
-  <meta name="twitter:description" content="How to mirror and control your iPhone from Mac in Europe with MirrorUE. Free .dmg download." />
-  <meta name="twitter:image" content="https://mirrorue.xyz/twitter-image.png" />
-
-  <meta name="theme-color" content="#0a0c12" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=mobile16" />
-
-  <!-- Structured Data -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Home",
-            "item": "https://mirrorue.xyz/"
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "iPhone Mirroring in the EU",
-            "item": "https://mirrorue.xyz/iphone-mirroring-eu.html"
-          }
-        ]
-      },
-      {
-        "@type": "Article",
-        "headline": "iPhone Mirroring Not Available in the EU? How to Mirror & Control iPhone on Mac in Europe",
-        "description": "Comprehensive guide on why Apple iPhone Mirroring is blocked in the EU and how MirrorUE provides an open-source, 120 FPS USB alternative.",
-        "author": {
-          "@type": "Person",
-          "name": "Kamil Bourouiba"
-        },
-        "publisher": {
-          "@type": "Organization",
-          "name": "MirrorUE",
-          "url": "https://mirrorue.xyz/"
-        },
-        "mainEntityOfPage": "https://mirrorue.xyz/iphone-mirroring-eu.html",
-        "datePublished": "2026-08-01",
-        "dateModified": "2026-08-16"
-      },
-      {
-        "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "Why is iPhone Mirroring not available in the European Union?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Apple stated that regulatory requirements under the European Digital Markets Act (DMA) led to delaying features such as iPhone Mirroring, SharePlay Screen Sharing, and Apple Intelligence in EU member states."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Does MirrorUE work in European Union countries?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Yes, 100%. MirrorUE communicates directly over a trusted USB cable using CoreMediaIO capture and CoreDevice UniversalHID interfaces. It does not rely on Apple ID cloud entitlement checks or geographic IP restrictions."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Do I need a US Apple ID or VPN to use MirrorUE?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "No. You do not need a US Apple ID, a VPN, or any region workarounds. MirrorUE operates entirely locally between your Mac and your iPhone."
-            }
-          }
-        ]
-      }
-    ]
-  }
-  </script>
   <!-- Event snippet for Download conversion -->
   <script>
   function gtag_report_conversion(url) {
@@ -136,6 +40,14 @@
     return false;
   }
   </script>
+  
+  <meta name="theme-color" content="#0a0c12" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" /></noscript>
+  <link rel="stylesheet" href="/styles.min.css?v=perf3" />
 </head>
 <body>
   <div class="bg" aria-hidden="true">

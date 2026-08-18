@@ -1,6 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Google tag (gtag.js) — loaded on idle for optimal FCP/LCP -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'AW-18393322142');
+
+    function loadGtagScript() {
+      if (document.getElementById('gtag-script')) return;
+      var s = document.createElement('script');
+      s.id = 'gtag-script';
+      s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=AW-18393322142';
+      document.head.appendChild(s);
+    }
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(loadGtagScript, { timeout: 2500 });
+    } else {
+      window.addEventListener('load', function() { setTimeout(loadGtagScript, 1000); });
+    }
+  </script>
+
+  <!-- Event snippet for Download conversion -->
+  <script>
+  function gtag_report_conversion(url) {
+    var callback = function () {
+      if (typeof(url) != 'undefined') {
+        window.location = url;
+      }
+    };
+    if (typeof gtag === 'function') {
+      gtag('event', 'conversion', {
+          'send_to': 'AW-18393322142/Ac_OCIq45eMcEJ6lz8JE',
+          'event_callback': callback
+      });
+    }
+    return false;
+  }
+  </script>
   <meta charset="utf-8" />
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
@@ -29,7 +68,15 @@
   <meta name="twitter:description" content="Local USB iPhone Mirroring and mouse/keyboard control for macOS Tahoe 26 and iOS 26." />
   <meta name="twitter:image" content="https://mirrorue.xyz/twitter-image.png" />
 
-  <meta name="theme-color" content="#0a0c12" />
+  
+  
+  
+  
+  
+  <noscript></noscript>
+  
+
+    <meta name="theme-color" content="#0a0c12" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" />
@@ -79,23 +126,7 @@
     ]
   }
   </script>
-  <!-- Event snippet for Download conversion -->
-  <script>
-  function gtag_report_conversion(url) {
-    var callback = function () {
-      if (typeof(url) != 'undefined') {
-        window.location = url;
-      }
-    };
-    if (typeof gtag === 'function') {
-      gtag('event', 'conversion', {
-          'send_to': 'AW-18393322142/Ac_OCIq45eMcEJ6lz8JE',
-          'event_callback': callback
-      });
-    }
-    return false;
-  }
-  </script>
+  
 </head>
 <body>
   <div class="bg" aria-hidden="true">
