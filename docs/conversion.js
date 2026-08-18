@@ -58,11 +58,11 @@
   // Track Google Ads Conversion on DMG Download
   document.querySelectorAll('a[href*="MirrorUE.dmg"]').forEach(function (btn) {
     btn.addEventListener("click", function () {
-      if (typeof window.gtag === "function") {
+      if (typeof window.gtag_report_conversion === "function") {
+        window.gtag_report_conversion();
+      } else if (typeof window.gtag === "function") {
         window.gtag("event", "conversion", {
-          send_to: "AW-18393322142",
-          event_category: "download",
-          event_label: "MirrorUE.dmg"
+          send_to: "AW-18393322142/Ac_OCIq45eMcEJ6lz8JE"
         });
       }
     });
