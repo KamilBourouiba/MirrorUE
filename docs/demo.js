@@ -182,7 +182,9 @@
       "</span>";
     apiFeed.appendChild(row);
     while (apiFeed.children.length > 8) apiFeed.removeChild(apiFeed.firstChild);
-    apiFeed.scrollTop = apiFeed.scrollHeight;
+    requestAnimationFrame(function () {
+      apiFeed.scrollTop = apiFeed.scrollHeight;
+    });
   }
 
   function resetPhone() {
@@ -200,7 +202,7 @@
   function updatePhoneScale() {
     var shell = document.querySelector(".phone-shell");
     if (!shell) return 1;
-    var w = shell.offsetWidth || 220;
+    var w = shell.clientWidth || 220;
     cachedPhoneScale = w > 0 ? w / 220 : 1;
     return cachedPhoneScale;
   }
@@ -228,8 +230,9 @@
     ripple.classList.remove("pop");
     ripple.style.left = x * 100 + "%";
     ripple.style.top = y * 100 + "%";
-    void ripple.offsetWidth;
-    ripple.classList.add("pop");
+    requestAnimationFrame(function () {
+      ripple.classList.add("pop");
+    });
   }
 
   function openApp(name, fromApi) {
@@ -461,7 +464,7 @@
 
   function shellWidth() {
     var shell = document.querySelector(".phone-shell");
-    return shell ? Math.round(shell.getBoundingClientRect().width) : 0;
+    return shell ? (shell.clientWidth || Math.round(shell.getBoundingClientRect().width)) : 0;
   }
 
   function bootDemo() {
