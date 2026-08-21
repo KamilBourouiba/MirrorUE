@@ -1,45 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <!-- Google tag (gtag.js) — loaded on idle for optimal FCP/LCP -->
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'AW-18393322142');
-
-    function loadGtagScript() {
-      if (document.getElementById('gtag-script')) return;
-      var s = document.createElement('script');
-      s.id = 'gtag-script';
-      s.async = true;
-      s.src = 'https://www.googletagmanager.com/gtag/js?id=AW-18393322142';
-      document.head.appendChild(s);
-    }
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(loadGtagScript, { timeout: 2500 });
-    } else {
-      window.addEventListener('load', function() { setTimeout(loadGtagScript, 1000); });
-    }
-  </script>
-
-  <!-- Event snippet for Download conversion -->
-  <script>
-  function gtag_report_conversion(url) {
-    var callback = function () {
-      if (typeof(url) != 'undefined') {
-        window.location = url;
-      }
-    };
-    if (typeof gtag === 'function') {
-      gtag('event', 'conversion', {
-          'send_to': 'AW-18393322142/Ac_OCIq45eMcEJ6lz8JE',
-          'event_callback': callback
-      });
-    }
-    return false;
-  }
-  </script>
+  
   <meta charset="utf-8" />
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
@@ -123,6 +85,33 @@
     ]
   }
   </script>
+  <!-- Event snippet for Download conversion -->
+  <script>
+  function gtag_report_conversion(url) {
+    var callback = function () {
+      if (typeof(url) != 'undefined') {
+        window.location = url;
+      }
+    };
+    if (typeof gtag === 'function') {
+      gtag('event', 'conversion', {
+          'send_to': 'AW-18393322142/Ac_OCIq45eMcEJ6lz8JE',
+          'event_callback': callback
+      });
+    }
+    return false;
+  }
+  </script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18393322142"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'AW-18393322142');
+  </script>
+
   <!-- Event snippet for Download conversion -->
   <script>
   function gtag_report_conversion(url) {

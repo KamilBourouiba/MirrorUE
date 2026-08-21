@@ -101,6 +101,13 @@
 
   function showSuccess(form, email, plan, message) {
     writeJoined({ email: email, plan: plan, at: new Date().toISOString() });
+    if (typeof window.gtag === "function") {
+      window.gtag("event", "generate_lead", {
+        send_to: "AW-18393322142/Ac_OCIq45eMcEJ6lz8JE",
+        event_category: "waitlist",
+        event_label: plan
+      });
+    }
     setFormState(
       form,
       "success",
