@@ -2806,5 +2806,24 @@ li a:not(.btn):hover {
   font-weight: 600;
 }
 
+/* Keep the interactive phone comfortably tappable on compact screens. */
+@media (max-width: 734px) {
+  .phone-shell,
+  html.touch-ui .phone-shell {
+    --phone-max-h: none;
+    --phone-max-w: none;
+    width: min(210px, 52vw);
+  }
+}
+
+@media (max-width: 960px) and (orientation: landscape) {
+  .phone-shell,
+  html.touch-ui .phone-shell {
+    --phone-max-h: none;
+    --phone-max-w: none;
+    width: min(170px, calc(76dvh * 9 / 19.4));
+  }
+}
+
 
 

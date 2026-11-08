@@ -466,9 +466,7 @@
     setApiMode("idle");
     moveCursor(0.5, 0.5, true);
 
-    if (!finishAuto(token)) return;
-    await wait(reduceMotion ? 400 : 2200, token);
-    if (token === autoToken) startAutoDemo();
+    finishAuto(token);
   }
 
   cursor.hidden = true;
