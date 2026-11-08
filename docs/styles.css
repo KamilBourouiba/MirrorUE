@@ -277,10 +277,9 @@ a:hover {
   transform: none;
 }
 
-/* Watch-only demo — auto-play, no manual interaction */
+/* Interactive demo */
 .phone-shell,
 .phone-shell * {
-  pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -290,7 +289,22 @@ a:hover {
 }
 
 .api-replay {
-  display: none !important;
+  margin-left: auto;
+  appearance: none;
+  border: 1px solid rgba(67, 56, 202, 0.18);
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--accent);
+  cursor: pointer;
+  transition: transform 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.api-replay:hover {
+  transform: translateY(-1px);
+  background: #fff;
 }
 
 .cursor {
@@ -592,7 +606,7 @@ a:hover {
   font-family: var(--mono);
   font-size: 0.48rem;
   color: var(--muted);
-  cursor: inherit;
+  cursor: pointer;
   pointer-events: auto;
 }
 
@@ -602,6 +616,22 @@ a:hover {
   border-radius: 0.75rem;
   background: var(--c, #5b6cff);
   box-shadow: 0 6px 14px rgba(28, 31, 46, 0.12);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.app:hover span,
+.app:focus-visible span {
+  transform: translateY(-2px);
+  box-shadow: 0 9px 18px rgba(28, 31, 46, 0.2);
+}
+
+.app:focus-visible {
+  outline: none;
+}
+
+.app:focus-visible span {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .app.pulse span,
@@ -664,7 +694,8 @@ a:hover {
   font-family: var(--mono);
   font-size: 0.68rem;
   padding: 0;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .app-nav strong {

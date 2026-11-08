@@ -21,6 +21,7 @@
   var apiFeed = document.getElementById("api-feed");
   var apiModeEl = document.getElementById("api-mode");
   var workflowStepsEl = document.getElementById("workflow-steps");
+  var replayButton = document.getElementById("demo-replay");
   var timeEl = document.getElementById("phone-time");
   if (!stage || !phone || !screen) return;
 
@@ -255,6 +256,35 @@
       if (!openAppName) appSheet.hidden = true;
     }, 280);
     if (!fromApi) apiLine("POST", "/v1/button", '{name:"home"}');
+  }
+
+  function pauseAutoForInteraction() {
+    if (!autoRunning) return;
+    autoToken += 1;
+    autoRunning = false;
+    setApiMode("manual");
+  }
+
+  homeLayer.querySelectorAll(".app[data-app]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      pauseAutoForInteraction();
+      openApp(button.getAttribute("data-app"), false);
+    });
+  });
+
+  if (appBack) {
+    appBack.addEventListener("click", function () {
+      pauseAutoForInteraction();
+      closeApp(false);
+    });
+  }
+
+  if (replayButton) {
+    replayButton.addEventListener("click", function () {
+      autoToken += 1;
+      autoRunning = false;
+      startAutoDemo();
+    });
   }
 
   function appCenter(name) {
